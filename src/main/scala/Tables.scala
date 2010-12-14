@@ -11,6 +11,8 @@ import CassandraConversions._
 import org.apache.cassandra.thrift.{ Column, ColumnPath }
 import org.apache.log4j.Logger
 
+import stopwatch.Stopwatch
+
 class HCAF (val csquareCode : String) {
 	override def toString() = "HCAF(%s)".format(csquareCode)
 }
@@ -56,16 +58,12 @@ class HSPEC (val speciesId : String, val csquareCode : String) extends Cassandra
   override def keyspaceName = "Aquamaps"
 	override def columnFamily = "hspec"
 
-	def btoCassandra : Row = (key, List("SpeciesID" --> speciesId,
-																		 "CsquareCode" --> csquareCode))
-
-	def toCassandra : Row = {
-		val x = btoCassandra
-		//println("WOWOWOW: " + x)
-		x
+	final def toCassandra : Row = Stopwatch("hspecSerialize") {
+		(key, List("SpeciesID" --> speciesId,
+							 "CsquareCode" --> csquareCode))
 	}
 
-	def key = "%s:%s".format(speciesId, csquareCode)
+	final def key = "%s:%s".format(speciesId, csquareCode)
 }
 
 object HSPEC {

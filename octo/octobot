@@ -10,7 +10,7 @@ options[1]="log4j.configuration=`pwd`/log4j.properties"
 # You shouldn't need to touch anything below
 # this line, but feel free to mess around.
 JVM_OPTS="-server"
-CLASSPATH="jar/octobot.jar:$PROJECT/project/boot/scala-2.8.1/lib/scala-library.jar:$PROJECT/lib/*"
+CLASSPATH="jar/octobot.jar:$PROJECT/project/boot/scala-2.8.1/lib/scala-library.jar:$PROJECT/lib/*:$PROJECT/lib_managed/scala_2.8.1/compile/*"
 EXECUTABLE="com.urbanairship.octobot.Octobot"
 
 for i in "${options[@]}"

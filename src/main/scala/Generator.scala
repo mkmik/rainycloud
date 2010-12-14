@@ -13,6 +13,12 @@ import scala.util.Random
 import CassandraConversions._
 
 
+import stopwatch.Stopwatch
+import stopwatch.StopwatchGroup
+import stopwatch.StopwatchRange
+import stopwatch.TimeUnit._
+
+
 object HSPENLoader extends CassandraFetcher {
   private val log = Logger.getLogger(this.getClass);
 
@@ -41,27 +47,31 @@ object HSPECGenerator extends Worker with CassandraFetcher with CassandraSink  {
 	val random : Random = new Random
 
 	lazy val hspen = HSPENLoader.load
+	
+	Watch.run
+	Stopwatch.enabled = true
+	Stopwatch.range = StopwatchRange(0 seconds, 15 seconds, 500 millis)
 
   def run(task: JSONObject) {
-    log.info("hspen task: " + task)
-
-		log.info("hspen size: " + hspen.size)
-
     val start = task.get("start").asInstanceOf[String]
-    val size = task.get("size").asInstanceOf[Long]
+    val size  = task.get("size" ).asInstanceOf[Long]
 
-    val generated = fetch(start, size).flatMap { case (_, v) => compute(v) }
+		
+			val generated = (Stopwatch("fetch") {fetch(start, size)}).flatMap { case (_, v) => compute(v) }
+		
 
-		log.info("GENERATED " + generated.size)
-
-    store(generated map (_.toCassandra))
+    store((Stopwatch("serialize") {generated map (_.toCassandra)}))
   }
 
 	def compute(hcafColumns: Iterable[Column]) : Iterable[HSPEC] = {
 		val hcaf = HCAF.fromCassandra(hcafColumns)
-		compute(hcaf)
+		Stopwatch("compute") {
+			compute(hcaf);
+		}
   }
 
+	// compute some HSPECs from the given HCAF and all the HSPENs
+	// currently just selects some randomly with the same distribution as the actualy computation
 	def compute (hcaf : HCAF) : Iterable[HSPEC]  = {
 		hspen.flatMap { pen =>
 			if(random.nextInt(30) == 0)

@@ -73,7 +73,7 @@ trait CassandraSink extends Cassandra {
 
   def store(rows: Iterable[Row]) = {
     //log.info("storing " + rows)
-		log.info("storing")
+		log.info("storing %s rows".format(rows.size))
 		log.info("-----------")
   }
 
