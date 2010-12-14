@@ -40,13 +40,10 @@ trait Cassandra extends CassandraConfig {
     ks.getRangeSlices(clp, sp, range)
   }
 
-	final def mutation(column: Column) = {
-		val mut = new Mutation
-		val color = new ColumnOrSuperColumn
-		mut.setColumn_or_supercolumn(color)
-		color.setColumn(column)
-		mut
+	def batchMutate(mutas : Map[String, Map[String, List[Mutation]]]) = {
+		log.info("mutating " + mutas)
 	}
+
 }
 
 object CassandraConversions {
@@ -72,13 +69,11 @@ trait CassandraFetcher extends Cassandra {
 trait CassandraSink extends Cassandra {
   private val log = Logger.getLogger(this.getClass);
 
-  def store(rows: Iterable[Iterable[Column]]) = {
+  def store(rows: Iterable[(String, Iterable[Column])]) = {
     log.info("storing " + rows)
   }
 
 }
-
-trait CassandraColumn
 
 trait CassandraCreator extends CassandraConfig {
 	class NewColumnWrapper(val name: String) {
@@ -92,4 +87,14 @@ trait CassandraCreator extends CassandraConfig {
 	}
 
 	def stamp = System.currentTimeMillis
+
+	final def mutation(column: Column) = {
+		val mut = new Mutation
+		val color = new ColumnOrSuperColumn
+		mut.setColumn_or_supercolumn(color)
+		color.setColumn(column)
+		mut
+	}
+
+	def simpleMutation(key: String, column: Column) = (key, mutation(column))
 }
