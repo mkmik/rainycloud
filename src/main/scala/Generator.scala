@@ -8,6 +8,7 @@ import org.apache.cassandra.thrift.{ Column }
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import scala.util.Random
 
 import CassandraConversions._
 
@@ -37,6 +38,8 @@ object HSPECGenerator extends Worker with CassandraFetcher with CassandraSink  {
 	override def columnFamily = "hcaf"
 	override def columnNames = HCAF.columns
 
+	val random : Random = new Random
+
 	lazy val hspen = HSPENLoader.load
 
   def run(task: JSONObject) {
@@ -49,15 +52,22 @@ object HSPECGenerator extends Worker with CassandraFetcher with CassandraSink  {
 
     val generated = fetch(start, size).flatMap { case (_, v) => compute(v) }
 
+		log.info("GENERATED " + generated.size)
+
     store(generated map (_.toCassandra))
   }
 
-	def compute(hcafColumns: Iterable[Column]) : List[HSPEC] = {
+	def compute(hcafColumns: Iterable[Column]) : Iterable[HSPEC] = {
 		val hcaf = HCAF.fromCassandra(hcafColumns)
 		compute(hcaf)
   }
 
-	def compute (hcaf : HCAF) : List[HSPEC]  = {
-		List(new HSPEC("a", "b"))
+	def compute (hcaf : HCAF) : Iterable[HSPEC]  = {
+		hspen.flatMap { pen =>
+			if(random.nextInt(30) == 0)
+				List(new HSPEC(csquareCode=hcaf.csquareCode, speciesId=hspen.head.speciesId))
+			else
+				Nil
+		}
 	}
 }

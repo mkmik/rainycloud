@@ -56,8 +56,16 @@ class HSPEC (val speciesId : String, val csquareCode : String) extends Cassandra
   override def keyspaceName = "Aquamaps"
 	override def columnFamily = "hspec"
 
-	def toCassandra : Row = ("0", List("SpeciesID" --> speciesId,
-																									"CsquareCode" --> csquareCode))
+	def btoCassandra : Row = (key, List("SpeciesID" --> speciesId,
+																		 "CsquareCode" --> csquareCode))
+
+	def toCassandra : Row = {
+		val x = btoCassandra
+		//println("WOWOWOW: " + x)
+		x
+	}
+
+	def key = "%s:%s".format(speciesId, csquareCode)
 }
 
 object HSPEC {

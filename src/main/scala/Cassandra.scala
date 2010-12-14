@@ -72,7 +72,9 @@ trait CassandraSink extends Cassandra {
   private val log = Logger.getLogger(this.getClass);
 
   def store(rows: Iterable[Row]) = {
-    log.info("storing " + rows)
+    //log.info("storing " + rows)
+		log.info("storing")
+		log.info("-----------")
   }
 
 }
