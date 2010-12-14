@@ -7,11 +7,26 @@ package it.cnr.aquamaps
 // tot:    1'650'703'652
 // output:    56'582'558
 
+import CassandraConversions._
+import org.apache.cassandra.thrift.{ Column }
+
+class HCAF (val csquareCode : String) {
+	override def toString() = "HCAF(%s)".format(csquareCode)
+}
+
 
 object HCAF {
   val columns = List("CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM", "DepthMin", "DepthMax", "SSTAnMean", "SBTAnMean", "SalinityMean", "SalinityBMean", "PrimProdMean", "IceConAnn", "LandDist", "EEZFirst", "LME", "DepthMean")
 
 	val condition = "OceanArea > 0"
+
+	def fromCassandra(x : Iterable[Column]) : HCAF = fromCassandra(columnList2map(x))
+
+	def fromCassandra(x : Map[String, Column]) : HCAF = build(x mapValues (_.value))
+
+	def build(x : Map[String, String]) = {
+		new HCAF(x.get("CsquareCode").getOrElse(""))
+	}
 }
 
 object HSpen {

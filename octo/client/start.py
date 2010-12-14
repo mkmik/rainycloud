@@ -13,10 +13,9 @@ if __name__ == '__main__':
     
     ch = connection.channel()
 
-
-
     for row in open("ranges"):
         size, start = row.strip().split()
-        msg = '{"task": "%s", "args": %s, "retries": 100 }' % (sys.argv[1], [int(start), int(size)])
+        msg = '{"task": "%s", "start": "%s:", "size": %s, "retries": 1 }' % (sys.argv[1], start, int(size))
 
         ch.basic_publish(Message(msg), "pippo")
+        break

@@ -11,11 +11,14 @@ if __name__ == '__main__':
     args = []
     if len(sys.argv) > 2:
         args = "[" + ",".join(sys.argv[2:]) + "]"
-    msg = '{"task": "%s", "args": %s, "retries": 100 }' % (sys.argv[1], args)
+
+    start = "12345"
+    size = 123
+
+    msg = '{"task": "%s", "start": "%s:", "size": %s, "retries": 0 }' % (sys.argv[1], start, int(size))
 
     connection = Connection('localhost', 'foo', 'bar')
     
     ch = connection.channel()
 
-    for i in xrange(0, 10):
-        ch.basic_publish(Message(msg), "pippo")
+    ch.basic_publish(Message(msg), "pippo")
