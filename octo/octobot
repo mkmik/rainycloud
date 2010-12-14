@@ -1,0 +1,25 @@
+#!/bin/bash
+PROJECT=/home/marko/Projects/rainycloud
+# Specify the path to the jar or classes containing your tasks.
+MY_TASKS=$PROJECT/target/scala_2.8.1/classes
+
+# Set any options you'd like to pass to the JVM here.
+options[0]="configFile=`pwd`/config.yml"
+options[1]="log4j.configuration=`pwd`/log4j.properties"
+
+# You shouldn't need to touch anything below
+# this line, but feel free to mess around.
+JVM_OPTS="-server"
+CLASSPATH="jar/octobot.jar:$PROJECT/project/boot/scala-2.8.1/lib/scala-library.jar"
+EXECUTABLE="com.urbanairship.octobot.Octobot"
+
+for i in "${options[@]}"
+do
+  JVM_OPTS="$JVM_OPTS -D$i "
+done
+
+echo -e "Launching Octobot...\n"
+export JVM_OPTS="$JVM_OPTS -noverify -javaagent:/home/marko/bin/ZeroTurnaround/JRebel/jrebel.jar"
+#java $JVM_OPTS -cp $MY_TASKS:$CLASSPATH $EXECUTABLE
+export JAVA_OPTS=$JVM_OPTS
+scala -classpath $MY_TASKS:$CLASSPATH $EXECUTABLE
