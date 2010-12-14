@@ -10,6 +10,8 @@ import scala.collection.JavaConversions._
 trait CassandraConfig {
   def keyspaceName: String
 	def columnFamily: String
+
+	type Row = (String, Iterable[Column])
 }
 
 trait Cassandra extends CassandraConfig {
@@ -69,7 +71,7 @@ trait CassandraFetcher extends Cassandra {
 trait CassandraSink extends Cassandra {
   private val log = Logger.getLogger(this.getClass);
 
-  def store(rows: Iterable[(String, Iterable[Column])]) = {
+  def store(rows: Iterable[Row]) = {
     log.info("storing " + rows)
   }
 
