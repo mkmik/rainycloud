@@ -3,4 +3,4 @@
 TASK=it.cnr.aquamaps.HSPECGenerator
 
 cd $(dirname $0)
-./start.py $TASK
+./start.py $TASK $@

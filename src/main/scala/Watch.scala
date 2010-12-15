@@ -24,7 +24,11 @@ object Watch {
 		
 		// configure port number
 		server.port = 9999
-		
-		server.start()
+		try {
+	//		server.start()
+		} catch {
+			case _ => 
+				println("couldn't start stopwatch web monitoring")
+		}
 	}
 }

@@ -14,6 +14,8 @@ if __name__ == '__main__':
     ch = connection.channel()
 
     count = 10
+    if len(sys.argv) > 2:
+        count = int(sys.argv[2])
 
     for row in open("ranges"):
         size, start = row.strip().split()
