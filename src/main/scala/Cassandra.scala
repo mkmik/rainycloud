@@ -7,6 +7,8 @@ import org.apache.cassandra.thrift.{ Column, SliceRange, SlicePredicate, ColumnP
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
+import stopwatch.Stopwatch
+
 trait CassandraConfig {
   def keyspaceName: String
 	def columnFamily: String
@@ -23,10 +25,10 @@ trait Cassandra extends CassandraConfig {
 
   val client = pool borrowClient
 
-  def keyspace = client.getKeyspace(keyspaceName)
+  lazy val keyspace = client.getKeyspace(keyspaceName)
 
   def rangeSlice(from: String, to: String, size: Long, columns: List[String]) = {
-    log.info("getting slice %s %s %s  on   %s %s".format(from, to, size, keyspaceName, columnFamily))
+    log.info("getting slice %s %s %s  on  %s %s".format(from, to, size, keyspaceName, columnFamily))
 
     val ks = keyspace
     val range = new KeyRange
@@ -43,8 +45,11 @@ trait Cassandra extends CassandraConfig {
   }
 
 	def batchMutate(mutas : java.util.Map[String, MutationList]) = {
-		log.info("mutating %s rows".format(mutas.size))
-		keyspace.batchMutate(mutas)
+		log.info("upserting %s rows".format(mutas.size))
+
+		Stopwatch("upsert") {
+			keyspace.batchMutate(mutas)
+		}
 	}
 
 }
@@ -75,26 +80,14 @@ trait CassandraSink extends Cassandra {
 	def outputColumnFamily : String
 
   def store(rows: Iterable[Row]) = {
-    //log.info("storing " + rows)
-		log.info("storing %s rows".format(rows.size))
-		log.info("-----------")
+		log.info("storing %s hspec rows".format(rows.size))
 		
-		// 	type Row = (String, Iterable[Column])
-
-		def makeColumns(cols : Iterable[Column]) = Map(outputColumnFamily -> (cols.map {col => mutation(col)}).toList.asJava).asJava
-		//def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns (cols))}
-
 		def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns (cols))}
+		def makeMutations(cols: Iterable[Column]) = cols.map {col => mutation(col)}
+		def makeColumns(cols : Iterable[Column]) = Map(outputColumnFamily -> makeMutations(cols).toList.asJava).asJava
 		
-//		val mutations = rows.foldLeft(Map[String, Map[String, Iterable[Mutation]]]()) { (acc, row) => acc + makeRow(row) }
-//		val mutations = rows.foldLeft(Map[String, MutationList]()) { (acc, row) => acc + makeRow(row) }
-
-//		val mutations = rows.foldLeft(Map[String, java.util.Map[String, java.util.List[Mutation]]]()) { (acc, row) => acc + makeRow(row) }
 		val mutations = rows.foldLeft(Map[String, MutationList]()) { (acc, row) => acc + makeRow(row) }
-
 		batchMutate(mutations.asJava)
-
-		//batchMutate(rows.foldl(Map()) { (acc, case (key, cols)) => acc + Map(key -> Map(columnFamily -> cols.map {col => mutation(col)}))})
   }
 
 	final def mutation(column: Column) = {

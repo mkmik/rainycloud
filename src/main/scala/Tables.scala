@@ -47,7 +47,6 @@ object HSPEN {
 	def fromCassandra(x : Map[String, Column]) : HSPEN = build(x mapValues (_.value))
 
 	def build(x : Map[String, String]) = {
-//		println(x.keys)
 		new HSPEN(x.get("SpeciesID").getOrElse("no species"))
 	}
 

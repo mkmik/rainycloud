@@ -13,9 +13,14 @@ if __name__ == '__main__':
     
     ch = connection.channel()
 
+    count = 10
+
     for row in open("ranges"):
         size, start = row.strip().split()
         msg = '{"task": "%s", "start": "%s:", "size": %s, "retries": 1 }' % (sys.argv[1], start, int(size))
 
         ch.basic_publish(Message(msg), "pippo")
-        break
+
+        count -= 1
+        if(count < 0):
+            break
