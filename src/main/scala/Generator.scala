@@ -42,14 +42,16 @@ object HSPECGenerator extends Worker with CassandraFetcher with CassandraSink  {
 
   override def keyspaceName = "Aquamaps"
 	override def columnFamily = "hcaf"
+	override def outputColumnFamily = "hspec"
 	override def columnNames = HCAF.columns
 
 	val random : Random = new Random
 
 	lazy val hspen = HSPENLoader.load
 	
-	Watch.run
-	Stopwatch.enabled = true
+	//Watch.run
+
+	Stopwatch.enabled = false
 	Stopwatch.range = StopwatchRange(0 seconds, 15 seconds, 500 millis)
 
   def run(task: JSONObject) {

@@ -18,3 +18,4 @@ if __name__ == '__main__':
         msg = '{"task": "%s", "start": "%s:", "size": %s, "retries": 1 }' % (sys.argv[1], start, int(size))
 
         ch.basic_publish(Message(msg), "pippo")
+        break

@@ -1,17 +1,18 @@
 package it.cnr.aquamaps
-
 import org.apache.log4j.Logger
 
 import me.prettyprint.cassandra.service.{ CassandraHostConfigurator, CassandraClientPoolFactory }
-import org.apache.cassandra.thrift.{ Column, SliceRange, SlicePredicate, ColumnParent, ColumnPath, KeyRange, Mutation, ColumnOrSuperColumn }
+import org.apache.cassandra.thrift.{ Column, SliceRange, SlicePredicate, ColumnParent, ColumnPath, KeyRange, Mutation, ColumnOrSuperColumn, ConsistencyLevel }
 
 import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 trait CassandraConfig {
   def keyspaceName: String
 	def columnFamily: String
 
 	type Row = (String, Iterable[Column])
+	type MutationList = java.util.Map[String, java.util.List[Mutation]]
 }
 
 trait Cassandra extends CassandraConfig {
@@ -25,7 +26,6 @@ trait Cassandra extends CassandraConfig {
   def keyspace = client.getKeyspace(keyspaceName)
 
   def rangeSlice(from: String, to: String, size: Long, columns: List[String]) = {
-
     log.info("getting slice %s %s %s  on   %s %s".format(from, to, size, keyspaceName, columnFamily))
 
     val ks = keyspace
@@ -42,8 +42,9 @@ trait Cassandra extends CassandraConfig {
     ks.getRangeSlices(clp, sp, range)
   }
 
-	def batchMutate(mutas : Map[String, Map[String, List[Mutation]]]) = {
-		log.info("mutating " + mutas)
+	def batchMutate(mutas : java.util.Map[String, MutationList]) = {
+		log.info("mutating %s rows".format(mutas.size))
+		keyspace.batchMutate(mutas)
 	}
 
 }
@@ -71,11 +72,40 @@ trait CassandraFetcher extends Cassandra {
 trait CassandraSink extends Cassandra {
   private val log = Logger.getLogger(this.getClass);
 
+	def outputColumnFamily : String
+
   def store(rows: Iterable[Row]) = {
     //log.info("storing " + rows)
 		log.info("storing %s rows".format(rows.size))
 		log.info("-----------")
+		
+		// 	type Row = (String, Iterable[Column])
+
+		def makeColumns(cols : Iterable[Column]) = Map(outputColumnFamily -> (cols.map {col => mutation(col)}).toList.asJava).asJava
+		//def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns (cols))}
+
+		def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns (cols))}
+		
+//		val mutations = rows.foldLeft(Map[String, Map[String, Iterable[Mutation]]]()) { (acc, row) => acc + makeRow(row) }
+//		val mutations = rows.foldLeft(Map[String, MutationList]()) { (acc, row) => acc + makeRow(row) }
+
+//		val mutations = rows.foldLeft(Map[String, java.util.Map[String, java.util.List[Mutation]]]()) { (acc, row) => acc + makeRow(row) }
+		val mutations = rows.foldLeft(Map[String, MutationList]()) { (acc, row) => acc + makeRow(row) }
+
+		batchMutate(mutations.asJava)
+
+		//batchMutate(rows.foldl(Map()) { (acc, case (key, cols)) => acc + Map(key -> Map(columnFamily -> cols.map {col => mutation(col)}))})
   }
+
+	final def mutation(column: Column) = {
+		val mut = new Mutation
+		val color = new ColumnOrSuperColumn
+		mut.setColumn_or_supercolumn(color)
+		color.setColumn(column)
+		mut
+	}
+
+	def simpleMutation(key: String, column: Column) = (key, mutation(column))
 
 }
 
@@ -92,13 +122,4 @@ trait CassandraCreator extends CassandraConfig {
 
 	def stamp = System.currentTimeMillis
 
-	final def mutation(column: Column) = {
-		val mut = new Mutation
-		val color = new ColumnOrSuperColumn
-		mut.setColumn_or_supercolumn(color)
-		color.setColumn(column)
-		mut
-	}
-
-	def simpleMutation(key: String, column: Column) = (key, mutation(column))
 }

@@ -3,4 +3,5 @@
 		2'55''  ~177000 records
 
 
-2. recompute all, single machine: 12'10''
+2. recompute all, single machine, 1 worker:  12'10''
+                  single machine, 3 workers   5'20''
