@@ -98,7 +98,7 @@ hcafFields = ["CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM",
 hspenFields = ["key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax"]
 
 def main():
-    input_data = iterate_input_fs('/home/marko/Projects/efg_stat/samples')
+    #input_data = iterate_input_fs('/home/marko/Projects/efg_stat/samples')
     #input_data = iterate_mongodb()
     input_data = iterate_mysql_hcaf()
     #input_data = iterate_mysql_hspen()
