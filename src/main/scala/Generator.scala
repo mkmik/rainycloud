@@ -16,53 +16,57 @@ import stopwatch.Stopwatch
 object HSPENLoader extends CassandraFetcher {
   private val log = Logger.getLogger(this.getClass);
 
-	override def keyspaceName = "Aquamaps"
-	override def columnFamily = "hspen"
-	override def columnNames = HSPEN.columns
+  override def keyspaceName = "Aquamaps"
+  override def columnFamily = "hspen"
+  override def columnNames = HSPEN.columns
 
-	// load HSPEN table 
-	def load = {
-		val hspen = fetch("", 10000)
-		log.info("hspen loaded: " + hspen.size)
-		
-		hspen.map {case (_, v) => HSPEN.fromCassandra(v) }
-	}
+  // load HSPEN table
+  def load = {
+    val hspen = fetch("", 10000)
+    log.info("hspen loaded: " + hspen.size)
+
+    hspen.map { case (_, v) => HSPEN.fromCassandra(v) }
+  }
 }
-
 
 object HSPECGenerator extends Worker with CassandraFetcher with CassandraSink with Watch {
   private val log = Logger.getLogger(this.getClass);
 
   override def keyspaceName = "Aquamaps"
-	override def columnFamily = "hcaf"
-	override def outputColumnFamily = "hspec"
-	override def columnNames = HCAF.columns
+  override def columnFamily = "hcaf"
+  override def outputColumnFamily = "hspec"
+  override def columnNames = HCAF.columns
 
-	// actual logic is here
-	val algorithm = new SimpleHSpecAlgorithm
+  // actual logic is here
+  val algorithm = new SimpleHSpecAlgorithm
 
-	// load HSPEN only once
-	lazy val hspen = HSPENLoader.load
+  // load HSPEN only once
+  lazy val hspen = HSPENLoader.load
 
-	// worker, accepts slices of HCAF table and computes HSPEC 
+  // worker, accepts slices of HCAF table and computes HSPEC
   def run(task: JSONObject) {
     val start = task.get("start").asInstanceOf[String]
-    val size  = task.get("size" ).asInstanceOf[Long]
+    val size = task.get("size").asInstanceOf[Long]
 
-		val generated = (Stopwatch("fetch") {fetch(start, size)}).flatMap { case (_, v) => compute(v) }		
+    val records = for {
+      // fetch hcaf rows
+      (_, hcaf) <- fetch(start, size)
+      // for each hacf compute a list of hspec
+      hspec <- compute(hcaf)
+      // yield each hspec converted to a cassandra row
+    } yield hspec.toCassandra 
 
-    store(Stopwatch("serialize") {generated map (_.toCassandra)})
+    store(records)
   }
 
-	// create a domain object from table store columns and compute
-	def compute(hcafColumns: Iterable[Column]) : Iterable[HSPEC] = {
-		
-		val hcaf = Stopwatch("deserialize") { HCAF.fromCassandra(hcafColumns) }
+  // create a domain object from table store columns and compute
+  def compute(hcafColumns: Iterable[Column]): Iterable[HSPEC] = {
 
-		Stopwatch("compute") {
-			algorithm.compute(hcaf, hspen);
-		}
+    val hcaf = HCAF.fromCassandra(hcafColumns)
+
+    Stopwatch("compute") {
+      algorithm.compute(hcaf, hspen);
+    }
   }
-
 
 }
