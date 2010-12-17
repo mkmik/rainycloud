@@ -1,7 +1,7 @@
 #!/bin/bash
-PROJECT=/home/marko/Projects/rainycloud
+PROJECT=$(dirname $0)/..
 # Specify the path to the jar or classes containing your tasks.
-MY_TASKS=$PROJECT/target/scala_2.8.1/classes
+MY_TASKS=${OCTOBOT_TASKS-$PROJECT/target/scala_2.8.1/classes}
 
 # Set any options you'd like to pass to the JVM here.
 options[0]="configFile=`pwd`/config.yml"
@@ -18,8 +18,17 @@ do
   JVM_OPTS="$JVM_OPTS -D$i "
 done
 
+JREBEL=${JREBEL-"$HOME/bin/ZeroTurnaround/JRebel/jrebel.jar"}
+if [ -e "$JREBEL" ]; then
+  JREBEL_AGENT="-noverify -javaagent:$JREBEL"
+fi
+
 echo -e "Launching Octobot...\n"
-export JVM_OPTS="$JVM_OPTS -noverify -javaagent:/home/marko/bin/ZeroTurnaround/JRebel/jrebel.jar"
-#java $JVM_OPTS -cp $MY_TASKS:$CLASSPATH $EXECUTABLE
-export JAVA_OPTS=$JVM_OPTS
-scala -classpath $MY_TASKS:$CLASSPATH $EXECUTABLE
+export JVM_OPTS="$JVM_OPTS $JREBEL_AGENT"
+exec java $JVM_OPTS -cp $MY_TASKS:$CLASSPATH $EXECUTABLE
+
+# can be run also with 'scala' but it requires scala to be installed. Don't remember the actual advantages
+# probably better integration with jrebel, anyway, useful only during development.
+
+#export JAVA_OPTS=$JVM_OPTS
+#exec scala -classpath $MY_TASKS:$CLASSPATH $EXECUTABLE
