@@ -29,12 +29,14 @@ Then in order to build it, simply run:
 Run time dependencies
 ---------------------
 
-* RabbitMQ
+* RabbitMQ (`apt-get install rabbitmq-server` or equivalent)
 * Cassandra 0.6.x
 
 
 Run
 ---
+
+### Workers ###
 
 Run this worker as many times you wish, depending on how many cpus you have. It can also be run on several machines.
 
@@ -44,4 +46,25 @@ Run this worker as many times you wish, depending on how many cpus you have. It 
 The 'octobot' script contains the classpath to the RainyCloud jar. The shipped version points to the jar produced by the sbt build
 which lies in `/target/scala_2.8.1/rainycloud_2.8.1-1.0.jar`.
 
+### Job partitioner ###
 
+The worker does nothing untils it gets some messages in the queue.
+
+Currently the jobs are fired by a python script  called `test` under `octo/client`
+
+    $ cd octo/client
+    $ ./test <number_of_jobs>
+    
+If you omit the `number_of_jobs` parameter, the default to process all.
+
+FAQ
+---
+
+### Drain the queue ###
+
+When you interrupt the workers the jobs might remain in the queue.
+The easiest way to drain the queue (besides using your favourite AMPQ client), is to use this trick:
+
+    $ OCTOBOT_TASKS=. ./octobot
+    
+This will effectively drain the queue without executing the time consuming tasks, because octobot will not find the code to execute.

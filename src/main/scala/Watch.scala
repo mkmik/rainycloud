@@ -9,7 +9,10 @@ import stopwatch.StopwatchRange
 import stopwatch.TimeUnit._
 
 trait Watch {
-	Watch.run
+  // disabled because it opens a tcp port and it conflicts with
+  // multiple instances
+
+	// Watch.run
 
 	Stopwatch.enabled = true
 	Stopwatch.range = StopwatchRange(0 seconds, 15 seconds, 500 millis)
