@@ -69,9 +69,13 @@ The worker does nothing untils it gets some messages in the queue.
 Currently the jobs are fired by a python script  called `test` under `octo/client`
 
     $ cd octo/client
-    $ ./test <number_of_jobs>
+    $ ./test <number_of_chunks>
     
-If you omit the `number_of_jobs` parameter, the default to process all.
+If you omit the `number_of_chunks` parameter, the default to process all.
+
+The partitioner is not very sofisticated, all it does is to read a `ranges` file and send messages to the queue with the 
+key prefixes and sizes parameters read from that file. The keys are static for this application scenario as they map the 
+locations on earth surface which hopefully won't change until humankind explores new planets, and starts to pollute them :-)
 
 FAQ
 ---
