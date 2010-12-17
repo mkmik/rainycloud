@@ -10,7 +10,15 @@ from thrift.protocol import TBinaryProtocol
 
 import pymongo, MySQLdb
 
+MYSQL_USER='aquamaps'
+MYSQL_PWD='aquamaps'
+
+CASSANDRA_HOST='127.0.0.1'
+CASSANDRA_PORT='9160'
+
 KS="Aquamaps"
+
+#############
 
 def stamp():
     return long(time.time()*1000)
@@ -18,8 +26,7 @@ def stamp():
 def connect():
     # establish connection to Cassandra
     try:
-        transport = TSocket.TSocket('127.0.0.1', '9160')
-        #transport = TSocket.TSocket('172.16.201.7', '9160')
+        transport = TSocket.TSocket(CASSANDRA_HOST, CASSANDRA_PORT)
         transport = TTransport.TBufferedTransport(transport)
         protocol = TBinaryProtocol.TBinaryProtocol(transport)
         client = Client(protocol)
@@ -39,14 +46,14 @@ def iterate_input_fs(dirName):
             yield (f, file(path+"/"+f).read())
 
 def iterate_mysql_hcaf():
-    db = MySQLdb.connect(host="localhost", user='aquamaps', db='aquamaps')
+    db = MySQLdb.connect(host="localhost", user=MYSQL_USER, db=MYSQL_PWD)
     cursor = db.cursor()
     cursor.execute("SELECT s.CsquareCode,s.OceanArea,s.CenterLat,s.CenterLong,FAOAreaM,DepthMin,DepthMax,SSTAnMean,SBTAnMean,SalinityMean, SalinityBMean,PrimProdMean,IceConAnn,LandDist,s.EEZFirst,s.LME,d.DepthMean FROM HCAF_S as s INNER JOIN HCAF_D as d ON s.CSquareCode=d.CSquareCode where oceanarea > 0")
 
     return cursor.fetchall()
 
 def iterate_mysql_hspen():
-    db = MySQLdb.connect(host="localhost", user='aquamaps', db='aquamaps')
+    db = MySQLdb.connect(host="localhost", user=MYSQL_USER, db=MYSQL_PWD)
     cursor = db.cursor()
     cursor.execute("SELECT concat(speciesid, ':', lifestage), Layer,SpeciesID,FAOAreas,Pelagic,NMostLat,SMostLat,WMostLong,EMostLong,DepthMin,DepthMax,DepthPrefMin,DepthPrefMax,TempMin,TempMax,TempPrefMin,TempPrefMax,SalinityMin,SalinityMax,SalinityPrefMin,SalinityPrefMax,PrimProdMin,PrimProdMax,PrimProdPrefMin,PrimProdPrefMax,IceConMin,IceConMax,IceConPrefMin,IceConPrefMax,LandDistMin,LandDistMax,LandDistPrefMin,MeanDepth,LandDistPrefMax FROM hspen")
 
@@ -98,17 +105,13 @@ hcafFields = ["CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM",
 hspenFields = ["key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax"]
 
 def main():
-    #input_data = iterate_input_fs('/home/marko/Projects/efg_stat/samples')
-    #input_data = iterate_mongodb()
+    print "loading hcaf"
     input_data = iterate_mysql_hcaf()
-    #input_data = iterate_mysql_hspen()
-    
-    #fill_cassandra(input_data, "hcaf", hcafFields)
-    #fill_cassandra(input_data, "hspen", hspenFields)
-    print_input(input_data)
-    #check_size(input_data)
+    fill_cassandra(input_data, "hcaf", hcafFields)
 
-    #print_input(filter_provider("DFI", input_data))
+    print "loading hspen"
+    input_data = iterate_mysql_hspen()
+    fill_cassandra(input_data, "hspen", hspenFields)
 
     print "done"
 
