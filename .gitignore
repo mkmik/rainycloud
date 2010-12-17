@@ -13,3 +13,4 @@ target/
 logs
 .sass-cache
 src/main/webapp/javascripts/cumino.js
+.emacs.desktop*
