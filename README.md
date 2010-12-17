@@ -32,13 +32,29 @@ Run time dependencies
 * RabbitMQ (`apt-get install rabbitmq-server` or equivalent)
 * Cassandra 0.6.x
 
+Configure
+---------
+
+### RabbitMQ ###
+
+I've tested it with rabbitmq but it should work with any AMQP and other queue protocols supported by Octobot (see Octobot doc).
+The file has to live in the current directory when running `octobot-jar`
+
+`octo/config.yaml` contains the AMQP broker hostname, port, credentials and queue name, please adapt to your configuration
+
+It also contains the number of workers to be spawned in a single octobot instances, you might consider increasing that number if you want
+to exploit SMP environments.
+
+### Cassandra ###
+
+To be documented...
 
 Run
 ---
 
 ### Workers ###
 
-Run this worker as many times you wish, depending on how many cpus you have. It can also be run on several machines.
+Run this worker as many times you wish (load permitting). It can also be run on several machines.
 
     $ octo
     $ ./octobot-jar
@@ -63,7 +79,7 @@ FAQ
 ### Drain the queue ###
 
 When you interrupt the workers the jobs might remain in the queue.
-The easiest way to drain the queue (besides using your favourite AMPQ client), is to use this trick:
+The easiest way to drain the queue (besides using your favourite AMQP client), is to use this trick:
 
     $ OCTOBOT_TASKS=. ./octobot
     
