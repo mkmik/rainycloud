@@ -51,6 +51,8 @@ Download cassandra, for example from `http://it.apache.contactlab.it//cassandra/
 
 Copy the bundled storage-conf.xml from `/cassandra/storage-conf.xml` to the `conf` dir of the cassandra distribution, and start cassandra.
 
+`octo/config.yaml` contains the cassandra hostname/ip which will be contacted by the worker.
+
 Run
 ---
 

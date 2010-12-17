@@ -17,10 +17,15 @@ trait CassandraConfig {
   type MutationList = java.util.Map[String, java.util.List[Mutation]]
 }
 
-trait Cassandra extends CassandraConfig {
+trait CassandraConnectionConfig extends CassandraConfig {
+  def cassandraHost: String
+  def cassandraPort: Int
+}
+
+trait Cassandra extends CassandraConnectionConfig {
   private val log = Logger.getLogger(this.getClass);
 
-  val hostConfigurator = new CassandraHostConfigurator("localhost:9160")
+  val hostConfigurator = new CassandraHostConfigurator("%s:%s".format(cassandraHost, cassandraPort))
   val pool = CassandraClientPoolFactory.getInstance.createNew(hostConfigurator)
 
   val client = pool borrowClient

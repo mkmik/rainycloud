@@ -19,8 +19,10 @@ Octobot:
   email_auth: true
   email_username: username
   email_password: password
-BangYourHead:
-  what: roof
+HSPECGenerator:
+  cassandra_host: localhost
+  cassandra_port: 9160
+  cassandra_keyspace: Aquamaps
 
   # startup_hook: org.example.taquito.StartupHook
   # shutdown_hook: org.example.taquito.ShutdownHook

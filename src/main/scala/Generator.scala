@@ -13,10 +13,25 @@ import CassandraConversions._
 
 import stopwatch.Stopwatch
 
-object HSPENLoader extends CassandraFetcher {
+import com.urbanairship.octobot.Settings
+
+trait TaskConfig {
+  def taskName : String
+}
+
+trait CassandraTaskConfig extends TaskConfig with CassandraConnectionConfig {
+  override def cassandraHost = Settings.get(taskName, "cassandra_host")
+  override def cassandraPort = Settings.get(taskName, "cassandra_port").toInt
+  override def keyspaceName = Settings.get(taskName, "cassandra_keyspace")
+}
+
+trait HSPECGeneratorTaskConfig extends TaskConfig {
+  def taskName = "HSPECGenerator"
+}
+
+object HSPENLoader extends CassandraFetcher with CassandraTaskConfig with HSPECGeneratorTaskConfig {
   private val log = Logger.getLogger(this.getClass);
 
-  override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspen"
   override def columnNames = HSPEN.columns
 
@@ -29,10 +44,9 @@ object HSPENLoader extends CassandraFetcher {
   }
 }
 
-object HSPECGenerator extends Worker with CassandraFetcher with CassandraSink with Watch {
+object HSPECGenerator extends Worker with CassandraTaskConfig with HSPECGeneratorTaskConfig with CassandraFetcher with CassandraSink with Watch {
   private val log = Logger.getLogger(this.getClass);
 
-  override def keyspaceName = "Aquamaps"
   override def columnFamily = "hcaf"
   override def outputColumnFamily = "hspec"
   override def columnNames = HCAF.columns
