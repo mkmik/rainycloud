@@ -1,6 +1,6 @@
 Octobot:
   queues:
-    - name: pippo
+    - name: rainycloud
       protocol: AMQP
       host: localhost
       port: 5672

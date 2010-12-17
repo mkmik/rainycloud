@@ -30,6 +30,7 @@ Run time dependencies
 ---------------------
 
 * RabbitMQ (`apt-get install rabbitmq-server` or equivalent)
+* python ampq client (`apt-get install python-amqplib` or equivalent)
 * Cassandra 0.6.x
 
 Configure
@@ -45,7 +46,13 @@ The file has to live in the current directory when running `octobot-jar`
 It also contains the number of workers to be spawned in a single octobot instances, you might consider increasing that number if you want
 to exploit SMP environments.
 
-You should create the queue/exchange etc you put in the configuration file. No doc for that here yet, please refer to rabbitmq doc.
+Create rabbitmq user and permissions:
+
+    # rabbitmqctl add_user foo bar
+    # rabbitmqctl set_permissions foo '.*' '.*' '.*'a
+    
+You can change username/pw in the `octo/config.yaml`
+
 
 ### Cassandra ###
 
