@@ -45,13 +45,23 @@ The file has to live in the current directory when running `octobot-jar`
 It also contains the number of workers to be spawned in a single octobot instances, you might consider increasing that number if you want
 to exploit SMP environments.
 
+You should create the queue/exchange etc you put in the configuration file. No doc for that here yet, please refer to rabbitmq doc.
+
 ### Cassandra ###
 
 Download cassandra, for example from `http://it.apache.contactlab.it//cassandra/0.6.8/apache-cassandra-0.6.8-bin.tar.gz`
 
 Copy the bundled storage-conf.xml from `/cassandra/storage-conf.xml` to the `conf` dir of the cassandra distribution, and start cassandra.
 
-`octo/config.yaml` contains the cassandra hostname/ip which will be contacted by the worker.
+`octo/config.yaml` contains the cassandra hostname/ip which will be contacted by the worker. It defaults to `localhost`, so if you intend to run that
+on a real cluster please change the hostname.
+
+In order to avoid that writing to cassandra becomes a bottleneck, the software should be tested on a cassandra cluster.
+
+This worker reads data from cassandra, but initially your cassandra will be empty, so you have to put some data there.
+
+There is a mysql dump in `/data/aqua.dump.bz2`, which has to be imported on a mysql server somewhere. Then you can fire `scripts/importer.py`.
+Please edit the `improter.py` script in order to change the mysql connection parameters and the target cassandra ip/hostname and port.
 
 Run
 ---
