@@ -86,15 +86,18 @@ trait CassandraSink extends Cassandra {
 
   def outputColumnFamily : String
 
-  def store(rows: Iterable[Row]) = {
+  def store(hugeRows: Iterable[Row]) = {
     Stopwatch("store") {
-      log.info("storing %s hspec rows".format(rows.size))
-      def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns (cols))}
-      def makeMutations(cols: Iterable[Column]) = cols.map {col => mutation(col)}
-      def makeColumns(cols : Iterable[Column]) = Map(outputColumnFamily -> makeMutations(cols).toList.asJava).asJava
-      
-      val mutations = rows.foldLeft(Map[String, MutationList]()) { (acc, row) => acc + makeRow(row) }
-      batchMutate(mutations.asJava)
+      for(rows <- hugeRows.toStream.grouped(4000)) {
+
+        log.info("storing %s hspec rows".format(rows.size))
+        def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns (cols))}
+        def makeMutations(cols: Iterable[Column]) = cols.map {col => mutation(col)}
+        def makeColumns(cols : Iterable[Column]) = Map(outputColumnFamily -> makeMutations(cols).toList.asJava).asJava
+
+        val mutations = rows.foldLeft(Map[String, MutationList]()) { (acc, row) => acc + makeRow(row) }
+        batchMutate(mutations.asJava)
+      }
     }
   }
 
