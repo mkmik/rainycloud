@@ -12,6 +12,8 @@ import pymongo, MySQLdb
 
 MYSQL_USER='aquamaps'
 MYSQL_PWD='aquamaps'
+MYSQL_DB='aquamaps'
+MYSQL_HOST='localhost'
 
 CASSANDRA_HOST='127.0.0.1'
 CASSANDRA_PORT='9160'
@@ -46,14 +48,14 @@ def iterate_input_fs(dirName):
             yield (f, file(path+"/"+f).read())
 
 def iterate_mysql_hcaf():
-    db = MySQLdb.connect(host="localhost", user=MYSQL_USER, db=MYSQL_PWD)
+    db = MySQLdb.connect(host=MYSQL_HOST, user=MYSQL_USER, db=MYSQL_DB, passwd=MYSQL_PWD)
     cursor = db.cursor()
     cursor.execute("SELECT s.CsquareCode,s.OceanArea,s.CenterLat,s.CenterLong,FAOAreaM,DepthMin,DepthMax,SSTAnMean,SBTAnMean,SalinityMean, SalinityBMean,PrimProdMean,IceConAnn,LandDist,s.EEZFirst,s.LME,d.DepthMean FROM HCAF_S as s INNER JOIN HCAF_D as d ON s.CSquareCode=d.CSquareCode where oceanarea > 0")
 
     return cursor.fetchall()
 
 def iterate_mysql_hspen():
-    db = MySQLdb.connect(host="localhost", user=MYSQL_USER, db=MYSQL_PWD)
+    db = MySQLdb.connect(host=MYSQL_HOST, user=MYSQL_USER, db=MYSQL_DB, passwd=MYSQL_PWD)
     cursor = db.cursor()
     cursor.execute("SELECT concat(speciesid, ':', lifestage), Layer,SpeciesID,FAOAreas,Pelagic,NMostLat,SMostLat,WMostLong,EMostLong,DepthMin,DepthMax,DepthPrefMin,DepthPrefMax,TempMin,TempMax,TempPrefMin,TempPrefMax,SalinityMin,SalinityMax,SalinityPrefMin,SalinityPrefMax,PrimProdMin,PrimProdMax,PrimProdPrefMin,PrimProdPrefMax,IceConMin,IceConMax,IceConPrefMin,IceConPrefMax,LandDistMin,LandDistMax,LandDistPrefMin,MeanDepth,LandDistPrefMax FROM hspen")
 
