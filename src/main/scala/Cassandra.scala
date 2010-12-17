@@ -85,12 +85,12 @@ trait CassandraSink extends Cassandra {
   private val log = Logger.getLogger(this.getClass);
 
   def outputColumnFamily : String
+  def batchSize = 10000
 
   def store(hugeRows: Iterable[Row]) = {
     Stopwatch("store") {
-      for(rows <- hugeRows.toStream.grouped(4000)) {
-
-        log.info("storing %s hspec rows".format(rows.size))
+      log.info("storing %s hspec rows".format(hugeRows.size))
+      for(rows <- hugeRows.toStream.grouped(batchSize)) {
         def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns (cols))}
         def makeMutations(cols: Iterable[Column]) = cols.map {col => mutation(col)}
         def makeColumns(cols : Iterable[Column]) = Map(outputColumnFamily -> makeMutations(cols).toList.asJava).asJava
