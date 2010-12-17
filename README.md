@@ -47,7 +47,9 @@ to exploit SMP environments.
 
 ### Cassandra ###
 
-To be documented...
+Download cassandra, for example from `http://it.apache.contactlab.it//cassandra/0.6.8/apache-cassandra-0.6.8-bin.tar.gz`
+
+Copy the bundled storage-conf.xml from `/cassandra/storage-conf.xml` to the `conf` dir of the cassandra distribution, and start cassandra.
 
 Run
 ---
