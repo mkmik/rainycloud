@@ -52,17 +52,6 @@ class DummyGenerator extends Generator {
   def computeInPartition(p: Partition) = println("dummy " + p)
 }
 
-object HSPECGeneratorOctopus extends Worker {
-
-  val generator = new HSPECGenerator()
-
-  def run(task: JSONObject) {
-    val start = task.get("start").asInstanceOf[String]
-    val size = task.get("size").asInstanceOf[Long]
-
-    generator.computeInPartition(new Partition(start, size))
-  }
-}
 
 class HSPECGenerator extends Generator with CassandraTaskConfig with HSPECGeneratorTaskConfig with CassandraFetcher with CassandraSink with Watch {
   private val log = Logger.getLogger(this.getClass);
