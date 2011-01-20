@@ -44,7 +44,33 @@ object HSPENLoader extends CassandraFetcher with CassandraTaskConfig with HSPECG
   }
 }
 
-object HSPECGenerator extends Worker with CassandraTaskConfig with HSPECGeneratorTaskConfig with CassandraFetcher with CassandraSink with Watch {
+
+object HSPECGeneratorManual {
+
+  val partitioner = new StaticPartitioner
+  val generator = new HSPECGenerator()
+
+  def main(argv: Array[String]) {
+    for(p <- partitioner.partitions)
+      generator.run(p)
+  }
+
+}
+
+
+object HSPECGeneratorOctopus extends Worker {
+
+  val generator = new HSPECGenerator()
+
+  def run(task: JSONObject) {
+    val start = task.get("start").asInstanceOf[String]
+    val size = task.get("size").asInstanceOf[Long]
+
+    generator.run(new Partition(start, size))
+  }
+}
+
+class HSPECGenerator extends Worker with CassandraTaskConfig with HSPECGeneratorTaskConfig with CassandraFetcher with CassandraSink with Watch {
   private val log = Logger.getLogger(this.getClass);
 
   override def columnFamily = "hcaf"
@@ -58,9 +84,9 @@ object HSPECGenerator extends Worker with CassandraTaskConfig with HSPECGenerato
   lazy val hspen = HSPENLoader.load
 
   // worker, accepts slices of HCAF table and computes HSPEC
-  def run(task: JSONObject) {
-    val start = task.get("start").asInstanceOf[String]
-    val size = task.get("size").asInstanceOf[Long]
+  def run(p:  Partition) {
+    val start = p.start
+    val size = p.size
 
     val records = for {
       // fetch hcaf rows
