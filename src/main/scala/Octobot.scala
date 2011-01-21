@@ -11,7 +11,7 @@ trait Bot {
   def processTask(task: JSONObject)
 }
 
-class HSPECGeneratorOctopus @Inject() (val generator: Generator) extends Bot {
+class HSPECGeneratorOctobot @Inject() (val generator: Generator) extends Bot {
   def processTask(task: JSONObject) {
     val start = task.get("start").asInstanceOf[String]
     val size = task.get("size").asInstanceOf[Long]
