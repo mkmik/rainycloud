@@ -20,6 +20,7 @@ import com.google.inject._
 import com.google.inject.name._
 
 import au.com.bytecode.opencsv.CSVReader
+import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy
 import java.io._
 import java.util.zip._
 
@@ -37,21 +38,16 @@ trait HSPECGeneratorTaskConfig extends TaskConfig {
   def taskName = "HSPECGenerator"
 }
 
-/** Used to load the HSPEN table in memory */
-trait HSPENLoader {
-  def load : Iterable[HSPEN]
-}
-
 class DummyHSPENLoader extends HSPENLoader {
   def load = List()
 }
 
-trait TableReader {
-   def reader(name: String) : Reader
+trait TableReader[A] {
+   def reader : Reader
 }
 
-class FileSystemTableReader extends TableReader {
-   def reader(name: String) = {
+class FileSystemTableReader[A] @Inject() (val name: String) extends TableReader[A] {
+   def reader = {
     if(name endsWith ".gz")
       new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(name))))
     else
@@ -59,26 +55,53 @@ class FileSystemTableReader extends TableReader {
   }
 }
 
-trait TableLoader {  
-  def read(name : String) : Iterable[Array[String]]
+trait TableLoader[A] {  
+  def read : Iterable[Array[String]]
 }
 
-class CSVTableLoader @Inject() (
-  val tableReader : TableReader
-)
-extends TableLoader {
-  def read(name : String) = new CSVReader(tableReader.reader(name)).readAll
+class CSVTableLoader[A] @Inject() (val tableReader : TableReader[A]) extends TableLoader[A] {
+  def read = new CSVReader(tableReader.reader).readAll
 }
 
-/** Load the HSPEN table from a file in the filesystem */
-class TableHSPENLoader @Inject() (
-  @Hspen
-  val fileName : String = "data/hspen.csv.gz",
-  val tableLoader : TableLoader
-) extends HSPENLoader {
- 
-  // def load = (tableLoader.read(fileName) map HSPEN.fromTableRow).toIterable
-  def load = tableLoader.read(fileName) map HSPEN.fromTableRow
+/** Used to load the HSPEN table in memory */
+trait HSPENLoader {
+  def load : Iterable[HSPEN]
+}
+
+/** Load the HSPEN table from a positional tabular source (i.e. the colums are known by position). */
+class TableHSPENLoader @Inject() (val tableLoader : TableLoader[HSPEN]) extends HSPENLoader {
+  def load = tableLoader.read map HSPEN.fromTableRow
+}
+
+/** Unordered loader which returns named columns */
+trait ColumnStoreLoader[A] {
+  def read : Iterable[Map[String, String]]
+}
+
+
+/** Provide a column/value output from a csv string. Not very useful, but might be useful for testing */
+class CSVColumnStoreLoader[A] @Inject() (val tableReader : TableReader[A]) extends ColumnStoreLoader[A] {
+
+  class ColumnNameMapper (reader: CSVReader) extends ColumnPositionMappingStrategy[A] {
+    captureHeader(reader)
+    
+    def name(pos: Int) = getColumnName(pos)
+    def columns = header
+    
+    def asMap(row: Array[String]) = Map(columns zip row:_*)
+  }
+
+  def read = {
+    val csv = new CSVReader(tableReader.reader)
+    val mapper = new ColumnNameMapper(csv)
+
+    csv.readAll map mapper.asMap
+  }
+}
+
+/** Load the HSPEN table from a column store source */
+class ColumnStoreHSPENLoader @Inject() (val columnStoreLoader : ColumnStoreLoader[HSPEN]) extends HSPENLoader {
+  def load = columnStoreLoader.read map HSPEN.build
 }
 
 
