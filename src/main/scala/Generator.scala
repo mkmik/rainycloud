@@ -24,6 +24,8 @@ import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy
 import java.io._
 import java.util.zip._
 
+import CassandraConversions._
+
 trait TaskConfig {
   def taskName : String
 }
@@ -104,37 +106,37 @@ class ColumnStoreHSPENLoader @Inject() (val columnStoreLoader : ColumnStoreLoade
   def load = columnStoreLoader.read map HSPEN.build
 }
 
+/** Loads the HSPEN table from cassandra */
+class CassandraLoader[A] @Inject() (val fetcher: CassandraFetcher) extends ColumnStoreLoader[A] {
+  val maxSize = 10000
+  
+  def read = {
+    val hspen = fetcher.fetch("", maxSize)
+    hspen.map { case (_, v) => (columnList2map(v) mapValues (x => byte2string(x.value))) }
 
-object CassandraHSPENLoader extends HSPENLoader with CassandraFetcher with CassandraTaskConfig with HSPECGeneratorTaskConfig {
-  private val log = Logger.getLogger(this.getClass);
-
-  override def columnFamily = "hspen"
-  override def columnNames = HSPEN.columns
-
-  // load HSPEN table
-  def load = {
-    val hspen = fetch("", 10000)
-    log.info("hspen loaded: " + hspen.size)
-
-    hspen.map { case (_, v) => HSPEN.fromCassandra(v) }
+    // this should work with CassandraConversion._ implicits but it doesn't
+    // hspen.map { case (_, v) => columnList2map(v) mapValues (_.value) }
   }
+}
+
+/** Generator uses emitter to output data */
+trait Emitter[A] {
+  def emit(record : A)
 }
 
 /** HSPEC Generator */
 trait Generator {
-
-  @Inject
-  var hspenLoader : HSPENLoader = _
-
   def computeInPartition(p: Partition)
 }
 
-class DummyGenerator extends Generator {
+class DummyGenerator @Inject() (val hspenLoader: HSPENLoader) extends Generator {
+
   def computeInPartition(p: Partition) = println("dummy " + p)
 }
 
 
-class HSPECGenerator extends Generator with CassandraTaskConfig with HSPECGeneratorTaskConfig with CassandraFetcher with CassandraSink with Watch {
+
+class HSPECGenerator @Inject() (hspenLoader: HSPENLoader) extends Generator with CassandraTaskConfig with HSPECGeneratorTaskConfig with CassandraFetcher with CassandraSink with Watch {
   private val log = Logger.getLogger(this.getClass);
 
   override def columnFamily = "hcaf"
@@ -145,7 +147,7 @@ class HSPECGenerator extends Generator with CassandraTaskConfig with HSPECGenera
   val algorithm = new SimpleHSpecAlgorithm
 
   // load HSPEN only once
-  lazy val hspen = CassandraHSPENLoader.load
+  lazy val hspen = hspenLoader.load
 
   // worker, accepts slices of HCAF table and computes HSPEC
   def computeInPartition(p:  Partition) {
