@@ -23,6 +23,8 @@ object HCAF {
 
 	val condition = "OceanArea > 0"
 
+  def fromTableRow(row : Array[String]) : HCAF = build(Map(columns zip row:_*))
+
 	def fromCassandra(x : Iterable[Column]) : HCAF = Stopwatch("deserialize") { fromCassandra(columnList2map(x)) }
 
 	def fromCassandra(x : Map[String, Column]) : HCAF = build(x mapValues (_.value))

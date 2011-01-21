@@ -65,15 +65,28 @@ class CSVTableLoader[A] @Inject() (val tableReader : TableReader[A]) extends Tab
   def read = new CSVReader(tableReader.reader).readAll
 }
 
-/** Used to load the HSPEN table in memory */
-trait HSPENLoader {
-  def load : Iterable[HSPEN]
+/** Load some data beans */
+trait Loader[A] {
+  def load : Iterable[A]
 }
+
+/** Used to load the HSPEN table in memory */
+trait HSPENLoader extends Loader[HSPEN]
+
+/** Used to load a HCAF table partition in memory */
+trait HCAFLoader extends Loader[HCAF]
+
 
 /** Load the HSPEN table from a positional tabular source (i.e. the colums are known by position). */
 class TableHSPENLoader @Inject() (val tableLoader : TableLoader[HSPEN]) extends HSPENLoader {
   def load = tableLoader.read map HSPEN.fromTableRow
 }
+
+/** Load the HCAF table from a positional tabular source (i.e. the colums are known by position). */
+class TableHCAFLoader @Inject() (val tableLoader : TableLoader[HCAF]) extends HCAFLoader {
+  def load = tableLoader.read map HCAF.fromTableRow
+}
+
 
 /** Unordered loader which returns named columns */
 trait ColumnStoreLoader[A] {
