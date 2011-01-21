@@ -12,7 +12,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
     bind[HSPENLoader].to[TableHSPENLoader]
 
     bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
-    bind[TableLoader[HSPEN]].to[CSVTableLoader[HSPEN]]
+    bind[PositionalStore[HSPEN]].to[CSVPositionalStore[HSPEN]]
 
     // For octobot worker (different entry point)
     bind[Bot].to[HSPECGeneratorOctobot]

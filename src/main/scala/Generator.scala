@@ -57,11 +57,11 @@ class FileSystemTableReader[A] @Inject() (val name: String) extends TableReader[
   }
 }
 
-trait TableLoader[A] {  
+trait PositionalStore[A] {  
   def read : Iterable[Array[String]]
 }
 
-class CSVTableLoader[A] @Inject() (val tableReader : TableReader[A]) extends TableLoader[A] {
+class CSVPositionalStore[A] @Inject() (val tableReader : TableReader[A]) extends PositionalStore[A] {
   def read = new CSVReader(tableReader.reader).readAll
 }
 
@@ -78,12 +78,12 @@ trait HCAFLoader extends Loader[HCAF]
 
 
 /** Load the HSPEN table from a positional tabular source (i.e. the colums are known by position). */
-class TableHSPENLoader @Inject() (val tableLoader : TableLoader[HSPEN]) extends HSPENLoader {
+class TableHSPENLoader @Inject() (val tableLoader : PositionalStore[HSPEN]) extends HSPENLoader {
   def load = tableLoader.read map HSPEN.fromTableRow
 }
 
 /** Load the HCAF table from a positional tabular source (i.e. the colums are known by position). */
-class TableHCAFLoader @Inject() (val tableLoader : TableLoader[HCAF]) extends HCAFLoader {
+class TableHCAFLoader @Inject() (val tableLoader : PositionalStore[HCAF]) extends HCAFLoader {
   def load = tableLoader.read map HCAF.fromTableRow
 }
 
