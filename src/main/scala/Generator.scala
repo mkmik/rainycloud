@@ -29,7 +29,15 @@ trait HSPECGeneratorTaskConfig extends TaskConfig {
   def taskName = "HSPECGenerator"
 }
 
-object HSPENLoader extends CassandraFetcher with CassandraTaskConfig with HSPECGeneratorTaskConfig {
+trait HSPENLoader {
+  def load : Iterable[HSPEN]
+}
+
+class DummyHSPENLoader extends HSPENLoader {
+  def load = List()
+}
+
+object CassandraHSPENLoader extends HSPENLoader with CassandraFetcher with CassandraTaskConfig with HSPECGeneratorTaskConfig {
   private val log = Logger.getLogger(this.getClass);
 
   override def columnFamily = "hspen"
@@ -64,7 +72,7 @@ class HSPECGenerator extends Generator with CassandraTaskConfig with HSPECGenera
   val algorithm = new SimpleHSpecAlgorithm
 
   // load HSPEN only once
-  lazy val hspen = HSPENLoader.load
+  lazy val hspen = CassandraHSPENLoader.load
 
   // worker, accepts slices of HCAF table and computes HSPEC
   def computeInPartition(p:  Partition) {
