@@ -23,4 +23,6 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) {
   val guice2 = "com.google.inject" % "guice" % "2.0"
   val guiceScala = "uk.me.lings" % "scala-guice_2.8.0" % "0.1"
 
+  val opencsv = "net.sf.opencsv" % "opencsv" % "2.1"
+
 }

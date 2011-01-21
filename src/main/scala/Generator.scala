@@ -8,12 +8,20 @@ import org.apache.cassandra.thrift.{ Column }
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
+import io.Source.fromFile
 
 import CassandraConversions._
 
 import stopwatch.Stopwatch
 
 import com.urbanairship.octobot.Settings
+
+import com.google.inject._
+import com.google.inject.name._
+
+import au.com.bytecode.opencsv.CSVReader
+import java.io._
+import java.util.zip._
 
 trait TaskConfig {
   def taskName : String
@@ -29,6 +37,7 @@ trait HSPECGeneratorTaskConfig extends TaskConfig {
   def taskName = "HSPECGenerator"
 }
 
+/** Used to load the HSPEN table in memory */
 trait HSPENLoader {
   def load : Iterable[HSPEN]
 }
@@ -36,6 +45,42 @@ trait HSPENLoader {
 class DummyHSPENLoader extends HSPENLoader {
   def load = List()
 }
+
+trait TableReader {
+   def reader(name: String) : Reader
+}
+
+class FileSystemTableReader extends TableReader {
+   def reader(name: String) = {
+    if(name endsWith ".gz")
+      new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(name))))
+    else
+      new FileReader(name)
+  }
+}
+
+trait TableLoader {  
+  def read(name : String) : Iterable[Array[String]]
+}
+
+class CSVTableLoader @Inject() (
+  val tableReader : TableReader
+)
+extends TableLoader {
+  def read(name : String) = new CSVReader(tableReader.reader(name)).readAll
+}
+
+/** Load the HSPEN table from a file in the filesystem */
+class TableHSPENLoader @Inject() (
+  @Hspen
+  val fileName : String = "data/hspen.csv.gz",
+  val tableLoader : TableLoader
+) extends HSPENLoader {
+ 
+  // def load = (tableLoader.read(fileName) map HSPEN.fromTableRow).toIterable
+  def load = tableLoader.read(fileName) map HSPEN.fromTableRow
+}
+
 
 object CassandraHSPENLoader extends HSPENLoader with CassandraFetcher with CassandraTaskConfig with HSPECGeneratorTaskConfig {
   private val log = Logger.getLogger(this.getClass);
@@ -52,7 +97,12 @@ object CassandraHSPENLoader extends HSPENLoader with CassandraFetcher with Cassa
   }
 }
 
+/** HSPEC Generator */
 trait Generator {
+
+  @Inject
+  var hspenLoader : HSPENLoader = _
+
   def computeInPartition(p: Partition)
 }
 

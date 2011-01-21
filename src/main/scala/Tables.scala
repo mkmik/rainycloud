@@ -36,11 +36,14 @@ class HSPEN(val speciesId : String) {
 	override def toString() = "HSPEN(%s)".format(speciesId)
 }
 
+
 object HSPEN {
   private val log = Logger.getLogger(this.getClass);
 
 
   val columns = List("Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
+
+  def fromTableRow(row : Array[String]) : HSPEN = build(Map(columns zip row:_*))
 
 	def fromCassandra(x : Iterable[Column]) : HSPEN = fromCassandra(columnList2map(x))
 
