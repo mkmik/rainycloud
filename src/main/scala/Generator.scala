@@ -20,6 +20,7 @@ import com.google.inject._
 import com.google.inject.name._
 
 import au.com.bytecode.opencsv.CSVReader
+import au.com.bytecode.opencsv.CSVWriter
 import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy
 import java.io._
 import java.util.zip._
@@ -132,10 +133,22 @@ class CassandraLoader[A] @Inject() (val fetcher: CassandraFetcher) extends Colum
 /** Generator uses emitter to output data */
 trait Emitter[A] {
   def emit(record: A)
+
+  def flush
 }
 
 trait Fetcher[A] {
   def fetch(key: String, size: Long): Iterable[A]
+}
+
+
+/** csv emitter */
+class CSVEmitter[A <: Product] extends Emitter[A] {
+  val writer = new CSVWriter(new FileWriter(new File("/tmp/test.csv")))
+
+  def emit(record: A) = writer.writeNext(record.productIterator.map(_.toString).toArray)
+
+  def flush = writer.flush
 }
 
 /** HSPEC Generator */

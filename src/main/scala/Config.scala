@@ -10,12 +10,14 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
     bind[Generator].to[DummyGenerator]
 
     bind[HSPENLoader].to[TableHSPENLoader]
-    bind[HCAFLoader].to[TableHCAFLoader]
-
     bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
-    bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
     bind[PositionalStore[HSPEN]].to[CSVPositionalStore[HSPEN]]
+
+    bind[HCAFLoader].to[TableHCAFLoader]
+    bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
     bind[PositionalStore[HCAF]].to[CSVPositionalStore[HCAF]]
+
+    bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]]
 
     // For octobot worker (different entry point)
     bind[Bot].to[HSPECGeneratorOctobot]

@@ -60,7 +60,7 @@ object HSPEN {
 
 }
 
-class HSPEC(val speciesId: String, val csquareCode: String) extends CassandraConfig with CassandraCreator {
+case class HSPEC(val speciesId: String, val csquareCode: String) extends CassandraConfig with CassandraCreator {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
 
