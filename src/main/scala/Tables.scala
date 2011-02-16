@@ -13,8 +13,14 @@ import org.apache.log4j.Logger
 
 import stopwatch.Stopwatch
 
-class HCAF(val csquareCode: String) {
+trait Keyed {
+  def key: String
+}
+
+class HCAF(val csquareCode: String) extends Keyed {
   override def toString() = "HCAF(%s)".format(csquareCode)
+
+  def key = csquareCode
 }
 
 object HCAF {
@@ -57,6 +63,8 @@ object HSPEN {
 class HSPEC(val speciesId: String, val csquareCode: String) extends CassandraConfig with CassandraCreator {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
+
+  override def toString() = "HSPEC(%s)".format(key)
 
   final def toCassandra: Row = Stopwatch("hspecSerialize") {
     (key, List("SpeciesID" --> speciesId,

@@ -134,17 +134,37 @@ trait Emitter[A] {
   def emit(record: A)
 }
 
+trait Fetcher[A] {
+  def fetch(key: String, size: Long): Iterable[A]
+}
+
 /** HSPEC Generator */
 trait Generator {
   def computeInPartition(p: Partition)
 }
 
 class DummyGenerator @Inject() (val hspenLoader: HSPENLoader) extends Generator {
-
   def computeInPartition(p: Partition) = println("dummy " + p)
 }
 
-class HSPECGenerator @Inject() (hspenLoader: HSPENLoader) extends Generator with CassandraTaskConfig with HSPECGeneratorTaskConfig with CassandraFetcher with CassandraSink with Watch {
+class HSPECGenerator @Inject() (val hspenLoader: HSPENLoader, val emitter: Emitter[HSPEC], val fetcher: Fetcher[HCAF], val algorithm: HspecAlgorithm) extends Generator {
+
+  // load HSPEN only once
+  lazy val hspen = hspenLoader.load
+
+  def computeInPartition(p: Partition) {
+    val records = for {
+      // fetch hcaf rows
+      hcaf <- fetcher.fetch(p.start, p.size)
+      // for each hacf compute a list of hspec
+      hspec <- algorithm.compute(hcaf, hspen)
+      // yield each hspec converted to a cassandra row
+    } emitter.emit(hspec)
+  }
+
+}
+
+class OldHSPECGenerator @Inject() (hspenLoader: HSPENLoader) extends Generator with CassandraTaskConfig with HSPECGeneratorTaskConfig with CassandraFetcher with CassandraSink with Watch {
   private val log = Logger.getLogger(this.getClass);
 
   override def columnFamily = "hcaf"

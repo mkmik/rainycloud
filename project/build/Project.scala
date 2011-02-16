@@ -20,6 +20,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) {
 	val codaRepo = "Coda Hale's Repository" at "http://repo.codahale.com/"
 
   val specsdep = "org.scala-tools.testing" %% "specs" % "1.6.7.2" % "test->default"
+  val mockito = "org.mockito" % "mockito-all" % "1.8.5"
 
 	val metrics = "com.yammer" %% "metrics" % "1.0.7" withSources()
   val guice2 = "com.google.inject" % "guice" % "2.0"
