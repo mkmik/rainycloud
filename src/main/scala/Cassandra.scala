@@ -49,7 +49,7 @@ trait Cassandra extends CassandraConnectionConfig {
     ks.getRangeSlices(clp, sp, range)
   }
 
-  def batchMutate(mutas : java.util.Map[String, MutationList]) = {
+  def batchMutate(mutas: java.util.Map[String, MutationList]) = {
     log.info("upserting %s rows".format(mutas.size))
 
     Stopwatch("upsert") {
@@ -68,11 +68,11 @@ object CassandraConversions {
     x.foldLeft(Map[String, Column]()) { (acc, v) => acc + (byte2string(v.name) -> v) }
   }
 
-  implicit def columnName(x : Column) : String = byte2string(x.name)
+  implicit def columnName(x: Column): String = byte2string(x.name)
 }
 
 trait CassandraFetcher extends Cassandra {
-  def columnNames : List[String]
+  def columnNames: List[String]
 
   def fetch(start: String, count: Long) = {
     Stopwatch("fetch") {
@@ -84,16 +84,16 @@ trait CassandraFetcher extends Cassandra {
 trait CassandraSink extends Cassandra {
   private val log = Logger.getLogger(this.getClass);
 
-  def outputColumnFamily : String
+  def outputColumnFamily: String
   def batchSize = 10000
 
   def store(hugeRows: Iterable[Row]) = {
     Stopwatch("store") {
       log.info("storing %s hspec rows".format(hugeRows.size))
-      for(rows <- hugeRows.toStream.grouped(batchSize)) {
-        def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns (cols))}
-        def makeMutations(cols: Iterable[Column]) = cols.map {col => mutation(col)}
-        def makeColumns(cols : Iterable[Column]) = Map(outputColumnFamily -> makeMutations(cols).toList.asJava).asJava
+      for (rows <- hugeRows.toStream.grouped(batchSize)) {
+        def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns(cols)) }
+        def makeMutations(cols: Iterable[Column]) = cols.map { col => mutation(col) }
+        def makeColumns(cols: Iterable[Column]) = Map(outputColumnFamily -> makeMutations(cols).toList.asJava).asJava
 
         val mutations = rows.foldLeft(Map[String, MutationList]()) { (acc, row) => acc + makeRow(row) }
         batchMutate(mutations.asJava)
@@ -121,7 +121,7 @@ trait CassandraCreator extends CassandraConfig {
   implicit def newColumnWrapper(name: String) = new NewColumnWrapper(name)
 
   def newColumn(name: String, value: String) = {
-      new Column(name.getBytes, value.getBytes, stamp)
+    new Column(name.getBytes, value.getBytes, stamp)
   }
 
   def stamp = System.currentTimeMillis

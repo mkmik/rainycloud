@@ -13,63 +13,59 @@ import org.apache.log4j.Logger
 
 import stopwatch.Stopwatch
 
-class HCAF (val csquareCode : String) {
-	override def toString() = "HCAF(%s)".format(csquareCode)
+class HCAF(val csquareCode: String) {
+  override def toString() = "HCAF(%s)".format(csquareCode)
 }
-
 
 object HCAF {
   val columns = List("CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM", "DepthMin", "DepthMax", "SSTAnMean", "SBTAnMean", "SalinityMean", "SalinityBMean", "PrimProdMean", "IceConAnn", "LandDist", "EEZFirst", "LME", "DepthMean")
 
-	val condition = "OceanArea > 0"
+  val condition = "OceanArea > 0"
 
-  def fromTableRow(row : Array[String]) : HCAF = build(Map(columns zip row:_*))
+  def fromTableRow(row: Array[String]): HCAF = build(Map(columns zip row: _*))
 
-	def fromCassandra(x : Iterable[Column]) : HCAF = Stopwatch("deserialize") { fromCassandra(columnList2map(x)) }
+  def fromCassandra(x: Iterable[Column]): HCAF = Stopwatch("deserialize") { fromCassandra(columnList2map(x)) }
 
-	def fromCassandra(x : Map[String, Column]) : HCAF = build(x mapValues (_.value))
+  def fromCassandra(x: Map[String, Column]): HCAF = build(x mapValues (_.value))
 
-	def build(x : Map[String, String]) = {
-		new HCAF(x.get("CsquareCode").getOrElse(""))
-	}
+  def build(x: Map[String, String]) = {
+    new HCAF(x.get("CsquareCode").getOrElse(""))
+  }
 }
 
-class HSPEN(val speciesId : String) {
-	override def toString() = "HSPEN(%s)".format(speciesId)
+class HSPEN(val speciesId: String) {
+  override def toString() = "HSPEN(%s)".format(speciesId)
 }
-
 
 object HSPEN {
   private val log = Logger.getLogger(this.getClass);
 
-
   val columns = List("Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
 
-  def fromTableRow(row : Array[String]) : HSPEN = build(Map(columns zip row:_*))
+  def fromTableRow(row: Array[String]): HSPEN = build(Map(columns zip row: _*))
 
-	def fromCassandra(x : Iterable[Column]) : HSPEN = fromCassandra(columnList2map(x))
+  def fromCassandra(x: Iterable[Column]): HSPEN = fromCassandra(columnList2map(x))
 
-	def fromCassandra(x : Map[String, Column]) : HSPEN = build(x mapValues (_.value))
+  def fromCassandra(x: Map[String, Column]): HSPEN = build(x mapValues (_.value))
 
-	def build(x : Map[String, String]) = {
-		new HSPEN(x.get("SpeciesID").getOrElse("no species"))
-	}
+  def build(x: Map[String, String]) = {
+    new HSPEN(x.get("SpeciesID").getOrElse("no species"))
+  }
 
 }
 
-
-class HSPEC (val speciesId : String, val csquareCode : String) extends CassandraConfig with CassandraCreator {
+class HSPEC(val speciesId: String, val csquareCode: String) extends CassandraConfig with CassandraCreator {
   override def keyspaceName = "Aquamaps"
-	override def columnFamily = "hspec"
+  override def columnFamily = "hspec"
 
-	final def toCassandra : Row = Stopwatch("hspecSerialize") {
-		(key, List("SpeciesID" --> speciesId,
-							 "CsquareCode" --> csquareCode))
-	}
+  final def toCassandra: Row = Stopwatch("hspecSerialize") {
+    (key, List("SpeciesID" --> speciesId,
+      "CsquareCode" --> csquareCode))
+  }
 
-	final def key = "%s:%s".format(speciesId, csquareCode)
+  final def key = "%s:%s".format(speciesId, csquareCode)
 }
 
 object HSPEC {
-	val columns = List("SpeciesID", "CsquareCode", "Probability", "boundboxYN", "faoareaYN", "FAOAreaM", "LME", "EEZAll")
+  val columns = List("SpeciesID", "CsquareCode", "Probability", "boundboxYN", "faoareaYN", "FAOAreaM", "LME", "EEZAll")
 }

@@ -6,13 +6,11 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 
 /** Entry point of the application */
 class EntryPoint @Inject() (
-  val partitioner : Partitioner,
-  val generator : Generator
-) {
-  
-  def run = for(p <- partitioner.partitions) generator.computeInPartition(p)
-}
+  val partitioner: Partitioner,
+  val generator: Generator) {
 
+  def run = for (p <- partitioner.partitions) generator.computeInPartition(p)
+}
 
 /** Main. Creates a configured entrypoint with guice, and runs it */
 object Main {
