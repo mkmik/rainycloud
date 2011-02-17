@@ -113,8 +113,7 @@ class FileSystemTableWriter[A] @Inject() (val name: String) extends TableWriter[
     if (name endsWith ".gz")
       new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(name))))
     else
-      //new FileWriter(name)
-      new PrintWriter(name)
+      new FileWriter(name)
   }
 }
 
@@ -174,7 +173,6 @@ class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extend
 class TableHSPECLoader @Inject() (val tableLoader: PositionalSource[HSPEC]) extends Loader[HSPEC] {
   def load = tableLoader.read map HSPEC.fromTableRow
 }
-
 
 /*! A `ColumnStoreLoader` provides the data differently. It returns data as unordered name-value pairs. Some data sources, like
  table stores can returns data like this. */

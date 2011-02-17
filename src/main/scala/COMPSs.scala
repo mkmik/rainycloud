@@ -82,7 +82,7 @@ object StaticFileParamsGenerator {
     }
 
     def mkTmp = {
-      val file = File.createTempFile("rainycloud-worker-", ".csv")
+      val file = File.createTempFile("rainycloud-worker-", ".csv.gz")
 //      file.deleteOnExit()
       file.toString
     }
