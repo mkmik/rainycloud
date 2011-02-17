@@ -9,6 +9,10 @@ import scala.collection.JavaConverters._
 
 import stopwatch.Stopwatch
 
+/*!## Parked
+
+ This code works but has to be refactored to follow the new design of `Loader`/`Fetcher`/`Emitter` */
+
 trait CassandraConfig {
   def keyspaceName: String
   def columnFamily: String

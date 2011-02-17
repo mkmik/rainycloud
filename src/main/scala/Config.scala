@@ -12,12 +12,12 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
   def configure() {
     /*!## Basic components
 
-    We select partitioner which loads the pre-made partitions from a plain text file, an implementation of the hspec generator and
-    a HSPEC generator algorithm component.
+    We select partitioner which loads the pre-made partitions from a plain text file, an implementation of the `Generator` and
+    `HspecAlgorithm` components.
     */
     bind[Partitioner].to[StaticPartitioner]
     bind[Generator].to[HSPECGenerator]
-    bind[HspecAlgorithm].to[SimpleHSpecAlgorithm]
+    bind[HspecAlgorithm].to[RandomHSpecAlgorithm]
 
     /*!## HSPEN database
 
@@ -30,8 +30,8 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
 
     /*!## HCAF database
      
-     In this wiring the HCAF database is loaded in memory from a gzipped csv file too, and the local worker
-     will fetch a given partition as a slice of the whole HCAF db held in RAM. This is inefficient but works well
+     In this wiring the `HCAF` database is loaded in memory from a gzipped csv file too, and the local worker
+     will fetch a given partition as a slice of the whole `HCAF` db held in RAM. This is inefficient but works well
      for our first prototype.
      */
     bind[HCAFLoader].to[TableHCAFLoader]
@@ -42,7 +42,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
 
     /*!## Emitter
      
-     The purpose of the emitter is to collect generated HSPEC records and write them somewhere. This emitter will write a CSV file
+     The purpose of the emitter is to collect generated `HSPEC` records and write them somewhere. This emitter will write a CSV file
      */
     bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]]
 

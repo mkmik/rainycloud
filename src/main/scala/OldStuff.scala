@@ -51,7 +51,7 @@ class OldHSPECGenerator @Inject() (hspenLoader: HSPENLoader) extends Generator w
   override def columnNames = HCAF.columns
 
   // actual logic is here
-  val algorithm = new SimpleHSpecAlgorithm
+  val algorithm = new RandomHSpecAlgorithm
 
   // load HSPEN only once
   lazy val hspen = hspenLoader.load

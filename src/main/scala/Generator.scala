@@ -22,9 +22,12 @@ trait Generator {
   def computeInPartition(p: Partition)
 }
 
-
 /*! This is a local implementation of the HSPEC generator core. */
-class HSPECGenerator @Inject() (val hspenLoader: HSPENLoader, val emitter: Emitter[HSPEC], val fetcher: Fetcher[HCAF], val algorithm: HspecAlgorithm) extends Generator {
+class HSPECGenerator @Inject() (
+  val hspenLoader: HSPENLoader,
+  val emitter: Emitter[HSPEC],
+  val fetcher: Fetcher[HCAF],
+  val algorithm: HspecAlgorithm) extends Generator {
 
   /*! HSPEN table is loaded only once (hence lazy)*/
   lazy val hspen = hspenLoader.load
@@ -42,7 +45,6 @@ class HSPECGenerator @Inject() (val hspenLoader: HSPENLoader, val emitter: Emitt
 
 }
 
-
 /*!## Fetcher
  
  A `Fetcher` is a component that reads some data from a db. It's mostly useful for loading partitions of the HCAF table.
@@ -56,7 +58,6 @@ trait Fetcher[A] {
   def fetch(key: String, size: Long): Iterable[A]
 }
 
-
 /*!## Emitter
  
  `Generator` uses `Emitter` to output data. Usually the `Emitter` emits `HSPEC` records.
@@ -67,17 +68,17 @@ trait Emitter[A] {
   def flush
 }
 
-
-/*! If a table is a `Product` (a case class is a Product) then we can serialize it to csv via this emitter. */
+/*!
+ If a table is a `Product` (a case class is a Product) then we can serialize it to csv via this emitter.
+ */
 class CSVEmitter[A <: Product] extends Emitter[A] {
+/*! */
   val writer = new CSVWriter(new FileWriter(new File("/tmp/test.csv")))
 
   def emit(record: A) = writer.writeNext(record.productIterator.map(_.toString).toArray)
 
   def flush = writer.flush
 }
-
-
 
 /*!## Table readers
 
@@ -109,7 +110,7 @@ class CSVPositionalStore[A] @Inject() (val tableReader: TableReader[A]) extends 
 }
 
 /*!## Loaders */
- 
+
 /*! A `Loader` loads a whole db in as an iterable. */
 trait Loader[A] {
   def load: Iterable[A]
