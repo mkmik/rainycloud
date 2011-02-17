@@ -26,7 +26,8 @@ class EntryPoint @Inject() (
   val emitter: Emitter[HSPEC]) {
 
   def run = {
-    for (p <- partitioner.partitions) generator.computeInPartition(p)
+    for (p <- partitioner.partitions)
+      generator.computeInPartition(p)
 
     emitter.flush
   }

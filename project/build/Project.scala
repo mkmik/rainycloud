@@ -1,7 +1,9 @@
 import sbt._
+import reaktor.scct.ScctProject
+
 //import eu.dnetlib.DoccoPlugin
 
-class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with AssemblyProject {
+class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with AssemblyProject with ScctProject {
   val log4j = "log4j" % "log4j" % "1.2.16"
 
 	//val scromiumRepo = "Cliff's Scromium Repo" at "http://cliffmoon.github.com/scromium/repository/"
