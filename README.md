@@ -40,7 +40,7 @@ Or you can run the self-contained jar:
 Doc
 ---
 
-You can find docs generated with docco [here](http://dl.dropbox.com/u/2520452/rainycloud/index.html)
+You can find docs generated with docco [here](http://mmikulicic.github.com/rainycloud/docco/)
 
 FAQ
 ---
