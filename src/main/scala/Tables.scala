@@ -1,11 +1,11 @@
 package it.cnr.aquamaps
 
-// hcaf_*:       259'200
-// hcaf ocean:   178'204
-
-// hspen:          9'263
-// tot:    1'650'703'652
-// output:    56'582'558
+/*!
+ 
+ Here we define our data model.
+ We have 3 tables: HCAF, HSPEN and the to be generated HSPEC
+ 
+*/
 
 import CassandraConversions._
 import org.apache.cassandra.thrift.{ Column, ColumnPath }
@@ -13,10 +13,23 @@ import org.apache.log4j.Logger
 
 import stopwatch.Stopwatch
 
+/*!
+ 
+ Tables which have primary key will have to implement this trait.
+ */
 trait Keyed {
   def key: String
 }
 
+/*!## HCAF
+ 
+ HCAF is the biggest of the three table, but we actually only need to fetch the ocean squares. With the 0.5 deg resolution cells we have:
+  
+ * hcaf_*:       259'200
+ * hcaf ocean:   178'204
+
+ HCAF Table has the csquareCode as key. The companion object contains conversion methods
+ */
 class HCAF(val csquareCode: String) extends Keyed {
   override def toString() = "HCAF(%s)".format(csquareCode)
 
@@ -39,6 +52,14 @@ object HCAF {
   }
 }
 
+/*!## HSPEN
+
+ The HSPEN table describes species and can be loaded in memory:
+
+ * hspen:          9'263
+
+ The HSPEN Table doesn't need a key. The companion object contains conversion methods
+ */
 class HSPEN(val speciesId: String) {
   override def toString() = "HSPEN(%s)".format(speciesId)
 }
@@ -59,6 +80,23 @@ object HSPEN {
   }
 
 }
+
+/*!## HSPEC
+
+ The HSPEC table is the cartesian product of HSPEN and HCAF and can potentially:
+
+ * total:    1'650'703'652
+ 
+ Fortunately we only care about the non-zero probability out cells, which are currently less:
+  
+ * output:    56'582'558
+
+  
+ The HSPEC Table is declared as a case so that it inherits the Product trait, this way we can easily serialize
+ all the fields as CSV
+ 
+ The companion object contains conversion methods.
+ */
 
 case class HSPEC(val speciesId: String, val csquareCode: String) extends CassandraConfig with CassandraCreator {
   override def keyspaceName = "Aquamaps"
