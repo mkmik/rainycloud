@@ -37,6 +37,11 @@ Or you can run the self-contained jar:
 
     java -jar ./target/scala_2.8.1/rainycloud_2.8.1-assembly-1.0.jar
 
+Doc
+---
+
+You can find docs generated with docco [here](http://dl.dropbox.com/u/2520452/rainycloud/index.html)
+
 FAQ
 ---
 
@@ -46,3 +51,4 @@ The data is in data/hcaf.csv.gz and data/hspen.csv.gz. You can consider to creat
 update the partition map file in octo/client/ranges.
 
 So you can use the provided data/hcaf-small.csv.gz (copy it over the hcaf.csv.gz file)
+
