@@ -40,3 +40,9 @@ Or you can run the self-contained jar:
 FAQ
 ---
 
+* It takes too long, how can I reduce the input data so that I can test it faster ?
+
+The data is in data/hcaf.csv.gz and data/hspen.csv.gz. You can consider to create a hcaf.csv.gz files containing only a few hundred lines. But if you do it manually you should also
+update the partition map file in octo/client/ranges.
+
+So you can use the provided data/hcaf-small.csv.gz (copy it over the hcaf.csv.gz file)
