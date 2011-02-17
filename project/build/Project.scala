@@ -1,7 +1,7 @@
 import sbt._
 //import eu.dnetlib.DoccoPlugin
 
-class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) {
+class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with AssemblyProject {
   val log4j = "log4j" % "log4j" % "1.2.16"
 
 	//val scromiumRepo = "Cliff's Scromium Repo" at "http://cliffmoon.github.com/scromium/repository/"
@@ -29,6 +29,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) {
   val guiceScala = "uk.me.lings" % "scala-guice_2.8.0" % "0.1"
 
   val opencsv = "net.sf.opencsv" % "opencsv" % "2.1"
-  //val flatpack = "net.sf.flatpack" % "flatpack" % "3.1.1"
   val supercsv = "org.supercsv" % "supercsv" % "1.20"
+
+  override def mainClass = Some("it.cnr.aquamaps.Main")
 }
