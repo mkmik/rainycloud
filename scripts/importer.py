@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import time, sys, os
+import time, sys, os, csv
 from cassandra.Cassandra import *
 
 from thrift import Thrift
@@ -106,14 +106,22 @@ hcafFields = ["CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM",
 
 hspenFields = ["key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax"]
 
+def fill_csv(data, fileName):
+    print "writing", fileName
+    writer = csv.writer(file(fileName, "w"),delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+    for row in data:
+        writer.writerow(row)
+
 def main():
     print "loading hcaf"
     input_data = iterate_mysql_hcaf()
-    fill_cassandra(input_data, "hcaf", hcafFields)
+    #fill_cassandra(input_data, "hcaf", hcafFields)
+    fill_csv(input_data, "hcaf.csv")
 
     print "loading hspen"
     input_data = iterate_mysql_hspen()
-    fill_cassandra(input_data, "hspen", hspenFields)
+    fill_csv(input_data, "hspen.csv")
+    #fill_cassandra(input_data, "hspen", hspenFields)
 
     print "done"
 

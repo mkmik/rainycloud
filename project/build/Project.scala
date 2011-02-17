@@ -1,4 +1,5 @@
 import sbt._
+//import eu.dnetlib.DoccoPlugin
 
 class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) {
   val log4j = "log4j" % "log4j" % "1.2.16"
@@ -19,8 +20,13 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) {
   val scalaToolsSnapshots = "Scala-Tools Maven2 Snapshots Repository" at "http://scala-tools.org/repo-snapshots"
 	val codaRepo = "Coda Hale's Repository" at "http://repo.codahale.com/"
 
+  val specsdep = "org.scala-tools.testing" %% "specs" % "1.6.7.2" % "test->default"
+  val mockito = "org.mockito" % "mockito-all" % "1.8.5"
+
 	val metrics = "com.yammer" %% "metrics" % "1.0.7" withSources()
   val guice2 = "com.google.inject" % "guice" % "2.0"
   val guiceScala = "uk.me.lings" % "scala-guice_2.8.0" % "0.1"
+
+  val opencsv = "net.sf.opencsv" % "opencsv" % "2.1"
 
 }

@@ -1,11 +1,11 @@
 package it.cnr.aquamaps
 
-// hcaf_*:       259'200
-// hcaf ocean:   178'204
-
-// hspen:          9'263
-// tot:    1'650'703'652
-// output:    56'582'558
+/*!
+ 
+ Here we define our data model.
+ We have 3 tables: HCAF, HSPEN and the to be generated HSPEC
+ 
+*/
 
 import CassandraConversions._
 import org.apache.cassandra.thrift.{ Column, ColumnPath }
@@ -13,58 +13,104 @@ import org.apache.log4j.Logger
 
 import stopwatch.Stopwatch
 
-class HCAF (val csquareCode : String) {
-	override def toString() = "HCAF(%s)".format(csquareCode)
+/*!
+ 
+ Tables which have primary key will have to implement this trait.
+ */
+trait Keyed {
+  def key: String
 }
 
+/*!## HCAF
+ 
+ HCAF is the biggest of the three table, but we actually only need to fetch the ocean squares. With the 0.5 deg resolution cells we have:
+  
+ * hcaf_*:       259'200
+ * hcaf ocean:   178'204
+
+ HCAF Table has the csquareCode as key. The companion object contains conversion methods
+ */
+class HCAF(val csquareCode: String) extends Keyed {
+  override def toString() = "HCAF(%s)".format(csquareCode)
+
+  def key = csquareCode
+}
 
 object HCAF {
   val columns = List("CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM", "DepthMin", "DepthMax", "SSTAnMean", "SBTAnMean", "SalinityMean", "SalinityBMean", "PrimProdMean", "IceConAnn", "LandDist", "EEZFirst", "LME", "DepthMean")
 
-	val condition = "OceanArea > 0"
+  val condition = "OceanArea > 0"
 
-	def fromCassandra(x : Iterable[Column]) : HCAF = Stopwatch("deserialize") { fromCassandra(columnList2map(x)) }
+  def fromTableRow(row: Array[String]): HCAF = build(Map(columns zip row: _*))
 
-	def fromCassandra(x : Map[String, Column]) : HCAF = build(x mapValues (_.value))
+  def fromCassandra(x: Iterable[Column]): HCAF = Stopwatch("deserialize") { fromCassandra(columnList2map(x)) }
 
-	def build(x : Map[String, String]) = {
-		new HCAF(x.get("CsquareCode").getOrElse(""))
-	}
+  def fromCassandra(x: Map[String, Column]): HCAF = build(x mapValues (_.value))
+
+  def build(x: Map[String, String]) = {
+    new HCAF(x.get("CsquareCode").getOrElse(""))
+  }
 }
 
-class HSPEN(val speciesId : String) {
-	override def toString() = "HSPEN(%s)".format(speciesId)
+/*!## HSPEN
+
+ The HSPEN table describes species and can be loaded in memory:
+
+ * hspen:          9'263
+
+ The HSPEN Table doesn't need a key. The companion object contains conversion methods
+ */
+class HSPEN(val speciesId: String) {
+  override def toString() = "HSPEN(%s)".format(speciesId)
 }
 
 object HSPEN {
   private val log = Logger.getLogger(this.getClass);
 
+  val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
 
-  val columns = List("Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
+  def fromTableRow(row: Array[String]): HSPEN = build(Map(columns zip row: _*))
 
-	def fromCassandra(x : Iterable[Column]) : HSPEN = fromCassandra(columnList2map(x))
+  def fromCassandra(x: Iterable[Column]): HSPEN = fromCassandra(columnList2map(x))
 
-	def fromCassandra(x : Map[String, Column]) : HSPEN = build(x mapValues (_.value))
+  def fromCassandra(x: Map[String, Column]): HSPEN = build(x mapValues (_.value))
 
-	def build(x : Map[String, String]) = {
-		new HSPEN(x.get("SpeciesID").getOrElse("no species"))
-	}
+  def build(x: Map[String, String]) = {
+    new HSPEN(x.get("SpeciesID").getOrElse("no species"))
+  }
 
 }
 
+/*!## HSPEC
 
-class HSPEC (val speciesId : String, val csquareCode : String) extends CassandraConfig with CassandraCreator {
+ The HSPEC table is the cartesian product of HSPEN and HCAF and can potentially:
+
+ * total:    1'650'703'652
+ 
+ Fortunately we only care about the non-zero probability out cells, which are currently less:
+  
+ * output:    56'582'558
+  
+ The HSPEC Table is declared as a case so that it inherits the Product trait, this way we can easily serialize
+ all the fields as CSV
+ 
+ The companion object contains conversion methods.
+ */
+
+case class HSPEC(val speciesId: String, val csquareCode: String) extends CassandraConfig with CassandraCreator {
   override def keyspaceName = "Aquamaps"
-	override def columnFamily = "hspec"
+  override def columnFamily = "hspec"
 
-	final def toCassandra : Row = Stopwatch("hspecSerialize") {
-		(key, List("SpeciesID" --> speciesId,
-							 "CsquareCode" --> csquareCode))
-	}
+  override def toString() = "HSPEC(%s)".format(key)
 
-	final def key = "%s:%s".format(speciesId, csquareCode)
+  final def toCassandra: Row = Stopwatch("hspecSerialize") {
+    (key, List("SpeciesID" --> speciesId,
+      "CsquareCode" --> csquareCode))
+  }
+
+  final def key = "%s:%s".format(speciesId, csquareCode)
 }
 
 object HSPEC {
-	val columns = List("SpeciesID", "CsquareCode", "Probability", "boundboxYN", "faoareaYN", "FAOAreaM", "LME", "EEZAll")
+  val columns = List("SpeciesID", "CsquareCode", "Probability", "boundboxYN", "faoareaYN", "FAOAreaM", "LME", "EEZAll")
 }
