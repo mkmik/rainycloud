@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Start.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Start.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <h2>Application Entry point</h2>
+<p>This is the application global entrypoint.</p>
+<p>The basic algorithm is very simple: for each partition invoke the 'computeInPartition' method of the <code>Generator</code> instance.</p>
+<p>The partition is described by a key range. The generator then fetches a number of <code>HCAF</code> records according to the specified partition  and executes an <code>HspecAlgorithm</code> for each pair of <code>HSPEC</code> x <code>HSPEN</code> records, which are emitted by an emitter. See <a href="Tables.scala.html">data model</a>.</p>
+<p>There may be different implementations of <code>Generator</code>, for example one which puts request in a queue, and the real generator is a pool of workers  consuming the queue; or a plain local instance which executes the work locally (and perhaps transparently remotized by COMPSs)</p>
+<p>See docs for <a href="Generator.scala.html#section-1">Generator</a>, <a href="Algorithm.scala.html">HspecAlgorithm</a> and <a href="Generator.scala.html#section-10">Emitter</a>, for further details.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>import com.google.inject.Guice
+import com.google.inject._
+import uk.me.lings.scalaguice.InjectorExtensions._
+import com.google.inject.util.Modules
+
+class EntryPoint @Inject() (
+  val partitioner: Partitioner,
+  val generator: Generator,
+  val emitter: Emitter[HSPEC]) {
+
+  def run = {
+    for (p &lt;- partitioner.partitions)
+      generator.computeInPartition(p)
+
+    emitter.flush
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <h2>Guice startup</h2>
+<p>This is the java <code>main</code> method. It instantiated a fully configured entrypoint with Guice, and runs it.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>object Main {
+  def main(argv: Array[String]) = {
+    //val injector = Guice createInjector AquamapsModule()
+    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsModule())  
+
+    val entryPoint = injector.instance[EntryPoint]
+
+    entryPoint.run
+  }
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

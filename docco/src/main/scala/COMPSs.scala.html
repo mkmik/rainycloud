@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>COMPSs.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;COMPSs.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps
+
+import com.google.inject._
+import scala.xml.{ Node, Text, XML }
+import scala.xml.Utility.trim
+import io.Source.fromFile
+import java.io.File
+import com.google.inject._
+import com.google.inject.util.Modules
+import uk.me.lings.scalaguice.InjectorExtensions._
+import uk.me.lings.scalaguice.ScalaModule</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <h1>COMPSs support</h1>
+<p>COMPSs currently only support files as communication method between remote spawns.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code></code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>Hencefore we needa way to serialize Partitions to and from xml: this import adds the <code>toXml</code> and <code>toPartition</code> methods to <code>Partition</code> and <code>xml.Node</code> respectively, see bottom.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>import P2XML._</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <p>In order to connect to the rest of the system, first we implement the <code>Generator</code> interface. We receive partitions from the entry point here, convert the parameters  * into files, amd delegate to another interface whose signature COMPSs knowns how to handle (files as parameters).</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter: Emitter[HSPEC]) extends Generator {
+
+  def computeInPartition(p: Partition) {
+    val tmpFile = mkTmp
+    XML.save(tmpFile, p.toXml)
+
+    val outputFile = delegate.computeInPartition(tmpFile)
+
+    println(&quot;got generated HSPEC records in %s; merging results&quot;.format(outputFile))
+
+    merge(outputFile)
+  }</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <p>Well this is a rather stupid way to merge the remote output into our single result. <code>Emitter</code> should be extended to support bulk emits.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>  def merge(outputFile: String) {
+    val loader = new TableHSPECLoader(new CSVPositionalSource(new FileSystemTableReader(outputFile)))
+
+    for(hspec &lt;- loader.load)
+      emitter.emit(hspec)
+  }
+
+  def mkTmp = {
+    val file = File.createTempFile(&quot;rainycloud&quot;, &quot;.xml&quot;)
+    file.deleteOnExit()
+    file.toString
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-5">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-5">#</a>
+        </div>
+      <p>Now here's the magic. This method accepts files and converts them back to our native parameters and delegates to another Generator (I still don't know if we have to pass java <code>Files</code> or file names.)</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait FileParamsGenerator {
+  def computeInPartition(fileName: String): String
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-6">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-6">#</a>
+        </div>
+      <p>The <code>FileParamsGenerator</code> above is just an abstract trait, we need a way to find the backend generator.  If we are running within a real application it's easy: just let Guice inject it!</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class SimpleFileParamsGenerator @Inject() (val delegate: Generator, val emitter: Emitter[HSPEC], val writer: FileSystemTableWriter[HSPEC]) extends FileParamsGenerator {
+  def computeInPartition(fileName: String): String = {
+    delegate.computeInPartition(XML.load(fileName).toPartition)
+    emitter.flush
+    writer.name
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-7">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-7">#</a>
+        </div>
+      <p>But what if COMPSs requires only static method invocations because it wouldn't know how to spawn the instances on the remote worker ?</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class StaticFileParamsGenerator extends FileParamsGenerator {
+  def computeInPartition(fileName: String): String = StaticFileParamsGenerator.staticDelegate(fileName)
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-8">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-8">#</a>
+        </div>
+      <p>The static delegate also returns the output filename so that COMPSs can move the data for us.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>object StaticFileParamsGenerator {
+
+  case class COMPSsWorkerModule() extends AbstractModule with ScalaModule {
+    def configure() {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-9">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-9">#</a>
+        </div>
+      <p>Let's write to a temporary file, so that the same machine can host several instances of this worker. In order to do this        we override the Guice config and inject another TableWriter.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>      val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(mkTmp)
+
+      bind[TableWriter[HSPEC]].toInstance(writer)
+      bind[FileSystemTableWriter[HSPEC]].toInstance(writer)
+    }
+
+    def mkTmp = {
+      val file = File.createTempFile(&quot;rainycloud-worker-&quot;, &quot;.csv.gz&quot;)
+      file.deleteOnExit()
+      file.toString
+    }
+  }
+
+  // val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())  
+
+  def staticDelegate(fileName: String): String = {
+    
+    // should be moved outside, but right now we have an issue with emitter singletons
+    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())  
+
+    val writer = injector.instance[FileSystemTableWriter[HSPEC]]
+    val generator = injector.instance[Generator]
+    val emitter = injector.instance[Emitter[HSPEC]]
+
+    generator.computeInPartition(XML.load(fileName).toPartition)
+    emitter.flush
+
+    writer.name
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-10">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-10">#</a>
+        </div>
+      <h2>Serialization</h2>
+<p>These are details, we need some (de)serialization for partition descriptors. Let's go for a readable choice:</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class P2XML(val p: Partition) {
+  def toXml() = {
+    &lt;partition&gt;
+      &lt;start&gt;{ p.start }&lt;/start&gt;
+      &lt;size&gt;{ p.size }&lt;/size&gt;
+    &lt;/partition&gt;
+  }
+}
+
+class XML2P(val p: Node) {
+  def toPartition: Partition = trim(p) match {
+    case &lt;partition&gt;&lt;start&gt;{ start }&lt;/start&gt;&lt;size&gt;{ size }&lt;/size&gt;&lt;/partition&gt; =&gt; new Partition(start.text, size.text.toLong)
+  }
+}
+
+object P2XML {
+  implicit def p2xml(p: Partition): P2XML = new P2XML(p)
+  implicit def p2xml(p: Node): XML2P = new XML2P(p)
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

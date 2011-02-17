@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Algorithm.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Algorithm.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps
+
+import scala.util.Random</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>The core computation of a <code>HSPEC</code> row from a pair of <code>HCAF</code> and <code>HSPEN</code> rows is defined in this trait.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait HspecAlgorithm {
+  def compute(hcaf: HCAF, hspen: Iterable[HSPEN]): Iterable[HSPEC]
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>We are focusing now the scalability aspects of this scenario not on the actualy algorithm, which requires too much  library dependencies to be able to execute it right now. We know that the correct algorithm generates about 60 million  records in output, which is about 1/30 of the full cartesian product of the <code>HSPEC</code> and <code>HSPEN</code> table for 0.5 degree resolution.  So let's choose randomly.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class RandomHSpecAlgorithm extends HspecAlgorithm {
+  val random: Random = new Random
+
+  override def compute(hcaf: HCAF, hspen: Iterable[HSPEN]): Iterable[HSPEC] = {
+
+    hspen.flatMap { pen =&gt;
+      if (random.nextInt(30) == 0)
+        List(new HSPEC(csquareCode = hcaf.csquareCode, speciesId = pen.speciesId))
+      else
+        Nil
+    }
+  }
+
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <p>Or, if you want to generate all 1.8 billion output records (for stress testing for example), use this impl.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class AllHSpecAlgorithm extends HspecAlgorithm {
+  val random: Random = new Random
+
+  // compute all HSPECs from the given HCAF and all the HSPENs
+  override def compute(hcaf: HCAF, hspen: Iterable[HSPEN]): Iterable[HSPEC] = {
+    hspen.map { pen =&gt; new HSPEC(csquareCode = hcaf.csquareCode, speciesId = pen.speciesId)}
+  }
+
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

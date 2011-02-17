@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Tables.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Tables.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>Here we define our data model.  We have 3 tables: HCAF, HSPEN and the to be generated HSPEC</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>import CassandraConversions._
+import org.apache.cassandra.thrift.{ Column, ColumnPath }
+import org.apache.log4j.Logger
+
+import stopwatch.Stopwatch</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>Tables which have primary key will have to implement this trait.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait Keyed {
+  def key: String
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <h2>HCAF</h2>
+<p>HCAF is the biggest of the three table, but we actually only need to fetch the ocean squares. With the 0.5 deg resolution cells we have:</p>
+<ul>
+  <li>hcaf_*:       259'200</li>
+  <li>hcaf ocean:   178'204</li>
+</ul>
+<p>HCAF Table has the csquareCode as key. The companion object contains conversion methods</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class HCAF(val csquareCode: String) extends Keyed {
+  override def toString() = &quot;HCAF(%s)&quot;.format(csquareCode)
+
+  def key = csquareCode
+}
+
+object HCAF {
+  val columns = List(&quot;CsquareCode&quot;, &quot;OceanArea&quot;, &quot;CenterLat&quot;, &quot;CenterLong&quot;, &quot;FAOAreaM&quot;, &quot;DepthMin&quot;, &quot;DepthMax&quot;, &quot;SSTAnMean&quot;, &quot;SBTAnMean&quot;, &quot;SalinityMean&quot;, &quot;SalinityBMean&quot;, &quot;PrimProdMean&quot;, &quot;IceConAnn&quot;, &quot;LandDist&quot;, &quot;EEZFirst&quot;, &quot;LME&quot;, &quot;DepthMean&quot;)
+
+  val condition = &quot;OceanArea &gt; 0&quot;
+
+  def fromTableRow(row: Array[String]): HCAF = build(Map(columns zip row: _*))
+
+  def fromCassandra(x: Iterable[Column]): HCAF = Stopwatch(&quot;deserialize&quot;) { fromCassandra(columnList2map(x)) }
+
+  def fromCassandra(x: Map[String, Column]): HCAF = build(x mapValues (_.value))
+
+  def build(x: Map[String, String]) = {
+    new HCAF(x.get(&quot;CsquareCode&quot;).getOrElse(&quot;&quot;))
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <h2>HSPEN</h2>
+<p>The HSPEN table describes species and can be loaded in memory:</p>
+<ul>
+  <li>hspen:          9'263</li>
+</ul>
+<p>The HSPEN Table doesn't need a key. The companion object contains conversion methods</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class HSPEN(val speciesId: String) {
+  override def toString() = &quot;HSPEN(%s)&quot;.format(speciesId)
+}
+
+object HSPEN {
+  private val log = Logger.getLogger(this.getClass);
+
+  val columns = List(&quot;key&quot;, &quot;Layer&quot;, &quot;SpeciesID&quot;, &quot;FAOAreas&quot;, &quot;Pelagic&quot;, &quot;NMostLat&quot;, &quot;SMostLat&quot;, &quot;WMostLong&quot;, &quot;EMostLong&quot;, &quot;DepthMin&quot;, &quot;DepthMax&quot;, &quot;DepthPrefMin&quot;, &quot;DepthPrefMax&quot;, &quot;TempMin&quot;, &quot;TempMax&quot;, &quot;TempPrefMin&quot;, &quot;TempPrefMax&quot;, &quot;SalinityMin&quot;, &quot;SalinityMax&quot;, &quot;SalinityPrefMin&quot;, &quot;SalinityPrefMax&quot;, &quot;PrimProdMin&quot;, &quot;PrimProdMax&quot;, &quot;PrimProdPrefMin&quot;, &quot;PrimProdPrefMax&quot;, &quot;IceConMin&quot;, &quot;IceConMax&quot;, &quot;IceConPrefMin&quot;, &quot;IceConPrefMax&quot;, &quot;LandDistMin&quot;, &quot;LandDistMax&quot;, &quot;LandDistPrefMin&quot;, &quot;MeanDepth&quot;, &quot;LandDistPrefMax&quot;)
+
+  def fromTableRow(row: Array[String]): HSPEN = build(Map(columns zip row: _*))
+
+  def fromCassandra(x: Iterable[Column]): HSPEN = fromCassandra(columnList2map(x))
+
+  def fromCassandra(x: Map[String, Column]): HSPEN = build(x mapValues (_.value))
+
+  def build(x: Map[String, String]) = {
+    new HSPEN(x.get(&quot;SpeciesID&quot;).getOrElse(&quot;no species&quot;))
+  }
+
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-5">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-5">#</a>
+        </div>
+      <h2>HSPEC</h2>
+<p>The HSPEC table is the cartesian product of HSPEN and HCAF and can potentially:</p>
+<ul>
+  <li>total:    1'650'703'652</li>
+</ul>
+<p>Fortunately we only care about the non-zero probability out cells, which are currently less:</p>
+<ul>
+  <li>output:    56'582'558</li>
+</ul>
+<p>The HSPEC Table is declared as a case so that it inherits the Product trait, this way we can easily serialize  all the fields as CSV</p>
+<p>The companion object contains conversion methods.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>case class HSPEC(val speciesId: String, val csquareCode: String) extends CassandraConfig with CassandraCreator {
+  override def keyspaceName = &quot;Aquamaps&quot;
+  override def columnFamily = &quot;hspec&quot;
+
+  override def toString() = &quot;HSPEC(%s)&quot;.format(key)
+
+  final def toCassandra: Row = Stopwatch(&quot;hspecSerialize&quot;) {
+    (key, List(&quot;SpeciesID&quot; --&gt; speciesId,
+      &quot;CsquareCode&quot; --&gt; csquareCode))
+  }
+
+  final def key = &quot;%s:%s&quot;.format(speciesId, csquareCode)
+}
+
+object HSPEC {
+  val columns = List(&quot;SpeciesID&quot;, &quot;CsquareCode&quot;, &quot;Probability&quot;, &quot;boundboxYN&quot;, &quot;faoareaYN&quot;, &quot;FAOAreaM&quot;, &quot;LME&quot;, &quot;EEZAll&quot;)</code></pre>
+      </td>
+    </tr>
+    <tr id="section-6">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-6">#</a>
+        </div>
+      <p>These are rarely needed, since we normally don't read back generated HSPEC here</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>  def fromTableRow(row: Array[String]): HSPEC = build(Map(columns zip row: _*))
+
+  def build(x: Map[String, String]) = {
+    new HSPEC(x.get(&quot;SpeciesID&quot;).getOrElse(&quot;no species&quot;),
+      x.get(&quot;CsquareCode&quot;).getOrElse(&quot;no csquare code&quot;))
+  }
+
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

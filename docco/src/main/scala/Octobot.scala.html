@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Octobot.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Octobot.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <h2>Octobot</h2>
+<p>This code is used only when running a scenario with the octobot workers</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>import org.json.simple.JSONObject
+
+import com.google.inject._
+import uk.me.lings.scalaguice.InjectorExtensions._
+
+trait Bot {
+  def processTask(task: JSONObject)
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>We receive a partition (start + size) via JSON. We just convert the parameters from  json to a partition instance and delegate the work to the Generator</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class HSPECGeneratorOctobot @Inject() (val generator: Generator) extends Bot {
+  def processTask(task: JSONObject)  = generator.computeInPartition(partition(task.get(&quot;start&quot;), task.get(&quot;size&quot;)))
+
+  def partition(start: Any, size: Any) = new Partition(start.asInstanceOf[String], size.asInstanceOf[Long])
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <h2>Entry point</h2>
+<p>This is the octopbot entry point.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>object HSPECGeneratorOctopus {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <p>We construct the Guice injector only once and then reuse the instances.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>  val injector = Guice createInjector AquamapsModule()
+  val bot = injector.instance[Bot]</code></pre>
+      </td>
+    </tr>
+    <tr id="section-5">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-5">#</a>
+        </div>
+      <p>Octobot will invoke the 'run' static method for each incoming job</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>  def run(task: JSONObject) = bot.processTask(task)
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

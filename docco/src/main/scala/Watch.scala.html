@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Watch.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Watch.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps
+
+import stopwatch.web.Server
+
+import stopwatch.Stopwatch
+import stopwatch.StopwatchGroup
+import stopwatch.StopwatchRange
+import stopwatch.TimeUnit._</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>This is a nice and easy to use utility to take measurements of code execution.</p>
+<p>It has been disabled  until we have a way to allocate a tcp port for each worker. I don't want to put the burdain of  allocating a port number in a configuration file, just to be able to run more instances of this toy.</p>
+<p>VisualVM sampling can be useful to monitor the performance of the code without this kind of interference at source level.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait Watch {
+  // disabled because it opens a tcp port and it conflicts with
+  // multiple instances
+
+  // Watch.run
+
+  Stopwatch.enabled = true
+  Stopwatch.range = StopwatchRange(0 seconds, 15 seconds, 500 millis)
+}
+
+object Watch {
+  val server = new stopwatch.web.Server
+
+  def run = {
+    // register StopwatchGroups you want to monitor
+    server.groups ::= Stopwatch
+
+    // configure port number
+    server.port = 9999
+    try {
+      //		server.start()
+    } catch {
+      case _ =&gt;
+        println(&quot;couldn't start stopwatch web monitoring&quot;)
+    }
+  }
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

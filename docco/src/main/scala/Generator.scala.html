@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Generator.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Generator.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps
+
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+
+import stopwatch.Stopwatch
+
+import com.google.inject._
+import com.google.inject.name._
+
+import au.com.bytecode.opencsv.CSVReader
+import au.com.bytecode.opencsv.CSVWriter
+import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy
+import org.supercsv.io.CsvListWriter
+import org.supercsv.prefs.CsvPreference
+import java.io._
+import java.util.zip._</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <h2>Generator</h2>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code></code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>This is the heart of the scenario. The entry point invokes this method once for each partition.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait Generator {
+  def computeInPartition(p: Partition)
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <p>This is a local implementation of the HSPEC generator core.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class HSPECGenerator @Inject() (
+  val hspenLoader: HSPENLoader,
+  val emitter: Emitter[HSPEC],
+  val fetcher: Fetcher[HCAF],
+  val algorithm: HspecAlgorithm) extends Generator {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <p>HSPEN table is loaded only once (hence lazy)</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>  lazy val hspen = hspenLoader.load</code></pre>
+      </td>
+    </tr>
+    <tr id="section-5">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-5">#</a>
+        </div>
+      <p>Then for each partition:</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>  def computeInPartition(p: Partition) {
+    val records = for {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-6">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-6">#</a>
+        </div>
+      <ul>
+  <li>fetch hcaf rows for that partition</li>
+</ul>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>      hcaf &lt;- fetcher.fetch(p.start, p.size)</code></pre>
+      </td>
+    </tr>
+    <tr id="section-7">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-7">#</a>
+        </div>
+      <ul>
+  <li>for each hacf row compute a list of output hspec rows</li>
+</ul>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>      hspec &lt;- algorithm.compute(hcaf, hspen)</code></pre>
+      </td>
+    </tr>
+    <tr id="section-8">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-8">#</a>
+        </div>
+      <ul>
+  <li>emit each generated hspec row using our pluggable emitter</li>
+</ul>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>    } emitter.emit(hspec)
+  }
+
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-9">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-9">#</a>
+        </div>
+      <h2>Fetcher</h2>
+<p>A <code>Fetcher</code> is a component that reads some data from a db. It's mostly useful for loading partitions of the HCAF table.</p>
+<p>A <code>Fetcher</code> differs from a <code>Loader</code>, in that it supports the fetch by range functionality, and it's implementation may be unable  to load the whole content in one piece.</p>
+<p>Please see the <a href="MemoryDB.scala.html">MemoryFetcher</a> for a concrete fetcher.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait Fetcher[A] {
+  def fetch(key: String, size: Long): Iterable[A]
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-10">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-10">#</a>
+        </div>
+      <h2>Emitter</h2>
+<p><code>Generator</code> uses <code>Emitter</code> to output data. Usually the <code>Emitter</code> emits <code>HSPEC</code> records.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait Emitter[A] {
+  def emit(record: A)
+
+  def flush
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-11">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-11">#</a>
+        </div>
+      <p>If a table is a <code>Product</code> (a case class is a Product) then we can serialize it to csv via this emitter.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class CSVEmitter[A &lt;: Product] @Inject() (val sink: PositionalSink[A]) extends Emitter[A] {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-12">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-12">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>  def emit(record: A) = sink.write(record.productIterator.map(_.toString).toArray)
+
+  def flush = sink.flush
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-13">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-13">#</a>
+        </div>
+      <h2>Table readers</h2>
+<p>A table reader declares a data source for a <code>PositionalSource</code> (or others). We exploit phantom types to easily bind  a particular implementation of a table reader to a given PositionalSource via Guice.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait TableReader[A] {
+  def reader: Reader
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-14">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-14">#</a>
+        </div>
+      <p>We can read data from the filesystem. Gzip files are supported</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class FileSystemTableReader[A] @Inject() (val name: String) extends TableReader[A] {
+  def reader = {
+    if (name endsWith &quot;.gz&quot;)
+      new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(name))))
+    else
+      new FileReader(name)
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-15">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-15">#</a>
+        </div>
+      <h2>Table writers</h2>
+<p>A table writer binds a writer for a <code>PositionalSink</code> with a phantom type.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait TableWriter[A] {
+  def writer: Writer
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-16">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-16">#</a>
+        </div>
+      <p>We can read data from the filesystem. Gzip files are supported</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class FileSystemTableWriter[A] @Inject() (val name: String) extends TableWriter[A] {
+  def writer = {
+    if (name endsWith &quot;.gz&quot;)
+      new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(name))))
+    else
+      new FileWriter(name)
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-17">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-17">#</a>
+        </div>
+      <h2>Sources and Sinks</h2>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code></code></pre>
+      </td>
+    </tr>
+    <tr id="section-18">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-18">#</a>
+        </div>
+      <p>Loads data from a positional source, like a table with ordered columns but without column names</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait PositionalSource[A] {
+  def read: Iterable[Array[String]]
+}
+
+trait PositionalSink[A] {
+  def write(row: Array[String])
+
+  def flush {}
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-19">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-19">#</a>
+        </div>
+      <p>We treat CSV as a positional source, we rely on the fact that the columns are in a particular order</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class CSVPositionalSource[A] @Inject() (val tableReader: TableReader[A]) extends PositionalSource[A] {
+  def read = new CSVReader(tableReader.reader).readAll
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-20">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-20">#</a>
+        </div>
+      <p>We can also write into a CSV with a PositionalSink. The phantom type parameter is again used  only as a type safe and dependency injection wiring aid</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class CSVPositionalSink[A] @Inject() (val tableWriter: TableWriter[A]) extends PositionalSink[A] {
+  val writer = new CsvListWriter(tableWriter.writer, CsvPreference.STANDARD_PREFERENCE)
+
+  def write(row: Array[String]) = writer.write(row);
+
+  override def flush = writer.close
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-21">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-21">#</a>
+        </div>
+      <h2>Loaders</h2>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code></code></pre>
+      </td>
+    </tr>
+    <tr id="section-22">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-22">#</a>
+        </div>
+      <p>A <code>Loader</code> loads a whole db in as an iterable.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait Loader[A] {
+  def load: Iterable[A]
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-23">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-23">#</a>
+        </div>
+      <p>Used to load the <code>HSPEN</code> table in memory</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait HSPENLoader extends Loader[HSPEN]</code></pre>
+      </td>
+    </tr>
+    <tr id="section-24">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-24">#</a>
+        </div>
+      <p>Used to load a <code>HCAF</code> table partition in memory</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait HCAFLoader extends Loader[HCAF]</code></pre>
+      </td>
+    </tr>
+    <tr id="section-25">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-25">#</a>
+        </div>
+      <p>Load the <code>HSPEN</code> table from a positional tabular source (i.e. the colums are known by position).</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class TableHSPENLoader @Inject() (val tableLoader: PositionalSource[HSPEN]) extends HSPENLoader {
+  def load = tableLoader.read map HSPEN.fromTableRow
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-26">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-26">#</a>
+        </div>
+      <p>Load the <code>HCAF</code> table from a positional tabular source (i.e. the colums are known by position).</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extends HCAFLoader {
+  def load = tableLoader.read map HCAF.fromTableRow
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-27">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-27">#</a>
+        </div>
+      <p>Load the <code>HSPEC</code> table from a positional tabular source (i.e. the colums are known by position). This shouuldn't be useful, but we currently use it to merge  multiple HSPEC outputs in a single big csv (inefficient but useful for test).</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class TableHSPECLoader @Inject() (val tableLoader: PositionalSource[HSPEC]) extends Loader[HSPEC] {
+  def load = tableLoader.read map HSPEC.fromTableRow
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-28">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-28">#</a>
+        </div>
+      <p>A <code>ColumnStoreLoader</code> provides the data differently. It returns data as unordered name-value pairs. Some data sources, like  table stores can returns data like this.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait ColumnStoreLoader[A] {
+  def read: Iterable[Map[String, String]]
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-29">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-29">#</a>
+        </div>
+      <p>We can provide a column/value output from a csv string. Not very useful, but might be useful for testing</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class CSVColumnStoreLoader[A] @Inject() (val tableReader: TableReader[A]) extends ColumnStoreLoader[A] {
+
+  class ColumnNameMapper(reader: CSVReader) extends ColumnPositionMappingStrategy[A] {
+    captureHeader(reader)
+
+    def name(pos: Int) = getColumnName(pos)
+    def columns = header
+
+    def asMap(row: Array[String]) = Map(columns zip row: _*)
+  }
+
+  def read = {
+    val csv = new CSVReader(tableReader.reader)
+    val mapper = new ColumnNameMapper(csv)
+
+    csv.readAll map mapper.asMap
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-30">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-30">#</a>
+        </div>
+      <p>Load the <code>HSPEN</code> table from a column store source</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class ColumnStoreHSPENLoader @Inject() (val columnStoreLoader: ColumnStoreLoader[HSPEN]) extends HSPENLoader {
+  def load = columnStoreLoader.read map HSPEN.build
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

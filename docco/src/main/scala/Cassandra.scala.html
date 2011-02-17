@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Cassandra.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Cassandra.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps
+import org.apache.log4j.Logger
+
+import me.prettyprint.cassandra.service.{ CassandraHostConfigurator, CassandraClientPoolFactory }
+import org.apache.cassandra.thrift.{ Column, SliceRange, SlicePredicate, ColumnParent, ColumnPath, KeyRange, Mutation, ColumnOrSuperColumn, ConsistencyLevel }
+
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+
+import stopwatch.Stopwatch</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <h2>Parked</h2>
+<p>This code works but has to be refactored to follow the new design of <code>Loader</code>/<code>Fetcher</code>/<code>Emitter</code></p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait CassandraConfig {
+  def keyspaceName: String
+  def columnFamily: String
+
+  type Row = (String, Iterable[Column])
+  type MutationList = java.util.Map[String, java.util.List[Mutation]]
+}
+
+trait CassandraConnectionConfig extends CassandraConfig {
+  def cassandraHost: String
+  def cassandraPort: Int
+}
+
+trait Cassandra extends CassandraConnectionConfig {
+  private val log = Logger.getLogger(this.getClass);
+
+  val hostConfigurator = new CassandraHostConfigurator(&quot;%s:%s&quot;.format(cassandraHost, cassandraPort))
+  val pool = CassandraClientPoolFactory.getInstance.createNew(hostConfigurator)
+
+  val client = pool borrowClient
+
+  lazy val keyspace = client.getKeyspace(keyspaceName)
+
+  def rangeSlice(from: String, to: String, size: Long, columns: List[String]) = {
+    log.info(&quot;getting slice %s %s %s  on  %s %s&quot;.format(from, to, size, keyspaceName, columnFamily))
+
+    val ks = keyspace
+    val range = new KeyRange
+    range.setStart_key(from)
+    range.setEnd_key(&quot;&quot;)
+    range.setCount(size.asInstanceOf[Int])
+
+    val sp = new SlicePredicate
+    val clp = new ColumnParent(columnFamily)
+
+    sp.setColumn_names(columns.map(_.getBytes))
+
+    ks.getRangeSlices(clp, sp, range)
+  }
+
+  def batchMutate(mutas: java.util.Map[String, MutationList]) = {
+    log.info(&quot;upserting %s rows&quot;.format(mutas.size))
+
+    Stopwatch(&quot;upsert&quot;) {
+      keyspace.batchMutate(mutas)
+    }
+  }
+
+}
+
+object CassandraConversions {
+  import scala.collection.immutable.HashMap
+
+  implicit def byte2string(x: Array[Byte]): String = new String(x, &quot;utf-8&quot;)
+
+  implicit def columnList2map(x: Iterable[Column]): Map[String, Column] = {
+    x.foldLeft(Map[String, Column]()) { (acc, v) =&gt; acc + (byte2string(v.name) -&gt; v) }
+  }
+
+  implicit def columnName(x: Column): String = byte2string(x.name)
+}
+
+trait CassandraFetcher extends Cassandra {
+  def columnNames: List[String]
+
+  def fetch(start: String, count: Long) = {
+    Stopwatch(&quot;fetch&quot;) {
+      rangeSlice(start, null, count, columnNames)
+    }
+  }
+}
+
+trait CassandraSink extends Cassandra {
+  private val log = Logger.getLogger(this.getClass);
+
+  def outputColumnFamily: String
+  def batchSize = 10000
+
+  def store(hugeRows: Iterable[Row]) = {
+    Stopwatch(&quot;store&quot;) {
+      log.info(&quot;storing %s hspec rows&quot;.format(hugeRows.size))
+      for (rows &lt;- hugeRows.toStream.grouped(batchSize)) {
+        def makeRow(row: Row) = row match { case (key, cols) =&gt; (key -&gt; makeColumns(cols)) }
+        def makeMutations(cols: Iterable[Column]) = cols.map { col =&gt; mutation(col) }
+        def makeColumns(cols: Iterable[Column]) = Map(outputColumnFamily -&gt; makeMutations(cols).toList.asJava).asJava
+
+        val mutations = rows.foldLeft(Map[String, MutationList]()) { (acc, row) =&gt; acc + makeRow(row) }
+        batchMutate(mutations.asJava)
+      }
+    }
+  }
+
+  final def mutation(column: Column) = {
+    val mut = new Mutation
+    val color = new ColumnOrSuperColumn
+    mut.setColumn_or_supercolumn(color)
+    color.setColumn(column)
+    mut
+  }
+
+  def simpleMutation(key: String, column: Column) = (key, mutation(column))
+
+}
+
+trait CassandraCreator extends CassandraConfig {
+  class NewColumnWrapper(val name: String) {
+    def --&gt;(value: String) = newColumn(name, value)
+  }
+
+  implicit def newColumnWrapper(name: String) = new NewColumnWrapper(name)
+
+  def newColumn(name: String, value: String) = {
+    new Column(name.getBytes, value.getBytes, stamp)
+  }
+
+  def stamp = System.currentTimeMillis
+
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

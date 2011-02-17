@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Config.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Config.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>This is the Guice component wiring for a particular implementation scenario</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>import com.google.inject._
+import com.google.inject.name._
+import uk.me.lings.scalaguice.ScalaModule
+
+case class AquamapsModule() extends AbstractModule with ScalaModule {
+  def configure() {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <h2>Basic components</h2>
+<p>We select partitioner which loads the pre-made partitions from a plain text file, an implementation of the <code>Generator</code> and <code>HspecAlgorithm</code> components.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>    bind[Partitioner].to[StaticPartitioner]
+    bind[Generator].to[HSPECGenerator]
+    bind[HspecAlgorithm].to[RandomHSpecAlgorithm]</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <h2>HSPEN database</h2>
+<p>HSPEN data is loaded from a gzipped csv file located in the filesystem. Each worker should load this file once.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>    bind[HSPENLoader].to[TableHSPENLoader]
+    bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader(&quot;data/hspen.csv.gz&quot;))
+    bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <h2>HCAF database</h2>
+<p>In this wiring the <code>HCAF</code> database is loaded in memory from a gzipped csv file too, and the local worker  will fetch a given partition as a slice of the whole <code>HCAF</code> db held in RAM. This is inefficient but works well  for our first prototype.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>    bind[HCAFLoader].to[TableHCAFLoader]
+    bind[Loader[HCAF]].to[HCAFLoader]
+    bind[TableReader[HCAF]].toInstance(new FileSystemTableReader(&quot;data/hcaf.csv.gz&quot;))
+    bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
+    bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]]</code></pre>
+      </td>
+    </tr>
+    <tr id="section-5">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-5">#</a>
+        </div>
+      <h2>Emitter</h2>
+<p>The purpose of the emitter is to collect generated <code>HSPEC</code> records and write them somewhere. This emitter will write a CSV file.  The file can be compressed (performance penalilty).</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(&quot;/tmp/hspec.csv.gz&quot;))
+    bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
+    bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]].in[Singleton]</code></pre>
+      </td>
+    </tr>
+    <tr id="section-6">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-6">#</a>
+        </div>
+      <h2>Octobot</h2>
+<p>(ignore this)  This is the octobot entry point, which is loaded from a different entry point (in fact we could move this to separate guice module)</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>    bind[Bot].to[HSPECGeneratorOctobot]
+  }
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>
