@@ -17,7 +17,7 @@ object GeneratorSpec extends Specification with Mockito {
       bind[HSPENLoader].to[TableHSPENLoader]
 
       bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
-      bind[PositionalStore[HSPEN]].to[CSVPositionalStore[HSPEN]]
+      bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]
 
       bind[Partitioner].to[StaticPartitioner]
       bind[Generator].to[HSPECGenerator]

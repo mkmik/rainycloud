@@ -71,19 +71,18 @@ trait Emitter[A] {
 /*!
  If a table is a `Product` (a case class is a Product) then we can serialize it to csv via this emitter.
  */
-class CSVEmitter[A <: Product] extends Emitter[A] {
+class CSVEmitter[A <: Product] @Inject() (val sink: PositionalSink[A]) extends Emitter[A] {
 /*! */
-  val writer = new CSVWriter(new FileWriter(new File("/tmp/test.csv")))
 
-  def emit(record: A) = writer.writeNext(record.productIterator.map(_.toString).toArray)
+  def emit(record: A) = sink.write(record.productIterator.map(_.toString).toArray)
 
-  def flush = writer.flush
+  def flush = sink.flush
 }
 
 /*!## Table readers
 
- A table reader declares a data source for a `PositionalStore` (or others). We exploit phantom types to easily bind
- a particular implementation of a table reader to a given PositionalStore via Guice.
+ A table reader declares a data source for a `PositionalSource` (or others). We exploit phantom types to easily bind
+ a particular implementation of a table reader to a given PositionalSource via Guice.
  */
 trait TableReader[A] {
   def reader: Reader
@@ -99,14 +98,51 @@ class FileSystemTableReader[A] @Inject() (val name: String) extends TableReader[
   }
 }
 
-/*! Loads data from a positional store, like a table with ordered columns but without column names */
-trait PositionalStore[A] {
+/*!## Table writers
+
+ A table writer binds a writer for a `PositionalSink` with a phantom type.
+ */
+trait TableWriter[A] {
+  def writer: Writer
+}
+
+/*! We can read data from the filesystem. Gzip files are supported */
+class FileSystemTableWriter[A] @Inject() (val name: String) extends TableWriter[A] {
+  def writer = {
+    if (name endsWith ".gz")
+      new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(name))))
+    else
+      new FileWriter(name)
+  }
+}
+
+/*!## Sources and Sinks */
+
+/*! Loads data from a positional source, like a table with ordered columns but without column names */
+trait PositionalSource[A] {
   def read: Iterable[Array[String]]
 }
 
-/*! We treat CSV as a positional store, we rely on the fact that the columns are in a particular order */
-class CSVPositionalStore[A] @Inject() (val tableReader: TableReader[A]) extends PositionalStore[A] {
+trait PositionalSink[A] {
+  def write(row: Array[String])
+
+  def flush {}
+}
+
+
+/*! We treat CSV as a positional source, we rely on the fact that the columns are in a particular order */
+class CSVPositionalSource[A] @Inject() (val tableReader: TableReader[A]) extends PositionalSource[A] {
   def read = new CSVReader(tableReader.reader).readAll
+}
+
+/*! We can also write into a CSV with a PositionalSink. The phantom type parameter is again used
+ only as a type safe and dependency injection wiring aid */
+class CSVPositionalSink[A] @Inject() (val tableWriter: TableWriter[A]) extends PositionalSink[A] {
+  val writer = new CSVWriter(tableWriter.writer)
+
+  def write(row: Array[String]) = writer.writeNext(row)
+
+  override def flush = { writer.flush; writer.close }
 }
 
 /*!## Loaders */
@@ -123,12 +159,12 @@ trait HSPENLoader extends Loader[HSPEN]
 trait HCAFLoader extends Loader[HCAF]
 
 /*! Load the `HSPEN` table from a positional tabular source (i.e. the colums are known by position). */
-class TableHSPENLoader @Inject() (val tableLoader: PositionalStore[HSPEN]) extends HSPENLoader {
+class TableHSPENLoader @Inject() (val tableLoader: PositionalSource[HSPEN]) extends HSPENLoader {
   def load = tableLoader.read map HSPEN.fromTableRow
 }
 
 /*! Load the `HCAF` table from a positional tabular source (i.e. the colums are known by position). */
-class TableHCAFLoader @Inject() (val tableLoader: PositionalStore[HCAF]) extends HCAFLoader {
+class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extends HCAFLoader {
   def load = tableLoader.read map HCAF.fromTableRow
 }
 

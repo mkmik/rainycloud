@@ -16,8 +16,8 @@ object CSVLoaderSpec extends Specification {
 
       bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
       bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
-      bind[PositionalStore[HSPEN]].to[CSVPositionalStore[HSPEN]]
-      bind[PositionalStore[HCAF]].to[CSVPositionalStore[HCAF]]
+      bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]
+      bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
     }
   }
 

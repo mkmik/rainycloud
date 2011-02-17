@@ -18,7 +18,7 @@ object HCAFFetcherSpec extends Specification with Mockito {
         def configure() {
           bind[HCAFLoader].to[TableHCAFLoader]
           bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
-          bind[PositionalStore[HCAF]].to[CSVPositionalStore[HCAF]]
+          bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
 
           bind[Loader[HCAF]].to[HCAFLoader]
 

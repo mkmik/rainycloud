@@ -9,13 +9,14 @@ import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
 
 import org.specs.mock.Mockito
-import org.mockito.Matchers._ // to use matchers like anyInt()
 
 object HSPECEmitterSpec extends Specification with Mockito {
   "HSPEC emitter" should {
     "emit into csv" in {
       case class TestModule() extends AbstractModule with ScalaModule {
         def configure() {
+          bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter("/tmp/hspec.csv.gz"))
+          bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
           bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]]
         }
       }

@@ -25,8 +25,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
      */
     bind[HSPENLoader].to[TableHSPENLoader]
     bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
-    bind[PositionalStore[HSPEN]].to[CSVPositionalStore[HSPEN]]
-
+    bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]
 
     /*!## HCAF database
      
@@ -37,13 +36,16 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
     bind[HCAFLoader].to[TableHCAFLoader]
     bind[Loader[HCAF]].to[HCAFLoader]
     bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
-    bind[PositionalStore[HCAF]].to[CSVPositionalStore[HCAF]]
+    bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
     bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]]
 
     /*!## Emitter
      
-     The purpose of the emitter is to collect generated `HSPEC` records and write them somewhere. This emitter will write a CSV file
+     The purpose of the emitter is to collect generated `HSPEC` records and write them somewhere. This emitter will write a CSV file.
+     The file can be compressed (performance penalilty).
      */
+    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter("/tmp/hspec.csv.gz"))
+    bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
     bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]]
 
     /*!## Octobot
