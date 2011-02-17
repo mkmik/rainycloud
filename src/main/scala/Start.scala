@@ -21,9 +21,14 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 
 class EntryPoint @Inject() (
   val partitioner: Partitioner,
-  val generator: Generator) {
+  val generator: Generator,
+  val emitter: Emitter[HSPEC]) {
 
-  def run = for (p <- partitioner.partitions) generator.computeInPartition(p)
+  def run = {
+    for (p <- partitioner.partitions) generator.computeInPartition(p)
+
+    emitter.flush
+  }
 }
 
 /*!## Guice startup

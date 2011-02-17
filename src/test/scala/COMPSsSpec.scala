@@ -66,7 +66,7 @@ object COMPSsSpec extends Specification with Mockito {
 
         bind[FileParamsGenerator].to[StaticFileParamsGenerator]
         bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
-        bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]]
+        bind[Emitter[HSPEC]].toInstance(mock[Emitter[HSPEC]])
 
         bind[Generator].toInstance(mock[Generator])
       }
@@ -82,7 +82,7 @@ object COMPSsSpec extends Specification with Mockito {
 
       compss.computeInPartition(partition)
 
-//      there was one(emitter).emit(anyObject())
+      there was atLeastOne(emitter).emit(anyObject())
     }
   }
 

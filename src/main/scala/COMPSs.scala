@@ -38,8 +38,8 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
   def merge(outputFile: String) {
     val loader = new TableHSPECLoader(new CSVPositionalSource(new FileSystemTableReader(outputFile)))
 
-    //for(hspec <- loader.load)
-    //  emitter.emit(hspec)
+    for(hspec <- loader.load)
+      emitter.emit(hspec)
   }
 
   def mkTmp = {
@@ -56,9 +56,10 @@ trait FileParamsGenerator {
 
 /*! The `FileParamsGenerator` above is just an abstract trait, we need a way to find the backend generator.
  If we are running within a real application it's easy: just let Guice inject it! */
-class SimpleFileParamsGenerator @Inject() (val delegate: Generator, val writer: FileSystemTableWriter[HSPEC]) extends FileParamsGenerator {
+class SimpleFileParamsGenerator @Inject() (val delegate: Generator, val emitter: Emitter[HSPEC], val writer: FileSystemTableWriter[HSPEC]) extends FileParamsGenerator {
   def computeInPartition(fileName: String): String = {
     delegate.computeInPartition(XML.load(fileName).toPartition)
+    emitter.flush
     writer.name
   }
 }
@@ -83,7 +84,7 @@ object StaticFileParamsGenerator {
 
     def mkTmp = {
       val file = File.createTempFile("rainycloud-worker-", ".csv.gz")
-//      file.deleteOnExit()
+      file.deleteOnExit()
       file.toString
     }
   }
