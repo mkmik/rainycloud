@@ -2,7 +2,6 @@ package it.cnr.aquamaps
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
-import io.Source.fromFile
 
 import stopwatch.Stopwatch
 
@@ -72,7 +71,7 @@ trait Emitter[A] {
  If a table is a `Product` (a case class is a Product) then we can serialize it to csv via this emitter.
  */
 class CSVEmitter[A <: Product] @Inject() (val sink: PositionalSink[A]) extends Emitter[A] {
-/*! */
+  /*! */
 
   def emit(record: A) = sink.write(record.productIterator.map(_.toString).toArray)
 
@@ -128,7 +127,6 @@ trait PositionalSink[A] {
 
   def flush {}
 }
-
 
 /*! We treat CSV as a positional source, we rely on the fact that the columns are in a particular order */
 class CSVPositionalSource[A] @Inject() (val tableReader: TableReader[A]) extends PositionalSource[A] {
