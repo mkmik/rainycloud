@@ -90,7 +90,6 @@ object HSPEN {
  Fortunately we only care about the non-zero probability out cells, which are currently less:
   
  * output:    56'582'558
-
   
  The HSPEC Table is declared as a case so that it inherits the Product trait, this way we can easily serialize
  all the fields as CSV

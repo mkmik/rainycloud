@@ -4,8 +4,8 @@ import com.google.inject._
 import com.google.inject.name._
 
 
-/**
- * Simple store which keeps records in memory. Extremely inefficient.
+/*!
+ Simple store which keeps records in memory. Extremely inefficient.
  */
 class MemoryFetcher[A <: Keyed] @Inject() (val loader: Loader[A]) extends Fetcher[A] {
 
