@@ -28,5 +28,5 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) {
   val guiceScala = "uk.me.lings" % "scala-guice_2.8.0" % "0.1"
 
   val opencsv = "net.sf.opencsv" % "opencsv" % "2.1"
-
+  val flatpack = "net.sf.flatpack" % "flatpack" % "3.1.1"
 }

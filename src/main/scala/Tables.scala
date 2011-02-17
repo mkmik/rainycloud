@@ -113,4 +113,13 @@ case class HSPEC(val speciesId: String, val csquareCode: String) extends Cassand
 
 object HSPEC {
   val columns = List("SpeciesID", "CsquareCode", "Probability", "boundboxYN", "faoareaYN", "FAOAreaM", "LME", "EEZAll")
+
+  /*! These are rarely needed, since we normally don't read back generated HSPEC here */
+  def fromTableRow(row: Array[String]): HSPEC = build(Map(columns zip row: _*))
+
+  def build(x: Map[String, String]) = {
+    new HSPEC(x.get("SpeciesID").getOrElse("no species"),
+      x.get("CsquareCode").getOrElse("no csquare code"))
+  }
+
 }

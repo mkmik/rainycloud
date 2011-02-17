@@ -111,7 +111,8 @@ class FileSystemTableWriter[A] @Inject() (val name: String) extends TableWriter[
     if (name endsWith ".gz")
       new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(name))))
     else
-      new FileWriter(name)
+      //new OutputStreamWriter(new FileOutputStream(name))
+      new PrintWriter(name)
   }
 }
 
@@ -138,9 +139,9 @@ class CSVPositionalSource[A] @Inject() (val tableReader: TableReader[A]) extends
 class CSVPositionalSink[A] @Inject() (val tableWriter: TableWriter[A]) extends PositionalSink[A] {
   val writer = new CSVWriter(tableWriter.writer)
 
-  def write(row: Array[String]) = writer.writeNext(row)
+  def write(row: Array[String]) = { writer.writeNext(row); println("wrote %s".format(row)) }
 
-  override def flush = { writer.flush; writer.close }
+  override def flush = { println("flushing sink"); writer.flush; Thread.sleep(12000); writer.flush; writer.close }
 }
 
 /*!## Loaders */
@@ -165,6 +166,13 @@ class TableHSPENLoader @Inject() (val tableLoader: PositionalSource[HSPEN]) exte
 class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extends HCAFLoader {
   def load = tableLoader.read map HCAF.fromTableRow
 }
+
+/*! Load the `HSPEC` table from a positional tabular source (i.e. the colums are known by position). This shouuldn't be useful, but we currently use it to merge
+ multiple HSPEC outputs in a single big csv (inefficient but useful for test). */
+class TableHSPECLoader @Inject() (val tableLoader: PositionalSource[HSPEC]) extends Loader[HSPEC] {
+  def load = tableLoader.read map HSPEC.fromTableRow
+}
+
 
 /*! A `ColumnStoreLoader` provides the data differently. It returns data as unordered name-value pairs. Some data sources, like
  table stores can returns data like this. */
