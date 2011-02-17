@@ -29,7 +29,7 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
 
     val outputFile = delegate.computeInPartition(tmpFile)
 
-    println("got generated HSPEC records in %s; should be merged".format(outputFile))
+    println("got generated HSPEC records in %s; merging results".format(outputFile))
 
     merge(outputFile)
   }
@@ -89,9 +89,13 @@ object StaticFileParamsGenerator {
     }
   }
 
-  val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())  
+  // val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())  
 
   def staticDelegate(fileName: String): String = {
+    
+    // should be moved outside, but right now we have an issue with emitter singletons
+    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())  
+
     val writer = injector.instance[FileSystemTableWriter[HSPEC]]
     val generator = injector.instance[Generator]
     val emitter = injector.instance[Emitter[HSPEC]]
