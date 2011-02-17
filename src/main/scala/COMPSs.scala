@@ -73,12 +73,12 @@ object StaticFileParamsGenerator {
 
   case class COMPSsWorkerModule() extends AbstractModule with ScalaModule {
     def configure() {
+      /*! Let's write to a temporary file, so that the same machine can host several instances of this worker. In order to do this
+       we override the Guice config and inject another TableWriter. */
       val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(mkTmp)
 
       bind[TableWriter[HSPEC]].toInstance(writer)
       bind[FileSystemTableWriter[HSPEC]].toInstance(writer)
-//      bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
-//      bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]]
     }
 
     def mkTmp = {
@@ -97,6 +97,7 @@ object StaticFileParamsGenerator {
 
     generator.computeInPartition(XML.load(fileName).toPartition)
     emitter.flush
+
     writer.name
   }
 }

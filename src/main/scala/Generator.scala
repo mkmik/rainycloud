@@ -11,6 +11,8 @@ import com.google.inject.name._
 import au.com.bytecode.opencsv.CSVReader
 import au.com.bytecode.opencsv.CSVWriter
 import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy
+import org.supercsv.io.CsvListWriter
+import org.supercsv.prefs.CsvPreference
 import java.io._
 import java.util.zip._
 
@@ -111,7 +113,7 @@ class FileSystemTableWriter[A] @Inject() (val name: String) extends TableWriter[
     if (name endsWith ".gz")
       new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(name))))
     else
-      //new OutputStreamWriter(new FileOutputStream(name))
+      //new FileWriter(name)
       new PrintWriter(name)
   }
 }
@@ -137,11 +139,11 @@ class CSVPositionalSource[A] @Inject() (val tableReader: TableReader[A]) extends
 /*! We can also write into a CSV with a PositionalSink. The phantom type parameter is again used
  only as a type safe and dependency injection wiring aid */
 class CSVPositionalSink[A] @Inject() (val tableWriter: TableWriter[A]) extends PositionalSink[A] {
-  val writer = new CSVWriter(tableWriter.writer)
+  val writer = new CsvListWriter(tableWriter.writer, CsvPreference.STANDARD_PREFERENCE)
 
-  def write(row: Array[String]) = { writer.writeNext(row); println("wrote %s".format(row)) }
+  def write(row: Array[String]) = writer.write(row);
 
-  override def flush = { println("flushing sink"); writer.flush; Thread.sleep(12000); writer.flush; writer.close }
+  override def flush = writer.close
 }
 
 /*!## Loaders */
