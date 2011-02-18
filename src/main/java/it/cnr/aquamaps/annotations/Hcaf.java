@@ -1,4 +1,4 @@
-package it.cnr.aquamaps;
+package it.cnr.aquamaps.annotations;
 
 import java.lang.annotation.*;
 import com.google.inject.*;
