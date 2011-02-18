@@ -37,7 +37,8 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
     bind[Loader[HCAF]].to[HCAFLoader]
     bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
     bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
-    bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]]
+    bind[Fetcher[HCAF]].to[BabuDBFetcher[HCAF]].in[Singleton]
+//    bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]]
 
     /*!## Emitter
      

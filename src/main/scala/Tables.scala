@@ -30,6 +30,7 @@ trait Keyed {
 
  HCAF Table has the csquareCode as key. The companion object contains conversion methods
  */
+@serializable
 class HCAF(val csquareCode: String) extends Keyed {
   override def toString() = "HCAF(%s)".format(csquareCode)
 

@@ -9,6 +9,7 @@ import com.google.inject._
 import com.google.inject.util.Modules
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
+import org.guiceyfruit.Injectors
 
 /*!# COMPSs support
 
@@ -102,7 +103,8 @@ object StaticFileParamsGenerator {
 
     generator.computeInPartition(XML.load(fileName).toPartition)
     emitter.flush
-
+    println("closing injector")
+    Injectors.close(injector)
     writer.name
   }
 }

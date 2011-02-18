@@ -44,5 +44,8 @@ object Main {
     val entryPoint = injector.instance[EntryPoint]
 
     entryPoint.run
+    println("exiting")
+    System.exit(0)
+    println("exiting 2")
   }
 }
