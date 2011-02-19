@@ -9,6 +9,7 @@ import com.google.inject._
 import com.google.inject.util.Modules
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
+import org.guiceyfruit.Injectors
 
 /*!# COMPSs support
 
@@ -80,6 +81,9 @@ object StaticFileParamsGenerator {
 
       bind[TableWriter[HSPEC]].toInstance(writer)
       bind[FileSystemTableWriter[HSPEC]].toInstance(writer)
+
+      /*! The static method will just delegate the work to the `SimpleFileParamsGenerator` */
+      bind[FileParamsGenerator].to[SimpleFileParamsGenerator]
     }
 
     def mkTmp = {
@@ -89,21 +93,12 @@ object StaticFileParamsGenerator {
     }
   }
 
-  // val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())  
+  /*! We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context) */
+  def injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())
 
   def staticDelegate(fileName: String): String = {
-    
-    // should be moved outside, but right now we have an issue with emitter singletons
-    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())  
-
-    val writer = injector.instance[FileSystemTableWriter[HSPEC]]
-    val generator = injector.instance[Generator]
-    val emitter = injector.instance[Emitter[HSPEC]]
-
-    generator.computeInPartition(XML.load(fileName).toPartition)
-    emitter.flush
-
-    writer.name
+    val generator = injector.instance[FileParamsGenerator]
+    generator.computeInPartition(fileName)
   }
 }
 
