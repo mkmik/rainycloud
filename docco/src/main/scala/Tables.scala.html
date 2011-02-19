@@ -81,7 +81,8 @@ import stopwatch.Stopwatch</code></pre>
 
       </td>
       <td class="code">
-        <pre class="scala"><code>class HCAF(val csquareCode: String) extends Keyed {
+        <pre class="scala"><code>@serializable
+class HCAF(val csquareCode: String) extends Keyed {
   override def toString() = &quot;HCAF(%s)&quot;.format(csquareCode)
 
   def key = csquareCode

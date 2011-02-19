@@ -69,7 +69,7 @@ case class Partition(val start: String, val size: Long)</code></pre>
     Partition(k, s.toInt)
   }
 
-  val rangesFile = &quot;octo/client/ranges&quot;
+  val rangesFile = &quot;octo/client/rangesSmall&quot;
 
   def partitions = fromFile(rangesFile).getLines map toPartition
 }</code></pre>

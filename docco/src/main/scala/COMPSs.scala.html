@@ -43,7 +43,8 @@ import java.io.File
 import com.google.inject._
 import com.google.inject.util.Modules
 import uk.me.lings.scalaguice.InjectorExtensions._
-import uk.me.lings.scalaguice.ScalaModule</code></pre>
+import uk.me.lings.scalaguice.ScalaModule
+import org.guiceyfruit.Injectors</code></pre>
       </td>
     </tr>
     <tr id="section-1">
@@ -191,7 +192,19 @@ import uk.me.lings.scalaguice.ScalaModule</code></pre>
         <pre class="scala"><code>      val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(mkTmp)
 
       bind[TableWriter[HSPEC]].toInstance(writer)
-      bind[FileSystemTableWriter[HSPEC]].toInstance(writer)
+      bind[FileSystemTableWriter[HSPEC]].toInstance(writer)</code></pre>
+      </td>
+    </tr>
+    <tr id="section-10">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-10">#</a>
+        </div>
+      <p>The static method will just delegate the work to the <code>SimpleFileParamsGenerator</code></p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>      bind[FileParamsGenerator].to[SimpleFileParamsGenerator]
     }
 
     def mkTmp = {
@@ -199,31 +212,31 @@ import uk.me.lings.scalaguice.ScalaModule</code></pre>
       file.deleteOnExit()
       file.toString
     }
-  }
+  }</code></pre>
+      </td>
+    </tr>
+    <tr id="section-11">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-11">#</a>
+        </div>
+      <p>We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context)</p>
 
-  // val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())  
+      </td>
+      <td class="code">
+        <pre class="scala"><code>  def injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())
 
   def staticDelegate(fileName: String): String = {
-    
-    // should be moved outside, but right now we have an issue with emitter singletons
-    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())  
-
-    val writer = injector.instance[FileSystemTableWriter[HSPEC]]
-    val generator = injector.instance[Generator]
-    val emitter = injector.instance[Emitter[HSPEC]]
-
-    generator.computeInPartition(XML.load(fileName).toPartition)
-    emitter.flush
-
-    writer.name
+    val generator = injector.instance[FileParamsGenerator]
+    generator.computeInPartition(fileName)
   }
 }</code></pre>
       </td>
     </tr>
-    <tr id="section-10">
+    <tr id="section-12">
       <td class="docs">
         <div class="octowrap">
-          <a class="octothorpe" href="#section-10">#</a>
+          <a class="octothorpe" href="#section-12">#</a>
         </div>
       <h2>Serialization</h2>
 <p>These are details, we need some (de)serialization for partition descriptors. Let's go for a readable choice:</p>

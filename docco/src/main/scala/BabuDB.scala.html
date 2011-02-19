@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>BabuDB.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;BabuDB.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps
+
+import com.google.inject._
+import com.google.inject.name._
+
+import org.xtreemfs.babudb._
+import org.xtreemfs.babudb.config._
+import org.xtreemfs.babudb.log._
+import org.xtreemfs.babudb.lsmdb._
+
+import java.io._
+import javax.annotation._
+
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+
+import com.google.inject._
+import uk.me.lings.scalaguice.InjectorExtensions._
+import com.google.inject.name._
+import uk.me.lings.scalaguice.ScalaModule
+
+
+case class BabuDBModule() extends AbstractModule with ScalaModule {
+  def configure() {
+    bind[Fetcher[HCAF]].to[BabuDBFetcher[HCAF]].in[Singleton]
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>Embedded key/value store. More efficient than naive memory db, but local, thus in our scenario the initial data has to be loaded from another loader.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class BabuDBFetcher[A &lt;: Keyed] @Inject() (val loader: Loader[A]) extends Fetcher[A] {
+
+  implicit def runnable(f: () =&gt; Unit): Runnable =
+    new Runnable() { def run() = f() }
+
+  val databaseSystem = BabuDBFactory.createBabuDB(new ConfigBuilder().setDataPath(&quot;/tmp/babudb&quot;).setLogAppendSyncMode(DiskLogger.SyncMode.ASYNC).build())
+  val dbman = databaseSystem.getDatabaseManager();
+
+  val db = getDb
+
+  println(&quot;opening db %s&quot;.format(db))
+
+  @PostConstruct
+  def init {
+    println(&quot;GOT EVENT&quot;)
+  }
+
+  @PreDestroy
+  def shutdown {
+    println(&quot;Shutting down %s&quot;.format(this))
+    db.shutdown
+  }
+
+  def fetch(start: String, size: Long) = {
+    val res = db.prefixLookup(0, start.getBytes, null)
+    res.get.take(size.toInt).map { x =&gt; deserialize(x.getValue) }.toIterable
+  }
+
+  def getDb = {
+    try {
+      dbman.createDatabase(&quot;myDB&quot;, 1)
+      val db = dbman.getDatabase(&quot;myDB&quot;);
+      reload(db)
+      db
+    } catch {
+      case _: BabuDBException =&gt; dbman.getDatabase(&quot;myDB&quot;);
+    }
+  }
+
+  def reload(db: Database) = {
+    for (record &lt;- loader.load)
+      db.singleInsert(0, record.key.getBytes, serialize(record), null)
+  }
+
+  def serialize(record: A) = {
+    val baos = new ByteArrayOutputStream(1024)
+    val o = new ObjectOutputStream(baos)
+
+    o writeObject record
+    val bar = baos.toByteArray
+    o.close
+    bar
+  }
+
+  def deserialize(bytes: Array[Byte]): A = {
+    val o = new ObjectInputStream(new ByteArrayInputStream(bytes))
+    val res = o.readObject.asInstanceOf[A]
+    o.close
+    res
+  }
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

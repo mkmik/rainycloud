@@ -87,6 +87,9 @@ class EntryPoint @Inject() (
     val entryPoint = injector.instance[EntryPoint]
 
     entryPoint.run
+    println(&quot;exiting&quot;)
+    System.exit(0)
+    println(&quot;exiting 2&quot;)
   }
 }</code></pre>
       </td>
