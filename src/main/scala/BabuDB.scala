@@ -14,6 +14,18 @@ import javax.annotation._
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
+import com.google.inject._
+import uk.me.lings.scalaguice.InjectorExtensions._
+import com.google.inject.name._
+import uk.me.lings.scalaguice.ScalaModule
+
+
+case class BabuDBModule() extends AbstractModule with ScalaModule {
+  def configure() {
+    bind[Fetcher[HCAF]].to[BabuDBFetcher[HCAF]].in[Singleton]
+  }
+}
+
 /*!
  Embedded key/value store. More efficient than naive memory db, but local, thus in our scenario the initial data has to be loaded from another loader.
  */
