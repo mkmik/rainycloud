@@ -61,6 +61,7 @@ object HCAF {
 
  The HSPEN Table doesn't need a key. The companion object contains conversion methods
  */
+@serializable
 class HSPEN(val speciesId: String) extends Keyed {
   override def toString() = "HSPEN(%s)".format(speciesId)
   

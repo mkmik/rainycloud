@@ -28,6 +28,13 @@ trait Watch {
 object Watch {
   val server = new stopwatch.web.Server
 
+  def timed[A](caption: String)(body: => A) = {
+    val start = System.currentTimeMillis
+    val res = body
+    println("executed %s in %sms".format(caption, System.currentTimeMillis - start))
+    res
+  }
+
   def run = {
     // register StopwatchGroups you want to monitor
     server.groups ::= Stopwatch

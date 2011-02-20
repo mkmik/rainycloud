@@ -25,7 +25,7 @@ trait Generator {
 
 /*! This is a local implementation of the HSPEC generator core. */
 class HSPECGenerator @Inject() (
-  val hspenLoader: HSPENLoader,
+  val hspenLoader: Loader[HSPEN],
   val emitter: Emitter[HSPEC],
   val fetcher: Fetcher[HCAF],
   val algorithm: HspecAlgorithm) extends Generator {
@@ -35,6 +35,8 @@ class HSPECGenerator @Inject() (
 
   /*! Then for each partition: */
   def computeInPartition(p: Partition) {
+    val startTime = System.currentTimeMillis
+
     val records = for {
       /*! * fetch hcaf rows for that partition */
       hcaf <- fetcher.fetch(p.start, p.size)
@@ -42,7 +44,7 @@ class HSPECGenerator @Inject() (
       hspec <- algorithm.compute(hcaf, hspen)
       /*! * emit each generated hspec row using our pluggable emitter */
     } emitter.emit(hspec)
-    println("partition %s computed in time %ss".format(p.start, (System.currentTimeMillis-HSPECGenerator.startTime)/1000))
+    println("partition %s computed in %sms, global time %ss".format(p.start, (System.currentTimeMillis - startTime), (System.currentTimeMillis - HSPECGenerator.startTime) / 1000))
   }
 
 }
@@ -64,7 +66,6 @@ trait Fetcher[A] {
   def fetch(key: String, size: Long): Iterable[A]
   def shutdown = {}
 }
-
 
 /*!## Emitter
  
@@ -160,18 +161,18 @@ trait Loader[A] {
 }
 
 /*! Used to load the `HSPEN` table in memory */
-trait HSPENLoader extends Loader[HSPEN]
+//trait HSPENLoader extends Loader[HSPEN]
 
 /*! Used to load a `HCAF` table partition in memory */
-trait HCAFLoader extends Loader[HCAF]
+//trait HCAFLoader extends Loader[HCAF]
 
 /*! Load the `HSPEN` table from a positional tabular source (i.e. the colums are known by position). */
-class TableHSPENLoader @Inject() (val tableLoader: PositionalSource[HSPEN]) extends HSPENLoader {
+class TableHSPENLoader @Inject() (val tableLoader: PositionalSource[HSPEN]) extends Loader[HSPEN] {
   def load = tableLoader.read map HSPEN.fromTableRow
 }
 
 /*! Load the `HCAF` table from a positional tabular source (i.e. the colums are known by position). */
-class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extends HCAFLoader {
+class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extends Loader[HCAF] {
   def load = tableLoader.read map HCAF.fromTableRow
 }
 
@@ -208,6 +209,6 @@ class CSVColumnStoreLoader[A] @Inject() (val tableReader: TableReader[A]) extend
 }
 
 /*! Load the `HSPEN` table from a column store source */
-class ColumnStoreHSPENLoader @Inject() (val columnStoreLoader: ColumnStoreLoader[HSPEN]) extends HSPENLoader {
+class ColumnStoreHSPENLoader @Inject() (val columnStoreLoader: ColumnStoreLoader[HSPEN]) extends Loader[HSPEN] {
   def load = columnStoreLoader.read map HSPEN.build
 }

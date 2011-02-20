@@ -10,6 +10,7 @@ import com.google.inject.util.Modules
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
 import org.guiceyfruit.Injectors
+import Watch.timed
 
 /*!# COMPSs support
 
@@ -32,7 +33,7 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
 
     println("got generated HSPEC records in %s; merging results".format(outputFile))
 
-    merge(outputFile)
+    timed("merge") { merge(outputFile) }
   }
 
   /*! Well this is a rather stupid way to merge the remote output into our single result. `Emitter` should be extended to support bulk emits. */
