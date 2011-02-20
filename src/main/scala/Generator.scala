@@ -30,7 +30,7 @@ class HSPECGenerator @Inject() (
   val fetcher: Fetcher[HCAF],
   val algorithm: HspecAlgorithm) extends Generator {
 
-  /*! HSPEN table is loaded only once (hence lazy)*/
+  /*! HSPEN table is loaded only once */
   lazy val hspen = hspenLoader.load
 
   /*! Then for each partition: */
@@ -42,8 +42,13 @@ class HSPECGenerator @Inject() (
       hspec <- algorithm.compute(hcaf, hspen)
       /*! * emit each generated hspec row using our pluggable emitter */
     } emitter.emit(hspec)
+    println("partition %s computed in time %ss".format(p.start, (System.currentTimeMillis-HSPECGenerator.startTime)/1000))
   }
 
+}
+
+object HSPECGenerator {
+  val startTime = System.currentTimeMillis
 }
 
 /*!## Fetcher

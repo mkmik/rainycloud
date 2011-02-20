@@ -39,6 +39,8 @@ class EntryPoint @Inject() (
 object Main {
   def main(argv: Array[String]) = {
     //val injector = Guice createInjector AquamapsModule()
+
+    //val injector = Guice createInjector (Modules `override` AquamapsModule() `with` BabuDBModule())  
     //val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsModule())
     val injector = Guice createInjector (Modules `override` AquamapsModule() `with` (COMPSsModule(), BabuDBModule()))
 

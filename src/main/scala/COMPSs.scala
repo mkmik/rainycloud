@@ -39,7 +39,7 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
   def merge(outputFile: String) {
     val loader = new TableHSPECLoader(new CSVPositionalSource(new FileSystemTableReader(outputFile)))
 
-    for(hspec <- loader.load)
+    for (hspec <- loader.load)
       emitter.emit(hspec)
   }
 
@@ -94,11 +94,21 @@ object StaticFileParamsGenerator {
   }
 
   /*! We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context) */
-  def injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsWorkerModule())
+  def injector = Guice createInjector (Modules `override` AquamapsModule() `with` (COMPSsWorkerModule(), BabuDBModule()))
 
   def staticDelegate(fileName: String): String = {
-    val generator = injector.instance[FileParamsGenerator]
-    generator.computeInPartition(fileName)
+    withInjector { injector =>
+      val generator = injector.instance[FileParamsGenerator]
+      generator.computeInPartition(fileName)
+    }
+  }
+
+  /*! Currently Guice has no support for shutting down an injector, so we have to do it manually */
+  def withInjector[A](body: Injector => A) = {
+    val i = injector
+    val res = body(i)
+    i.instance[Fetcher[HCAF]].shutdown
+    res
   }
 }
 

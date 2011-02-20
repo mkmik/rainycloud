@@ -23,7 +23,7 @@ class StaticPartitioner extends Partitioner {
     Partition(k, s.toInt)
   }
 
-  val rangesFile = "octo/client/rangesSmall"
+  val rangesFile = "octo/client/ranges"
 
   def partitions = fromFile(rangesFile).getLines map toPartition
 }

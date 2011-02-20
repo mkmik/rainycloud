@@ -22,43 +22,30 @@ import uk.me.lings.scalaguice.ScalaModule
 case class BabuDBModule() extends AbstractModule with ScalaModule {
   def configure() {
     bind[Fetcher[HCAF]].to[BabuDBFetcher[HCAF]].in[Singleton]
+
+    //bind[Loader[HSPEN]].to[BabuDBLoader[HSPEN]].in[Singleton]
+    //bind[HSPENLoader].to[BabuDBHSPENLoader].in[Singleton]
   }
 }
 
-/*!
- Embedded key/value store. More efficient than naive memory db, but local, thus in our scenario the initial data has to be loaded from another loader.
- */
-class BabuDBFetcher[A <: Keyed] @Inject() (val loader: Loader[A]) extends Fetcher[A] {
+class BabuDBHSPENLoader @Inject() (loader: Loader[HSPEN], babu: BabuDBLoader[HSPEN]) extends HSPENLoader {
+  def load = babu.load
+}
 
-  implicit def runnable(f: () => Unit): Runnable =
-    new Runnable() { def run() = f() }
+trait BabuDB[A <: Keyed] {
+  val loader: Loader[A]
 
   val databaseSystem = BabuDBFactory.createBabuDB(new ConfigBuilder().setDataPath("/tmp/babudb").setLogAppendSyncMode(DiskLogger.SyncMode.ASYNC).build())
   val dbman = databaseSystem.getDatabaseManager();
 
   val db = getDb
 
-  println("opening db %s".format(db))
-
-  @PostConstruct
-  def init {
-    println("GOT EVENT")
-  }
-
-  @PreDestroy
-  override
-  def shutdown {
-    println("Shutting down %s".format(this))
+  def stop {
     db.shutdown
     databaseSystem.shutdown()
   }
 
-  def fetch(start: String, size: Long) = {
-    val res = db.prefixLookup(0, start.getBytes, null)
-    res.get.take(size.toInt).map { x => deserialize(x.getValue) }.toIterable
-  }
-
-  def getDb = {
+  def getDb() = {
     try {
       dbman.createDatabase("myDB", 1)
       val db = dbman.getDatabase("myDB");
@@ -70,8 +57,11 @@ class BabuDBFetcher[A <: Keyed] @Inject() (val loader: Loader[A]) extends Fetche
   }
 
   def reload(db: Database) = {
+    print("caching %s ...".format(loader))
     for (record <- loader.load)
       db.singleInsert(0, record.key.getBytes, serialize(record), null)
+    databaseSystem.getCheckpointer().checkpoint()
+    println(" done")
   }
 
   def serialize(record: A) = {
@@ -90,4 +80,28 @@ class BabuDBFetcher[A <: Keyed] @Inject() (val loader: Loader[A]) extends Fetche
     o.close
     res
   }
+
+}
+
+/*!
+ Embedded key/value store. More efficient than naive memory db, but local, thus in our scenario the initial data has to be loaded from another loader.
+ */
+class BabuDBFetcher[A <: Keyed] @Inject() (val loader: Loader[A]) extends Fetcher[A] with BabuDB[A] {
+
+  def fetch(start: String, size: Long) = {
+    val res = db.prefixLookup(0, start.getBytes, null)
+    res.get.take(size.toInt).map { x => deserialize(x.getValue) }.toIterable
+  }
+
+  override def shutdown = stop
+}
+
+class BabuDBLoader[A <: Keyed] @Inject() (val loader: Loader[A]) extends Loader[A] with BabuDB[A] {
+
+  def load = {
+    println("LLLLLLLLLLLLL loading from babu loader")
+    val res = db.prefixLookup(0, "".getBytes, null)
+    res.get.map { x => deserialize(x.getValue) }.toIterable
+  }
+
 }
