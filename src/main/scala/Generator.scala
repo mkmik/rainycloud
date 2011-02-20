@@ -57,7 +57,9 @@ class HSPECGenerator @Inject() (
  */
 trait Fetcher[A] {
   def fetch(key: String, size: Long): Iterable[A]
+  def shutdown = {}
 }
+
 
 /*!## Emitter
  

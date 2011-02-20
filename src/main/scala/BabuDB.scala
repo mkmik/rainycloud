@@ -19,7 +19,6 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
 
-
 case class BabuDBModule() extends AbstractModule with ScalaModule {
   def configure() {
     bind[Fetcher[HCAF]].to[BabuDBFetcher[HCAF]].in[Singleton]
@@ -47,9 +46,11 @@ class BabuDBFetcher[A <: Keyed] @Inject() (val loader: Loader[A]) extends Fetche
   }
 
   @PreDestroy
+  override
   def shutdown {
     println("Shutting down %s".format(this))
     db.shutdown
+    databaseSystem.shutdown()
   }
 
   def fetch(start: String, size: Long) = {

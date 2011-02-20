@@ -29,6 +29,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 
 	val metrics = "com.yammer" %% "metrics" % "1.0.7" withSources()
   val guice2 = "com.google.inject" % "guice" % "2.0"
+  //val guice2 = "org.guiceyfruit" % "guice-all" % "2.0"
   //val guicey = "org.guiceyfruit" % "guiceyfruit" % "2.0"
   val guiceScala = "uk.me.lings" % "scala-guice_2.8.0" % "0.1"
 

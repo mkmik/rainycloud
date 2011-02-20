@@ -39,13 +39,14 @@ class EntryPoint @Inject() (
 object Main {
   def main(argv: Array[String]) = {
     //val injector = Guice createInjector AquamapsModule()
-    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsModule())  
+    //val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsModule())
+    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` (COMPSsModule(), BabuDBModule()))
 
     val entryPoint = injector.instance[EntryPoint]
 
     entryPoint.run
-    println("exiting")
-    System.exit(0)
-    println("exiting 2")
+
+    /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
+    injector.instance[Fetcher[HCAF]].shutdown
   }
 }
