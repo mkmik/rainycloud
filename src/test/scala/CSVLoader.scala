@@ -11,8 +11,8 @@ import uk.me.lings.scalaguice.ScalaModule
 object CSVLoaderSpec extends Specification {
   case class TestModule() extends AbstractModule with ScalaModule {
     def configure() {
-      bind[HSPENLoader].to[TableHSPENLoader]
-      bind[HCAFLoader].to[TableHCAFLoader]
+      bind[Loader[HSPEN]].to[TableHSPENLoader]
+      bind[Loader[HCAF]].to[TableHCAFLoader]
 
       bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
       bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
@@ -25,12 +25,12 @@ object CSVLoaderSpec extends Specification {
     val injector = Guice createInjector TestModule()
 
     "load hspen" in {
-      val loader = injector.instance[HSPENLoader]
+      val loader = injector.instance[Loader[HSPEN]]
       loader.load.size must be_>(100)
     }
 
     "load hcaf" in {
-      val loader = injector.instance[HCAFLoader]
+      val loader = injector.instance[Loader[HCAF]]
       loader.load.size must be_>(100)
     }
 

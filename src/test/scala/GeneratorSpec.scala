@@ -14,7 +14,7 @@ import org.mockito.Matchers._  // to use matchers like anyInt()
 object GeneratorSpec extends Specification with Mockito {
   case class TestModule() extends AbstractModule with ScalaModule {
     def configure() {
-      bind[HSPENLoader].to[TableHSPENLoader]
+      bind[Loader[HSPEN]].to[TableHSPENLoader]
 
       bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
       bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]
@@ -43,7 +43,7 @@ object GeneratorSpec extends Specification with Mockito {
       val p = partitioner.partitions.next
       generator.computeInPartition(p)
 
-      val hspenLoader = injector.instance[HSPENLoader]
+      val hspenLoader = injector.instance[Loader[HSPEN]]
       val size = 2 * hspenLoader.load.size
 
       there was size.times(emitter).emit(anyObject())

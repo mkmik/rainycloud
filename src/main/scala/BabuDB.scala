@@ -22,11 +22,7 @@ import uk.me.lings.scalaguice.ScalaModule
 
 case class BabuDBModule() extends AbstractModule with ScalaModule {
   def configure() {
-    //    bind[Fetcher[HCAF]].to[BabuDBFetcher[HCAF]].in[Singleton]
-
-    //    bind[Loader[HSPEN]].to[BabuDBLoader[HSPEN]].in[Singleton]
     bind[Loader[HSPEN]].annotatedWith(named("forBabu")).to(classOf[TableHSPENLoader])
-
   }
 
   @Provides

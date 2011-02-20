@@ -19,17 +19,19 @@ import com.google.inject.util.Modules
 object BabuDBSpec extends Specification with Mockito {
   case class TestModule() extends AbstractModule with ScalaModule {
     def configure() {
-      bind[Fetcher[HCAF]].to[BabuDBFetcher[HCAF]].in[Singleton]
-
-      bind[HCAFLoader].to[TableHCAFLoader]
-      bind[Loader[HCAF]].to[HCAFLoader]
+      bind[Loader[HCAF]].to[TableHCAFLoader]
       bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
       bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
     }
+
+    @Provides
+    def hcafFetcher(loader: Loader[HCAF]): Fetcher[HCAF] = new BabuDBFetcher("hcaf", loader)
+
   }
 
   "BabuDB fetcher" should {
-    val injector = Guice createInjector (Modules `override` TestModule() `with` BabuDBModule())
+    val injector = Guice createInjector TestModule()
+
     val fetcher = injector.instance[Fetcher[HCAF]]
 
     "first page" in {
@@ -50,13 +52,5 @@ object BabuDBSpec extends Specification with Mockito {
     }
     fetcher.shutdown
 
-    for((k,v) <- injector.getBindings) {
-      if(v.isInstanceOf[com.google.inject.spi.LinkedKeyBinding[_]]) {
-        val lb = v.asInstanceOf[com.google.inject.spi.LinkedKeyBinding[_]]
-        println("key: %s, value: %s".format(k,v))
-//        println(lb.get
-        println("--------")
-      }
-    }
   }
 }

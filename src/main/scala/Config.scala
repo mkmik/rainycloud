@@ -44,7 +44,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
      The file can be compressed (performance penalilty).
      */
     bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter("/tmp/hspec.csv.gz"))
-    bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
+    bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
     bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]].in[Singleton]
 
     /*!## Octobot

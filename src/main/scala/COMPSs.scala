@@ -11,6 +11,7 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
 import org.guiceyfruit.Injectors
 import Watch.timed
+import java.io._
 
 /*!# COMPSs support
 
@@ -23,7 +24,7 @@ import P2XML._
 
 /*! In order to connect to the rest of the system, first we implement the `Generator` interface. We receive partitions from the entry point here, convert the parameters
  * into files, amd delegate to another interface whose signature COMPSs knowns how to handle (files as parameters). */
-class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter: Emitter[HSPEC]) extends Generator {
+class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter: Emitter[HSPEC], val sink: PositionalSink[HSPEC]) extends Generator {
 
   def computeInPartition(p: Partition) {
     val tmpFile = mkTmp
@@ -31,18 +32,26 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
 
     val outputFile = delegate.computeInPartition(tmpFile)
 
-    println("got generated HSPEC records in %s; merging results".format(outputFile))
-
-    timed("merge") { merge(outputFile) }
+    timed("partition %s merge".format(p.start)) { merge(outputFile) }
   }
 
   /*! Well this is a rather stupid way to merge the remote output into our single result. `Emitter` should be extended to support bulk emits. */
-  def merge(outputFile: String) {
+  def slowMerge(outputFile: String) {
     val loader = new TableHSPECLoader(new CSVPositionalSource(new FileSystemTableReader(outputFile)))
 
     for (hspec <- loader.load)
       emitter.emit(hspec)
   }
+
+  /*! If the emitter is using a sink, just bypass the emitter and raw append the data to the sink.
+   It may still have to uncompress/re-compress the data, since the compression is transparent to the sink layer
+   (being too transparent is not always good...)*/
+  def fastMerge(outputFile: String) {
+    val fis = new FileSystemTableReader(outputFile).reader
+    sink.merge(fis)
+  }
+
+  val merge = fastMerge _
 
   def mkTmp = {
     val file = File.createTempFile("rainycloud", ".xml")
@@ -88,7 +97,7 @@ object StaticFileParamsGenerator {
     }
 
     def mkTmp = {
-      val file = File.createTempFile("rainycloud-worker-", ".csv.gz")
+      val file = File.createTempFile("rainycloud-worker-", ".csv")
       file.deleteOnExit()
       file.toString
     }

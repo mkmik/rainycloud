@@ -15,6 +15,8 @@ import org.supercsv.io.CsvListWriter
 import org.supercsv.prefs.CsvPreference
 import java.io._
 import java.util.zip._
+import org.apache.commons.io.IOUtils
+import Watch.timed
 
 /*!## Generator */
 
@@ -37,14 +39,15 @@ class HSPECGenerator @Inject() (
   def computeInPartition(p: Partition) {
     val startTime = System.currentTimeMillis
 
-    val records = for {
-      /*! * fetch hcaf rows for that partition */
-      hcaf <- fetcher.fetch(p.start, p.size)
-      /*! * for each hacf row compute a list of output hspec rows*/
-      hspec <- algorithm.compute(hcaf, hspen)
-      /*! * emit each generated hspec row using our pluggable emitter */
-    } emitter.emit(hspec)
-    println("partition %s computed in %sms, global time %ss".format(p.start, (System.currentTimeMillis - startTime), (System.currentTimeMillis - HSPECGenerator.startTime) / 1000))
+    timed("partition %s".format(p.start)) {
+      val records = for {
+        /*! * fetch hcaf rows for that partition */
+        hcaf <- fetcher.fetch(p.start, p.size)
+        /*! * for each hacf row compute a list of output hspec rows*/
+        hspec <- algorithm.compute(hcaf, hspen)
+        /*! * emit each generated hspec row using our pluggable emitter */
+      } emitter.emit(hspec)
+    }
   }
 
 }
@@ -135,6 +138,9 @@ trait PositionalSource[A] {
 trait PositionalSink[A] {
   def write(row: Array[String])
 
+  /*! Low level merge, data must be in the same format used by this sink */
+  def merge(is: Reader)
+
   def flush {}
 }
 
@@ -146,9 +152,15 @@ class CSVPositionalSource[A] @Inject() (val tableReader: TableReader[A]) extends
 /*! We can also write into a CSV with a PositionalSink. The phantom type parameter is again used
  only as a type safe and dependency injection wiring aid */
 class CSVPositionalSink[A] @Inject() (val tableWriter: TableWriter[A]) extends PositionalSink[A] {
-  val writer = new CsvListWriter(tableWriter.writer, CsvPreference.STANDARD_PREFERENCE)
+  val lowWriter = tableWriter.writer
+  val writer = new CsvListWriter(lowWriter, CsvPreference.STANDARD_PREFERENCE)
 
   def write(row: Array[String]) = writer.write(row);
+
+  def merge(in: Reader) = {
+    lowWriter.flush
+    IOUtils.copy(in, lowWriter)
+  }
 
   override def flush = writer.close
 }
