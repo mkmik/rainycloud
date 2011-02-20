@@ -4,6 +4,7 @@ import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
+import com.google.inject.util.Modules
 
 import java.io.File
 
@@ -24,11 +25,12 @@ case class COMPSsModule() extends AbstractModule with ScalaModule {
 
     /*! Unfortunately we need to obtain the filename from the writer. So we need to declare a single TableWriter instance as bound on two different types
      otherwise Guice will not resolve the injections */
-    val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter("/tmp/hspec.csv.gz")
-    bind[TableWriter[HSPEC]].toInstance(writer)
-    bind[FileSystemTableWriter[HSPEC]].toInstance(writer)
+    bind[TableWriter[HSPEC]].to[FileSystemTableWriter[HSPEC]]
 
   }
+
+  @Provides
+  def writer(): FileSystemTableWriter[HSPEC] = new FileSystemTableWriter("/tmp/hspec.csv.gz")
 
 }
 

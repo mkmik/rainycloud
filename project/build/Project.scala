@@ -22,6 +22,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val scalaToolsSnapshots = "Scala-Tools Maven2 Snapshots Repository" at "http://scala-tools.org/repo-snapshots"
 	val codaRepo = "Coda Hale's Repository" at "http://repo.codahale.com/"
   val fuseRepo = "fuse repo" at "http://repo.fusesource.com/maven2-all/"
+  val akkaRepo = "akka repo" at "http://akka.io/repository"
   //val fruit    = "guiceyfruit repo" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
 
   val specsdep = "org.scala-tools.testing" %% "specs" % "1.6.7.2" % "test->default"
@@ -29,8 +30,11 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 
 	val metrics = "com.yammer" %% "metrics" % "1.0.7" withSources()
   val guice2 = "com.google.inject" % "guice" % "2.0"
+  //val guice2 = "org.guiceyfruit" % "guice-all" % "2.0"
   //val guicey = "org.guiceyfruit" % "guiceyfruit" % "2.0"
   val guiceScala = "uk.me.lings" % "scala-guice_2.8.0" % "0.1"
+
+  val configgy = "net.lag" % "configgy" % "2.0.2-nologgy" % "compile" //ApacheV2
 
   val opencsv = "net.sf.opencsv" % "opencsv" % "2.1"
   val supercsv = "org.supercsv" % "supercsv" % "1.20"

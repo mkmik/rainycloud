@@ -6,6 +6,7 @@ import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
+import com.google.inject.util.Modules
 
 import org.specs.mock.Mockito
 import org.mockito.Matchers._ // to use matchers like anyInt()
@@ -29,17 +30,26 @@ object COMPSsSpec extends Specification with Mockito {
   "guice compss wrapper" should {
     case class TestModule() extends AbstractModule with ScalaModule {
       def configure() {
-        val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(mkTmp)
 
-        bind[TableWriter[HSPEC]].toInstance(writer)
-        bind[FileSystemTableWriter[HSPEC]].toInstance(writer)
+        bind[TableWriter[HSPEC]].to[FileSystemTableWriter[HSPEC]]
 
-        bind[FileParamsGenerator].to[SimpleFileParamsGenerator]
         bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
         bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]]
 
         bind[Generator].toInstance(mock[Generator])
       }
+
+      @Provides
+      def writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(mkTmp)
+
+      /*! This is a little tricky: we need a separate context but need to use the same generator as the outer context (since it's a mock we actually
+       access from the test code. */
+      @Provides 
+      def fpg(generator: Generator): FileParamsGenerator = {
+        val injector = Guice createInjector (Modules `override` AquamapsModule() `with` StaticFileParamsGenerator.COMPSsWorkerModule())
+        new SimpleFileParamsGenerator(generator, injector.instance[Emitter[HSPEC]], injector.instance[FileSystemTableWriter[HSPEC]])
+      }
+
     }
 
     val injector = Guice createInjector TestModule()
@@ -65,7 +75,7 @@ object COMPSsSpec extends Specification with Mockito {
         bind[FileSystemTableWriter[HSPEC]].toInstance(writer)
 
         bind[FileParamsGenerator].to[StaticFileParamsGenerator]
-        bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
+        bind[PositionalSink[HSPEC]].toInstance(mock[CSVPositionalSink[HSPEC]])
         bind[Emitter[HSPEC]].toInstance(mock[Emitter[HSPEC]])
 
         bind[Generator].toInstance(mock[Generator])
@@ -75,14 +85,15 @@ object COMPSsSpec extends Specification with Mockito {
     val injector = Guice createInjector TestModule()
 
     val compss = injector.instance[COMPSsGenerator]
-    val emitter = injector.instance[Emitter[HSPEC]]
+    val sink = injector.instance[PositionalSink[HSPEC]]
 
     "pass params in files" in {
       val partition = new Partition("1000", 231)
 
       compss.computeInPartition(partition)
 
-      there was atLeastOne(emitter).emit(anyObject())
+      //there was atLeastOne(emitter).emit(anyObject())
+      there was one(sink).merge(anyObject())
     }
   }
 

@@ -15,6 +15,8 @@ import org.supercsv.io.CsvListWriter
 import org.supercsv.prefs.CsvPreference
 import java.io._
 import java.util.zip._
+import org.apache.commons.io.IOUtils
+import Watch.timed
 
 /*!## Generator */
 
@@ -25,25 +27,33 @@ trait Generator {
 
 /*! This is a local implementation of the HSPEC generator core. */
 class HSPECGenerator @Inject() (
-  val hspenLoader: HSPENLoader,
+  val hspenLoader: Loader[HSPEN],
   val emitter: Emitter[HSPEC],
   val fetcher: Fetcher[HCAF],
   val algorithm: HspecAlgorithm) extends Generator {
 
-  /*! HSPEN table is loaded only once (hence lazy)*/
+  /*! HSPEN table is loaded only once */
   lazy val hspen = hspenLoader.load
 
   /*! Then for each partition: */
   def computeInPartition(p: Partition) {
-    val records = for {
-      /*! * fetch hcaf rows for that partition */
-      hcaf <- fetcher.fetch(p.start, p.size)
-      /*! * for each hacf row compute a list of output hspec rows*/
-      hspec <- algorithm.compute(hcaf, hspen)
-      /*! * emit each generated hspec row using our pluggable emitter */
-    } emitter.emit(hspec)
+    val startTime = System.currentTimeMillis
+
+    timed("partition %s".format(p.start)) {
+      val records = for {
+        /*! * fetch hcaf rows for that partition */
+        hcaf <- fetcher.fetch(p.start, p.size)
+        /*! * for each hacf row compute a list of output hspec rows*/
+        hspec <- algorithm.compute(hcaf, hspen)
+        /*! * emit each generated hspec row using our pluggable emitter */
+      } emitter.emit(hspec)
+    }
   }
 
+}
+
+object HSPECGenerator {
+  val startTime = System.currentTimeMillis
 }
 
 /*!## Fetcher
@@ -57,6 +67,7 @@ class HSPECGenerator @Inject() (
  */
 trait Fetcher[A] {
   def fetch(key: String, size: Long): Iterable[A]
+  def shutdown = {}
 }
 
 /*!## Emitter
@@ -127,6 +138,9 @@ trait PositionalSource[A] {
 trait PositionalSink[A] {
   def write(row: Array[String])
 
+  /*! Low level merge, data must be in the same format used by this sink */
+  def merge(is: Reader)
+
   def flush {}
 }
 
@@ -138,9 +152,15 @@ class CSVPositionalSource[A] @Inject() (val tableReader: TableReader[A]) extends
 /*! We can also write into a CSV with a PositionalSink. The phantom type parameter is again used
  only as a type safe and dependency injection wiring aid */
 class CSVPositionalSink[A] @Inject() (val tableWriter: TableWriter[A]) extends PositionalSink[A] {
-  val writer = new CsvListWriter(tableWriter.writer, CsvPreference.STANDARD_PREFERENCE)
+  val lowWriter = tableWriter.writer
+  val writer = new CsvListWriter(lowWriter, CsvPreference.STANDARD_PREFERENCE)
 
   def write(row: Array[String]) = writer.write(row);
+
+  def merge(in: Reader) = {
+    lowWriter.flush
+    IOUtils.copy(in, lowWriter)
+  }
 
   override def flush = writer.close
 }
@@ -153,18 +173,18 @@ trait Loader[A] {
 }
 
 /*! Used to load the `HSPEN` table in memory */
-trait HSPENLoader extends Loader[HSPEN]
+//trait HSPENLoader extends Loader[HSPEN]
 
 /*! Used to load a `HCAF` table partition in memory */
-trait HCAFLoader extends Loader[HCAF]
+//trait HCAFLoader extends Loader[HCAF]
 
 /*! Load the `HSPEN` table from a positional tabular source (i.e. the colums are known by position). */
-class TableHSPENLoader @Inject() (val tableLoader: PositionalSource[HSPEN]) extends HSPENLoader {
+class TableHSPENLoader @Inject() (val tableLoader: PositionalSource[HSPEN]) extends Loader[HSPEN] {
   def load = tableLoader.read map HSPEN.fromTableRow
 }
 
 /*! Load the `HCAF` table from a positional tabular source (i.e. the colums are known by position). */
-class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extends HCAFLoader {
+class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extends Loader[HCAF] {
   def load = tableLoader.read map HCAF.fromTableRow
 }
 
@@ -201,6 +221,6 @@ class CSVColumnStoreLoader[A] @Inject() (val tableReader: TableReader[A]) extend
 }
 
 /*! Load the `HSPEN` table from a column store source */
-class ColumnStoreHSPENLoader @Inject() (val columnStoreLoader: ColumnStoreLoader[HSPEN]) extends HSPENLoader {
+class ColumnStoreHSPENLoader @Inject() (val columnStoreLoader: ColumnStoreLoader[HSPEN]) extends Loader[HSPEN] {
   def load = columnStoreLoader.read map HSPEN.build
 }

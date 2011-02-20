@@ -23,7 +23,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
 
     HSPEN data is loaded from a gzipped csv file located in the filesystem. Each worker should load this file once.
      */
-    bind[HSPENLoader].to[TableHSPENLoader]
+    bind[Loader[HSPEN]].to[TableHSPENLoader]
     bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
     bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]
 
@@ -33,11 +33,10 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
      will fetch a given partition as a slice of the whole `HCAF` db held in RAM. This is inefficient but works well
      for our first prototype.
      */
-    bind[HCAFLoader].to[TableHCAFLoader]
-    bind[Loader[HCAF]].to[HCAFLoader]
+    bind[Loader[HCAF]].to[TableHCAFLoader]
     bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
     bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
-    bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]]
+    bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]].in[Singleton]
 
     /*!## Emitter
      
@@ -45,7 +44,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
      The file can be compressed (performance penalilty).
      */
     bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter("/tmp/hspec.csv.gz"))
-    bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
+    bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
     bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]].in[Singleton]
 
     /*!## Octobot

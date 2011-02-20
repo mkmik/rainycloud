@@ -11,20 +11,27 @@ import uk.me.lings.scalaguice.ScalaModule
 import org.specs.mock.Mockito
 import org.mockito.Matchers._ // to use matchers like anyInt()
 
+import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
+
+import com.google.inject.util.Modules
+
 object BabuDBSpec extends Specification with Mockito {
   case class TestModule() extends AbstractModule with ScalaModule {
     def configure() {
-      bind[Fetcher[HCAF]].to[BabuDBFetcher[HCAF]]
-
-      bind[HCAFLoader].to[TableHCAFLoader]
-      bind[Loader[HCAF]].to[HCAFLoader]
+      bind[Loader[HCAF]].to[TableHCAFLoader]
       bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
       bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
     }
+
+    @Provides
+    def hcafFetcher(loader: Loader[HCAF]): Fetcher[HCAF] = new BabuDBFetcher("hcaf", loader)
+
   }
 
   "BabuDB fetcher" should {
     val injector = Guice createInjector TestModule()
+
     val fetcher = injector.instance[Fetcher[HCAF]]
 
     "first page" in {
@@ -43,5 +50,7 @@ object BabuDBSpec extends Specification with Mockito {
       rows.last.key must be_==("1004:489:2")
 
     }
+    fetcher.shutdown
+
   }
 }

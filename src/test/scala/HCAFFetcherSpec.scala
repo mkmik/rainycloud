@@ -16,11 +16,9 @@ object HCAFFetcherSpec extends Specification with Mockito {
     "fetch from csv" in {
       case class TestModule() extends AbstractModule with ScalaModule {
         def configure() {
-          bind[HCAFLoader].to[TableHCAFLoader]
+          bind[Loader[HCAF]].to[TableHCAFLoader]
           bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
           bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
-
-          bind[Loader[HCAF]].to[HCAFLoader]
 
           bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]]
         }
