@@ -118,6 +118,7 @@ object StaticFileParamsGenerator {
     val i = injector
     val res = body(i)
     i.instance[Fetcher[HCAF]].shutdown
+    i.instance[Loader[HSPEN]].shutdown
     res
   }
 }

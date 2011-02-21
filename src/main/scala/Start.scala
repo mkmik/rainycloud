@@ -19,6 +19,9 @@ import com.google.inject.Guice
 import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.util.Modules
+import net.lag.configgy.Configgy
+import org.github.scopt.OptionParser
+import org.github.scopt.OptionParser._
 
 class EntryPoint @Inject() (
   val partitioner: Partitioner,
@@ -37,7 +40,17 @@ class EntryPoint @Inject() (
  
   This is the java `main` method. It instantiated a fully configured entrypoint with Guice, and runs it. */
 object Main {
-  def main(argv: Array[String]) = {
+
+  val parser = new OptionParser("scopt") {
+    opt("r", "ranges", "range file", {v: String => Configgy.config.setString("ranges", v)})
+  }
+
+  def main(args: Array[String]) {
+    Configgy.configure("rainycloud.conf")
+    val conf = Configgy.config
+    if (!parser.parse(args)) 
+      return
+
     //val injector = Guice createInjector AquamapsModule()
 
     //val injector = Guice createInjector (Modules `override` AquamapsModule() `with` BabuDBModule())  
@@ -49,6 +62,8 @@ object Main {
     entryPoint.run
 
     /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
+    println("done")
     injector.instance[Fetcher[HCAF]].shutdown
+    injector.instance[Loader[HSPEN]].shutdown
   }
 }

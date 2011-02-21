@@ -35,6 +35,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val guiceScala = "uk.me.lings" % "scala-guice_2.8.0" % "0.1"
 
   val configgy = "net.lag" % "configgy" % "2.0.2-nologgy" % "compile" //ApacheV2
+  val scopt = "eed3si9n" %% "scopt" % "1.0"
 
   val opencsv = "net.sf.opencsv" % "opencsv" % "2.1"
   val supercsv = "org.supercsv" % "supercsv" % "1.20"
