@@ -64,3 +64,6 @@ update the partition map file in octo/client/ranges.
 
 So you can use the provided data/hcaf-small.csv.gz (copy it over the hcaf.csv.gz file)
 
+The other way is to reduce the number of partitions:
+
+    java -jar ./target/scala_2.8.1/rainycloud_2.8.1-assembly-1.0.jar -r octo/client/rangesSmall
