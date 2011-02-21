@@ -37,6 +37,18 @@ Or you can run the self-contained jar:
 
     java -jar ./target/scala_2.8.1/rainycloud_2.8.1-assembly-1.0.jar
 
+Config
+------
+
+There is a configuration file in `rainycloud.conf`, it contains paths to the partitions, list of modules to be activated etc.
+
+Run jar with `--help` to get info about command line switches.
+
+For example you can enable the `COMPSs` module manually either by adding `COMPSs` do the modules in the config file or via commandline:
+
+    java -jar ./target/scala_2.8.1/rainycloud_2.8.1-assembly-1.0.jar -m COMPSs
+
+
 Doc
 ---
 

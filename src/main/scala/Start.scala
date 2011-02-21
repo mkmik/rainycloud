@@ -43,24 +43,37 @@ object Main {
 
   val parser = new OptionParser("scopt") {
     opt("r", "ranges", "range file", {v: String => Configgy.config.setString("ranges", v)})
+    opt("m", "module", "add a module to runtime", {v: String => val c= Configgy.config; c.setList("modules", (c.getList("modules").toList ++ List(v)).distinct) })
   }
+
+  val modules = Map("BabuDB" -> BabuDBModule(),
+                    "COMPSs" -> COMPSsModule())
 
   def main(args: Array[String]) {
     Configgy.configure("rainycloud.conf")
     val conf = Configgy.config
+
     if (!parser.parse(args)) 
       return
 
-    //val injector = Guice createInjector AquamapsModule()
+    val mods:Seq[Module] = for (name <- conf.getList("modules");
+                                module <- modules.get(name))
+                           yield module
 
-    //val injector = Guice createInjector (Modules `override` AquamapsModule() `with` BabuDBModule())  
-    //val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsModule())
-    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` (COMPSsModule(), BabuDBModule()))
+    println(conf.getList("modules"))
+    println("Available modules: %s".format(modules.values.mkString(", ")))
+    println("Enabled modules: %s".format(mods.mkString(", ")))
+
+
+    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` (mods :_*))
 
     val entryPoint = injector.instance[EntryPoint]
-
     entryPoint.run
 
+    cleanup(injector)
+  }
+
+  def cleanup(injector: Injector) {
     /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
     println("done")
     injector.instance[Fetcher[HCAF]].shutdown
