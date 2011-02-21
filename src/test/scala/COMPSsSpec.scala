@@ -27,7 +27,7 @@ object COMPSsSpec extends Specification with Mockito {
       des must be_==(p)
     }
   }
-/*
+
   "guice compss wrapper" should {
     case class TestModule() extends AbstractModule with ScalaModule {
       def configure() {
@@ -66,10 +66,8 @@ object COMPSsSpec extends Specification with Mockito {
       there was one(backend).computeInPartition(partition)
     }
   }
-*/
 
   "static compss wrapper" should {
-    try {
     case class TestModule() extends AbstractModule with ScalaModule {
       def configure() {
         val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(mkTmp)
@@ -94,12 +92,6 @@ object COMPSsSpec extends Specification with Mockito {
 
       compss.computeInPartition(partition)
 
-    }
-    } catch {
-      case e => 
-        println("got exception %s".format(e))
-      e.printStackTrace()
-        "fake" in { println("some fake spec") }
     }
   }
 
