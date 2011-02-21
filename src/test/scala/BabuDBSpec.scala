@@ -14,8 +14,6 @@ import org.mockito.Matchers._ // to use matchers like anyInt()
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
-import com.google.inject.util.Modules
-
 object BabuDBSpec extends Specification with Mockito {
   case class TestModule() extends AbstractModule with ScalaModule {
     def configure() {

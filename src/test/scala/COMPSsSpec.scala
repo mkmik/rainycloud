@@ -6,7 +6,7 @@ import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
-import com.google.inject.util.Modules
+import com.google.inject.util.{Modules => GuiceModules}
 
 import org.specs.mock.Mockito
 import org.mockito.Matchers._ // to use matchers like anyInt()
@@ -44,9 +44,9 @@ object COMPSsSpec extends Specification with Mockito {
 
       /*! This is a little tricky: we need a separate context but need to use the same generator as the outer context (since it's a mock we actually
        access from the test code. */
-      @Provides 
+      @Provides
       def fpg(generator: Generator): FileParamsGenerator = {
-        val injector = Guice createInjector (Modules `override` AquamapsModule() `with` StaticFileParamsGenerator.COMPSsWorkerModule())
+        val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` StaticFileParamsGenerator.COMPSsWorkerModule())
         new SimpleFileParamsGenerator(generator, injector.instance[Emitter[HSPEC]], injector.instance[FileSystemTableWriter[HSPEC]])
       }
 

@@ -4,7 +4,6 @@ import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
-import com.google.inject.util.Modules
 
 import java.io.File
 

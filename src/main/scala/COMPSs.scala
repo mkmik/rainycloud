@@ -6,7 +6,7 @@ import scala.xml.Utility.trim
 import io.Source.fromFile
 import java.io.File
 import com.google.inject._
-import com.google.inject.util.Modules
+import com.google.inject.util.{Modules => GuiceModules}
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
 import org.guiceyfruit.Injectors
@@ -104,7 +104,7 @@ object StaticFileParamsGenerator {
   }
 
   /*! We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context) */
-  def injector = Guice createInjector (Modules `override` AquamapsModule() `with` (COMPSsWorkerModule(), BabuDBModule()))
+  def injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(), BabuDBModule()))
 
   def staticDelegate(fileName: String): String = {
     withInjector { injector =>

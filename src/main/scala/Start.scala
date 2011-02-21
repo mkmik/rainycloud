@@ -18,8 +18,8 @@ package it.cnr.aquamaps
 import com.google.inject.Guice
 import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
-import com.google.inject.util.Modules
-import net.lag.configgy.Configgy
+import com.google.inject.util.{Modules => GuiceModules}
+import net.lag.configgy.{Config, Configgy}
 import org.github.scopt.OptionParser
 import org.github.scopt.OptionParser._
 
@@ -46,8 +46,6 @@ object Main {
     opt("m", "module", "add a module to runtime", {v: String => val c= Configgy.config; c.setList("modules", (c.getList("modules").toList ++ List(v)).distinct) })
   }
 
-  val modules = Map("BabuDB" -> BabuDBModule(),
-                    "COMPSs" -> COMPSsModule())
 
   def main(args: Array[String]) {
     Configgy.configure("rainycloud.conf")
@@ -56,21 +54,22 @@ object Main {
     if (!parser.parse(args)) 
       return
 
-    val mods:Seq[Module] = for (name <- conf.getList("modules");
-                                module <- modules.get(name))
-                           yield module
+    val mods = Modules.enabledModules(conf)
+    printSomeFeedback(mods, conf)
 
-    println(conf.getList("modules"))
-    println("Available modules: %s".format(modules.values.mkString(", ")))
-    println("Enabled modules: %s".format(mods.mkString(", ")))
-
-
-    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` (mods :_*))
+    /*! Configure our Guice context with the main modules overrided with optional modules obtained from config file + cmdline. */
+    val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (mods :_*))
 
     val entryPoint = injector.instance[EntryPoint]
     entryPoint.run
 
     cleanup(injector)
+  }
+
+  def printSomeFeedback(mods: Seq[Module], conf: Config) {
+    println(conf.getList("modules"))
+    println("Available modules: %s".format(Modules.modules.values.mkString(", ")))
+    println("Enabled modules: %s".format(mods.mkString(", ")))
   }
 
   def cleanup(injector: Injector) {
