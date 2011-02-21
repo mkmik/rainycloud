@@ -17,7 +17,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCl
     We select partitioner which loads the pre-made partitions from a plain text file, an implementation of the `Generator` and
     `HspecAlgorithm` components.
     */
-    bind[Partitioner].to[StaticPartitioner]
+    bind[Partitioner].toInstance(new StaticPartitioner(conf.getString("ranges").getOrElse("octo/client/ranges")))
     bind[Generator].to[HSPECGenerator]
     bind[HspecAlgorithm].to[RandomHSpecAlgorithm]
 
