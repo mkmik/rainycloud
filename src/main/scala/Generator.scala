@@ -170,6 +170,7 @@ class CSVPositionalSink[A] @Inject() (val tableWriter: TableWriter[A]) extends P
 /*! A `Loader` loads a whole db in as an iterable. */
 trait Loader[A] {
   def load: Iterable[A]
+  def shutdown = {}
 }
 
 /*! Used to load the `HSPEN` table in memory */

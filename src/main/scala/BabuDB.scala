@@ -22,12 +22,12 @@ import uk.me.lings.scalaguice.ScalaModule
 
 case class BabuDBModule() extends AbstractModule with ScalaModule {
   def configure() {
-    bind[Loader[HSPEN]].annotatedWith(named("forBabu")).to(classOf[TableHSPENLoader])
+    bind[Loader[HSPEN]].annotatedWith(named("forBabu")).to(classOf[TableHSPENLoader]).in(classOf[Singleton])
   }
 
-  @Provides
+  @Provides @Singleton
   def hcafFetcher(loader: Loader[HCAF]): Fetcher[HCAF] = new BabuDBFetcher("hcaf", loader)
-  @Provides
+  @Provides @Singleton
   def hspenLoader(@Named("forBabu") loader: Loader[HSPEN]): Loader[HSPEN] = new BabuDBLoader("hspen", loader)
 }
 
@@ -103,4 +103,5 @@ class BabuDBLoader[A <: Keyed] @Inject() (val dbName: String, val loader: Loader
     res.get.map { x => deserialize(x.getValue) }.toIterable
   }
 
+  override def shutdown = stop
 }

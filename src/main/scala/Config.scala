@@ -7,9 +7,12 @@ package it.cnr.aquamaps
 import com.google.inject._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
+import net.lag.configgy.Config
+import net.lag.configgy.Configgy
 
 case class AquamapsModule() extends AbstractModule with ScalaModule {
   def configure() {
+    bind[Config].toInstance(Configgy.config)
     /*!## Basic components
 
     We select partitioner which loads the pre-made partitions from a plain text file, an implementation of the `Generator` and
