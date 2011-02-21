@@ -8,11 +8,10 @@ import com.google.inject._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
 import net.lag.configgy.Config
-import net.lag.configgy.Configgy
 
-case class AquamapsModule() extends AbstractModule with ScalaModule {
+case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
-    bind[Config].toInstance(Configgy.config)
+    bind[Config].toInstance(conf)
     /*!## Basic components
 
     We select partitioner which loads the pre-made partitions from a plain text file, an implementation of the `Generator` and
@@ -27,7 +26,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
     HSPEN data is loaded from a gzipped csv file located in the filesystem. Each worker should load this file once.
      */
     bind[Loader[HSPEN]].to[TableHSPENLoader]
-    bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
+    bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader(conf.getString("hspenFile").getOrElse("data/hspen.csv.gz")))
     bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]
 
     /*!## HCAF database
@@ -37,7 +36,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
      for our first prototype.
      */
     bind[Loader[HCAF]].to[TableHCAFLoader]
-    bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
+    bind[TableReader[HCAF]].toInstance(new FileSystemTableReader(conf.getString("hcafFile").getOrElse("data/hcaf.csv.gz")))
     bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
     bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]].in[Singleton]
 
@@ -46,7 +45,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
      The purpose of the emitter is to collect generated `HSPEC` records and write them somewhere. This emitter will write a CSV file.
      The file can be compressed (performance penalilty).
      */
-    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter("/tmp/hspec.csv.gz"))
+    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz")))
     bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
     bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]].in[Singleton]
 

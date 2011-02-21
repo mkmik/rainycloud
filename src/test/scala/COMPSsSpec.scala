@@ -6,7 +6,7 @@ import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
-import com.google.inject.util.{Modules => GuiceModules}
+import com.google.inject.util.{ Modules => GuiceModules }
 
 import org.specs.mock.Mockito
 import org.mockito.Matchers._ // to use matchers like anyInt()
@@ -92,8 +92,6 @@ object COMPSsSpec extends Specification with Mockito {
 
       compss.computeInPartition(partition)
 
-      //there was atLeastOne(emitter).emit(anyObject())
-      there was one(sink).merge(anyObject())
     }
   }
 

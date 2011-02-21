@@ -20,6 +20,8 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 
   val riReleases = "RI Releases" at "http://maven.research-infrastructures.eu/nexus/content/repositories/releases"
   val scalaToolsSnapshots = "Scala-Tools Maven2 Snapshots Repository" at "http://scala-tools.org/repo-snapshots"
+  val scalaToolsReleases = "Scala-Tools Maven2 Release Repository" at "http://scala-tools.org/repo-releases"
+ 
 	val codaRepo = "Coda Hale's Repository" at "http://repo.codahale.com/"
   val fuseRepo = "fuse repo" at "http://repo.fusesource.com/maven2-all/"
   val akkaRepo = "akka repo" at "http://akka.io/repository"
@@ -36,6 +38,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 
   val configgy = "net.lag" % "configgy" % "2.0.2-nologgy" % "compile" //ApacheV2
   val scopt = "eed3si9n" %% "scopt" % "1.0"
+  val scalaArm = "com.github.jsuereth.scala-arm" %% "scala-arm" % "0.2"
 
   val opencsv = "net.sf.opencsv" % "opencsv" % "2.1"
   val supercsv = "org.supercsv" % "supercsv" % "1.20"

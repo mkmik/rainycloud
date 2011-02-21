@@ -138,9 +138,6 @@ trait PositionalSource[A] {
 trait PositionalSink[A] {
   def write(row: Array[String])
 
-  /*! Low level merge, data must be in the same format used by this sink */
-  def merge(is: Reader)
-
   def flush {}
 }
 
@@ -156,11 +153,6 @@ class CSVPositionalSink[A] @Inject() (val tableWriter: TableWriter[A]) extends P
   val writer = new CsvListWriter(lowWriter, CsvPreference.STANDARD_PREFERENCE)
 
   def write(row: Array[String]) = writer.write(row);
-
-  def merge(in: Reader) = {
-    lowWriter.flush
-    IOUtils.copy(in, lowWriter)
-  }
 
   override def flush = writer.close
 }

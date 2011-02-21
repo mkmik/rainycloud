@@ -6,12 +6,14 @@ import scala.xml.Utility.trim
 import io.Source.fromFile
 import java.io.File
 import com.google.inject._
-import com.google.inject.util.{Modules => GuiceModules}
+import com.google.inject.util.{ Modules => GuiceModules }
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
 import org.guiceyfruit.Injectors
 import Watch.timed
 import java.io._
+import org.apache.commons.io.IOUtils
+import resource._
 
 /*!# COMPSs support
 
@@ -24,7 +26,7 @@ import P2XML._
 
 /*! In order to connect to the rest of the system, first we implement the `Generator` interface. We receive partitions from the entry point here, convert the parameters
  * into files, amd delegate to another interface whose signature COMPSs knowns how to handle (files as parameters). */
-class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter: Emitter[HSPEC], val sink: PositionalSink[HSPEC]) extends Generator {
+class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter: COMPSsCollectorEmitter[HSPEC]) extends Generator {
 
   def computeInPartition(p: Partition) {
     val tmpFile = mkTmp
@@ -32,7 +34,8 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
 
     val outputFile = delegate.computeInPartition(tmpFile)
 
-    timed("partition %s merge".format(p.start)) { merge(outputFile) }
+    /*! Keep it for later */
+    emitter.add(outputFile)
   }
 
   /*! Well this is a rather stupid way to merge the remote output into our single result. `Emitter` should be extended to support bulk emits. */
@@ -43,20 +46,39 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
       emitter.emit(hspec)
   }
 
-  /*! If the emitter is using a sink, just bypass the emitter and raw append the data to the sink.
-   It may still have to uncompress/re-compress the data, since the compression is transparent to the sink layer
-   (being too transparent is not always good...)*/
-  def fastMerge(outputFile: String) {
-    val fis = new FileSystemTableReader(outputFile).reader
-    sink.merge(fis)
-  }
-
-  val merge = fastMerge _
-
   def mkTmp = {
     val file = File.createTempFile("rainycloud", ".xml")
     file.deleteOnExit()
     file.toString
+  }
+}
+
+/*! We would like to defer the merging of the results until we spawned all the tasks */
+class COMPSsCollectorEmitter[A] @Inject() (val outputFileName: String) extends Emitter[A] {
+  var list: List[String] = List()
+
+  def emit(record: A) = throw new IllegalArgumentException("this emitter cannot be used directly")
+
+  def add(fileName: String) = list = fileName :: list
+
+  /*! The actual merging is invoked upon emitter flush, which is called at the end of the job. */
+  def flush {
+    println("merging results into %s".format("outputFileName"))
+    val output = new FileSystemTableWriter(outputFileName)
+    timed("merging") {
+      for {
+        fw <- managed(output.writer)
+        file <- list
+      } merge(file, fw)
+    }
+  }
+
+  /*! We assume we can perform a nice low level concatenation of the parts. */
+  def merge(fileName: String, out: Writer) {
+    timed("merging %s".format(fileName)) {
+      for (in <- managed(new FileReader(fileName)))
+        IOUtils.copy(in, out)
+    }
   }
 }
 
