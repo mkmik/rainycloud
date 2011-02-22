@@ -72,6 +72,13 @@ class COMPSsCollectorEmitter[A] @Inject() (val outputFileName: String) extends E
     }
   }
 
+  /*! We have to call a static method for COMPSs to be able to track this call and managed dependencies. */
+  def merge(fileName: String, out: Writer) {
+    COMPSsCollectorEmitter.merge(fileName, out)
+  }
+}
+
+object COMPSsCollectorEmitter {
   /*! We assume we can perform a nice low level concatenation of the parts. */
   def merge(fileName: String, out: Writer) {
     timed("merging %s".format(fileName)) {
