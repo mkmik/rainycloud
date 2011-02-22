@@ -12,14 +12,15 @@ import org.specs.mock.Mockito
 import org.mockito.Matchers._  // to use matchers like anyInt()
 
 object GeneratorSpec extends Specification with Mockito {
-  case class TestModule() extends AbstractModule with ScalaModule {
+  case class TestModule() extends AbstractModule with ScalaModule with RainyCloudModule {
     def configure() {
       bind[Loader[HSPEN]].to[TableHSPENLoader]
 
       bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
       bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]
 
-      bind[Partitioner].to[StaticPartitioner]
+      bind[Partitioner].toInstance(new StaticPartitioner(conf.getString("ranges").getOrElse("octo/client/ranges")))
+
       bind[Generator].to[HSPECGenerator]
 
       bind[HspecAlgorithm].to[AllHSpecAlgorithm]

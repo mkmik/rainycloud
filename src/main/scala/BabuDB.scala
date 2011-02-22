@@ -20,6 +20,8 @@ import com.google.inject.name._
 import com.google.inject.name.Names.named
 import uk.me.lings.scalaguice.ScalaModule
 
+import resource._
+
 case class BabuDBModule() extends AbstractModule with ScalaModule {
   def configure() {
     bind[Loader[HSPEN]].annotatedWith(named("forBabu")).to(classOf[TableHSPENLoader]).in(classOf[Singleton])
@@ -31,7 +33,7 @@ case class BabuDBModule() extends AbstractModule with ScalaModule {
   def hspenLoader(@Named("forBabu") loader: Loader[HSPEN]): Loader[HSPEN] = new BabuDBLoader("hspen", loader)
 }
 
-trait BabuDB[A <: Keyed] {
+trait BabuDB[A <: Keyed] extends BabuDBSerializer[A] {
   val loader: Loader[A]
   val dbName: String
 
@@ -63,22 +65,22 @@ trait BabuDB[A <: Keyed] {
     databaseSystem.getCheckpointer().checkpoint()
     println(" done")
   }
+}
 
-  def serialize(record: A) = {
+trait BabuDBSerializer[A] {
+
+  def serialize(record: A): Array[Byte] = {
     val baos = new ByteArrayOutputStream(1024)
-    val o = new ObjectOutputStream(baos)
+    val res = for (o <- managed(new ObjectOutputStream(baos)))
+      o writeObject record
 
-    o writeObject record
-    val bar = baos.toByteArray
-    o.close
-    bar
+    baos.toByteArray
   }
 
   def deserialize(bytes: Array[Byte]): A = {
-    val o = new ObjectInputStream(new ByteArrayInputStream(bytes))
-    val res = o.readObject.asInstanceOf[A]
-    o.close
-    res
+    val res = for (o <- managed(new ObjectInputStream(new ByteArrayInputStream(bytes))))
+      yield o.readObject.asInstanceOf[A]
+    res.opt.get
   }
 
 }

@@ -9,7 +9,6 @@ import com.google.inject._
 import com.google.inject.util.{ Modules => GuiceModules }
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
-import org.guiceyfruit.Injectors
 import Watch.timed
 import java.io._
 import org.apache.commons.io.IOUtils

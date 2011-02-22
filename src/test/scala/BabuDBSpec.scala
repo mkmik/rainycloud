@@ -27,6 +27,15 @@ object BabuDBSpec extends Specification with Mockito {
 
   }
 
+  "BabuDB initializer" should {
+    val serializer = new BabuDBSerializer[String] {}
+
+    "serialize objects" in {
+      val res = serializer.serialize("test")
+      println(res)
+    }
+  }
+
   "BabuDB fetcher" should {
     val injector = Guice createInjector TestModule()
 
