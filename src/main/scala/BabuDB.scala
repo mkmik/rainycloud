@@ -27,8 +27,8 @@ case class BabuDBModule() extends AbstractModule with ScalaModule {
   def configure() {
     bind[Loader[HSPEN]].annotatedWith(named("forBabu")).to(classOf[TableHSPENLoader]).in(classOf[Singleton])
 
-    bind[BabuDBSerializer[HCAF]].to[SerializableBabuDBSerializer[HCAF]]
-    bind[BabuDBSerializer[HSPEN]].to[SerializableBabuDBSerializer[HSPEN]]
+    bind[BabuDBSerializer[HCAF]].toInstance(new AvroBabuDBSerializer[HCAF] { def makeRecord = HCAF("")})
+    bind[BabuDBSerializer[HSPEN]].toInstance(new AvroBabuDBSerializer[HSPEN] { def makeRecord = HSPEN("")})
   }
 
   @Provides
@@ -65,6 +65,7 @@ trait BabuDB[A <: Keyed] {
       dbman.createDatabase(dbName, 1)
       val db = dbman.getDatabase(dbName);
       reload(db)
+      databaseSystem.getCheckpointer().checkpoint()
       db
     } catch {
       case _: BabuDBException => dbman.getDatabase(dbName);
@@ -75,7 +76,6 @@ trait BabuDB[A <: Keyed] {
     print("caching %s ...".format(loader))
     for (record <- loader.load)
       db.singleInsert(0, record.key.getBytes, serializer.serialize(record), null)
-    databaseSystem.getCheckpointer().checkpoint()
     println(" done")
   }
 }
