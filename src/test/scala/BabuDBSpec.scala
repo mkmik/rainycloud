@@ -20,15 +20,18 @@ object BabuDBSpec extends Specification with Mockito {
       bind[Loader[HCAF]].to[TableHCAFLoader]
       bind[TableReader[HCAF]].toInstance(new FileSystemTableReader("data/hcaf.csv.gz"))
       bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
+      bind[BabuDBSerializer[HCAF]].to[SerializableBabuDBSerializer[HCAF]]
+
     }
 
     @Provides
-    def hcafFetcher(loader: Loader[HCAF]): Fetcher[HCAF] = new BabuDBFetcher("hcaf", loader)
+    @Singleton
+    def hcafFetcher(loader: Loader[HCAF], serializer: BabuDBSerializer[HCAF]): Fetcher[HCAF] = new BabuDBFetcher("hcaf", loader, serializer)
 
   }
 
   "BabuDB initializer" should {
-    val serializer = new BabuDBSerializer[String] {}
+    val serializer = new SerializableBabuDBSerializer[String] {}
 
     "serialize objects" in {
       val res = serializer.serialize("test")

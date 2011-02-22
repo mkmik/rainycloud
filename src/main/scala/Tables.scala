@@ -12,6 +12,7 @@ import org.apache.cassandra.thrift.{ Column, ColumnPath }
 import org.apache.log4j.Logger
 
 import stopwatch.Stopwatch
+import com.googlecode.avro.marker._
 
 /*!
  
@@ -31,7 +32,7 @@ trait Keyed {
  HCAF Table has the csquareCode as key. The companion object contains conversion methods
  */
 @serializable
-class HCAF(val csquareCode: String) extends Keyed {
+case class HCAF(var csquareCode: String) extends Keyed with AvroRecord {
   override def toString() = "HCAF(%s)".format(csquareCode)
 
   def key = csquareCode
@@ -62,7 +63,7 @@ object HCAF {
  The HSPEN Table doesn't need a key. The companion object contains conversion methods
  */
 @serializable
-class HSPEN(val speciesId: String) extends Keyed {
+case class HSPEN(var speciesId: String) extends Keyed with AvroRecord {
   override def toString() = "HSPEN(%s)".format(speciesId)
   
   def key = speciesId
@@ -101,7 +102,7 @@ object HSPEN {
  The companion object contains conversion methods.
  */
 
-case class HSPEC(val speciesId: String, val csquareCode: String) extends CassandraConfig with CassandraCreator {
+case class HSPEC(var speciesId: String, var csquareCode: String) extends CassandraConfig with CassandraCreator with AvroRecord {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
 
