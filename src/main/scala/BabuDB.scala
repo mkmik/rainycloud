@@ -23,12 +23,15 @@ import uk.me.lings.scalaguice.ScalaModule
 import resource._
 import com.googlecode.avro.marker._
 
+import HCAF._
+import HSPEN._
+
 case class BabuDBModule() extends AbstractModule with ScalaModule {
   def configure() {
     bind[Loader[HSPEN]].annotatedWith(named("forBabu")).to(classOf[TableHSPENLoader]).in(classOf[Singleton])
 
-    bind[BabuDBSerializer[HCAF]].toInstance(new AvroBabuDBSerializer[HCAF] { def makeRecord = HCAF("")})
-    bind[BabuDBSerializer[HSPEN]].toInstance(new AvroBabuDBSerializer[HSPEN] { def makeRecord = HSPEN("")})
+    bind[BabuDBSerializer[HCAF]].toInstance(AvroBabuDBSerializer[HCAF]())
+    bind[BabuDBSerializer[HSPEN]].toInstance(AvroBabuDBSerializer[HSPEN]())
   }
 
   @Provides
@@ -84,6 +87,10 @@ abstract class AvroBabuDBSerializer[A <: AvroRecord] @Inject() extends BabuDBSer
   def makeRecord: A
   def serialize(record: A): Array[Byte] = record.toBytes
   def deserialize(bytes: Array[Byte]): A = makeRecord.parse(bytes)
+}
+
+object AvroBabuDBSerializer {
+  def apply[A <: AvroRecord]()(implicit a: A): AvroBabuDBSerializer[A] = new AvroBabuDBSerializer[A] { def makeRecord = a }
 }
 
 class SerializableBabuDBSerializer[A] @Inject() extends BabuDBSerializer[A] {

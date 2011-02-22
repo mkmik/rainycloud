@@ -39,6 +39,8 @@ case class HCAF(var csquareCode: String) extends Keyed with AvroRecord {
 }
 
 object HCAF {
+  implicit def makeHcaf = HCAF("")
+
   val columns = List("CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM", "DepthMin", "DepthMax", "SSTAnMean", "SBTAnMean", "SalinityMean", "SalinityBMean", "PrimProdMean", "IceConAnn", "LandDist", "EEZFirst", "LME", "DepthMean")
 
   val condition = "OceanArea > 0"
@@ -71,6 +73,8 @@ case class HSPEN(var speciesId: String) extends Keyed with AvroRecord {
 
 object HSPEN {
   private val log = Logger.getLogger(this.getClass);
+
+  implicit def makeHspen = HSPEN("")
 
   val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
 
