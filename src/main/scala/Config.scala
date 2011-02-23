@@ -35,9 +35,9 @@ case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCl
      will fetch a given partition as a slice of the whole `HCAF` db held in RAM. This is inefficient but works well
      for our first prototype.
      */
-    bind[Loader[HCAF]].to[TableHCAFLoader]
+    bind[Loader[HCAF]].to[TableHCAFLoader].in[Singleton]
     bind[TableReader[HCAF]].toInstance(new FileSystemTableReader(conf.getString("hcafFile").getOrElse("data/hcaf.csv.gz")))
-    bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
+    bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]].in[Singleton]
     bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]].in[Singleton]
 
     /*!## Emitter

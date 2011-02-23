@@ -59,5 +59,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val opencsv = "net.sf.opencsv" % "opencsv" % "2.1"
   val supercsv = "org.supercsv" % "supercsv" % "1.20"
 
+  val hadoop = "org.apache.hadoop" % "hadoop-core" % "0.20.2"
+
   override def mainClass = Some("it.cnr.aquamaps.Main")
 }

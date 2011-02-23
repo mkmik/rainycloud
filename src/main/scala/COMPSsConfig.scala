@@ -25,18 +25,18 @@ case class COMPSsModule() extends AbstractModule with ScalaModule with RainyClou
 
     /*! Unfortunately we need to obtain the filename from the writer. So we need to declare a single TableWriter instance as bound on two different types
      otherwise Guice will not resolve the injections */
-    bind[TableWriter[HSPEC]].to[FileSystemTableWriter[HSPEC]]
+//    bind[TableWriter[HSPEC]].to[FileSystemTableWriter[HSPEC]]
 
 
     bind[Emitter[HSPEC]].to[COMPSsCollectorEmitter[HSPEC]]
 
   }
 
-  @Provides
-  def writer(): FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz"))
+//  @Provides
+//  def writer(): FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz"))
 
   @Provides @Singleton
-  def emitter(): COMPSsCollectorEmitter[HSPEC] = new COMPSsCollectorEmitter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz"))
+  def emitter(tableWriter: TableWriter[HSPEC]): COMPSsCollectorEmitter[HSPEC] = new COMPSsCollectorEmitter(tableWriter)
 
 }
 
