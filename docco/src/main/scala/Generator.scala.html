@@ -49,7 +49,9 @@ import au.com.bytecode.opencsv.bean.ColumnPositionMappingStrategy
 import org.supercsv.io.CsvListWriter
 import org.supercsv.prefs.CsvPreference
 import java.io._
-import java.util.zip._</code></pre>
+import java.util.zip._
+import org.apache.commons.io.IOUtils
+import Watch.timed</code></pre>
       </td>
     </tr>
     <tr id="section-1">
@@ -88,7 +90,7 @@ import java.util.zip._</code></pre>
       </td>
       <td class="code">
         <pre class="scala"><code>class HSPECGenerator @Inject() (
-  val hspenLoader: HSPENLoader,
+  val hspenLoader: Loader[HSPEN],
   val emitter: Emitter[HSPEC],
   val fetcher: Fetcher[HCAF],
   val algorithm: HspecAlgorithm) extends Generator {</code></pre>
@@ -99,7 +101,7 @@ import java.util.zip._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-4">#</a>
         </div>
-      <p>HSPEN table is loaded only once (hence lazy)</p>
+      <p>HSPEN table is loaded only once</p>
 
       </td>
       <td class="code">
@@ -116,7 +118,10 @@ import java.util.zip._</code></pre>
       </td>
       <td class="code">
         <pre class="scala"><code>  def computeInPartition(p: Partition) {
-    val records = for {</code></pre>
+    val startTime = System.currentTimeMillis
+
+    timed(&quot;partition %s&quot;.format(p.start)) {
+      val records = for {</code></pre>
       </td>
     </tr>
     <tr id="section-6">
@@ -130,7 +135,7 @@ import java.util.zip._</code></pre>
 
       </td>
       <td class="code">
-        <pre class="scala"><code>      hcaf &lt;- fetcher.fetch(p.start, p.size)</code></pre>
+        <pre class="scala"><code>        hcaf &lt;- fetcher.fetch(p.start, p.size)</code></pre>
       </td>
     </tr>
     <tr id="section-7">
@@ -144,7 +149,7 @@ import java.util.zip._</code></pre>
 
       </td>
       <td class="code">
-        <pre class="scala"><code>      hspec &lt;- algorithm.compute(hcaf, hspen)</code></pre>
+        <pre class="scala"><code>        hspec &lt;- algorithm.compute(hcaf, hspen)</code></pre>
       </td>
     </tr>
     <tr id="section-8">
@@ -158,9 +163,14 @@ import java.util.zip._</code></pre>
 
       </td>
       <td class="code">
-        <pre class="scala"><code>    } emitter.emit(hspec)
+        <pre class="scala"><code>      } emitter.emit(hspec)
+    }
   }
 
+}
+
+object HSPECGenerator {
+  val startTime = System.currentTimeMillis
 }</code></pre>
       </td>
     </tr>
@@ -178,6 +188,7 @@ import java.util.zip._</code></pre>
       <td class="code">
         <pre class="scala"><code>trait Fetcher[A] {
   def fetch(key: String, size: Long): Iterable[A]
+  def shutdown = {}
 }</code></pre>
       </td>
     </tr>
@@ -348,7 +359,8 @@ trait PositionalSink[A] {
       </td>
       <td class="code">
         <pre class="scala"><code>class CSVPositionalSink[A] @Inject() (val tableWriter: TableWriter[A]) extends PositionalSink[A] {
-  val writer = new CsvListWriter(tableWriter.writer, CsvPreference.STANDARD_PREFERENCE)
+  val lowWriter = tableWriter.writer
+  val writer = new CsvListWriter(lowWriter, CsvPreference.STANDARD_PREFERENCE)
 
   def write(row: Array[String]) = writer.write(row);
 
@@ -379,6 +391,7 @@ trait PositionalSink[A] {
       <td class="code">
         <pre class="scala"><code>trait Loader[A] {
   def load: Iterable[A]
+  def shutdown = {}
 }</code></pre>
       </td>
     </tr>
@@ -391,7 +404,7 @@ trait PositionalSink[A] {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>trait HSPENLoader extends Loader[HSPEN]</code></pre>
+        <pre class="scala"><code>//trait HSPENLoader extends Loader[HSPEN]</code></pre>
       </td>
     </tr>
     <tr id="section-24">
@@ -403,7 +416,7 @@ trait PositionalSink[A] {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>trait HCAFLoader extends Loader[HCAF]</code></pre>
+        <pre class="scala"><code>//trait HCAFLoader extends Loader[HCAF]</code></pre>
       </td>
     </tr>
     <tr id="section-25">
@@ -415,7 +428,7 @@ trait PositionalSink[A] {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>class TableHSPENLoader @Inject() (val tableLoader: PositionalSource[HSPEN]) extends HSPENLoader {
+        <pre class="scala"><code>class TableHSPENLoader @Inject() (val tableLoader: PositionalSource[HSPEN]) extends Loader[HSPEN] {
   def load = tableLoader.read map HSPEN.fromTableRow
 }</code></pre>
       </td>
@@ -429,7 +442,7 @@ trait PositionalSink[A] {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extends HCAFLoader {
+        <pre class="scala"><code>class TableHCAFLoader @Inject() (val tableLoader: PositionalSource[HCAF]) extends Loader[HCAF] {
   def load = tableLoader.read map HCAF.fromTableRow
 }</code></pre>
       </td>
@@ -500,7 +513,7 @@ trait PositionalSink[A] {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>class ColumnStoreHSPENLoader @Inject() (val columnStoreLoader: ColumnStoreLoader[HSPEN]) extends HSPENLoader {
+        <pre class="scala"><code>class ColumnStoreHSPENLoader @Inject() (val columnStoreLoader: ColumnStoreLoader[HSPEN]) extends Loader[HSPEN] {
   def load = columnStoreLoader.read map HSPEN.build
 }</code></pre>
       </td>

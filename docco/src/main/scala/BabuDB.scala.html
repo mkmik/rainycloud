@@ -44,20 +44,68 @@ import org.xtreemfs.babudb.log._
 import org.xtreemfs.babudb.lsmdb._
 
 import java.io._
-import javax.annotation._
-
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
 import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
+import com.google.inject.name.Names.named
 import uk.me.lings.scalaguice.ScalaModule
 
+import HCAF._
+import HSPEN._
 
 case class BabuDBModule() extends AbstractModule with ScalaModule {
   def configure() {
-    bind[Fetcher[HCAF]].to[BabuDBFetcher[HCAF]].in[Singleton]
+    bind[Loader[HSPEN]].annotatedWith(named(&quot;forBabu&quot;)).to(classOf[TableHSPENLoader]).in(classOf[Singleton])
+
+    bind[Serializer[HCAF]].toInstance(AvroSerializer[HCAF]())
+    bind[Serializer[HSPEN]].toInstance(AvroSerializer[HSPEN]())
+  }
+
+  @Provides
+  @Singleton
+  def hcafFetcher(loader: Loader[HCAF], serializer: Serializer[HCAF]): Fetcher[HCAF] = new BabuDBFetcher(&quot;hcaf&quot;, loader, serializer)
+
+  @Provides
+  @Singleton
+  def hspenLoader(@Named(&quot;forBabu&quot;) loader: Loader[HSPEN], serializer: Serializer[HSPEN]): Loader[HSPEN] = new BabuDBLoader(&quot;hspen&quot;, loader, serializer)
+}
+
+
+trait BabuDB[A &lt;: Keyed] {
+  val loader: Loader[A]
+  val dbName: String
+  val serializer: Serializer[A]
+
+  val databaseSystem = BabuDBFactory.createBabuDB(new ConfigBuilder().setDataPath(&quot;/tmp/babudb&quot;).setLogAppendSyncMode(DiskLogger.SyncMode.ASYNC).build())
+  val dbman = databaseSystem.getDatabaseManager();
+
+  val db = getDb
+
+  def stop {
+    db.shutdown
+    databaseSystem.shutdown()
+  }
+
+  def getDb() = {
+    try {
+      dbman.createDatabase(dbName, 1)
+      val db = dbman.getDatabase(dbName);
+      reload(db)
+      databaseSystem.getCheckpointer().checkpoint()
+      db
+    } catch {
+      case _: BabuDBException =&gt; dbman.getDatabase(dbName);
+    }
+  }
+
+  def reload(db: Database) = {
+    print(&quot;caching %s ...&quot;.format(loader))
+    for (record &lt;- loader.load)
+      db.singleInsert(0, record.key.getBytes, serializer.serialize(record), null)
+    println(&quot; done&quot;)
   }
 }</code></pre>
       </td>
@@ -71,66 +119,24 @@ case class BabuDBModule() extends AbstractModule with ScalaModule {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>class BabuDBFetcher[A &lt;: Keyed] @Inject() (val loader: Loader[A]) extends Fetcher[A] {
-
-  implicit def runnable(f: () =&gt; Unit): Runnable =
-    new Runnable() { def run() = f() }
-
-  val databaseSystem = BabuDBFactory.createBabuDB(new ConfigBuilder().setDataPath(&quot;/tmp/babudb&quot;).setLogAppendSyncMode(DiskLogger.SyncMode.ASYNC).build())
-  val dbman = databaseSystem.getDatabaseManager();
-
-  val db = getDb
-
-  println(&quot;opening db %s&quot;.format(db))
-
-  @PostConstruct
-  def init {
-    println(&quot;GOT EVENT&quot;)
-  }
-
-  @PreDestroy
-  def shutdown {
-    println(&quot;Shutting down %s&quot;.format(this))
-    db.shutdown
-  }
+        <pre class="scala"><code>class BabuDBFetcher[A &lt;: Keyed] @Inject() (val dbName: String, val loader: Loader[A], val serializer: Serializer[A]) extends Fetcher[A] with BabuDB[A] {
 
   def fetch(start: String, size: Long) = {
     val res = db.prefixLookup(0, start.getBytes, null)
-    res.get.take(size.toInt).map { x =&gt; deserialize(x.getValue) }.toIterable
+    res.get.take(size.toInt).map { x =&gt; serializer.deserialize(x.getValue) }.toIterable
   }
 
-  def getDb = {
-    try {
-      dbman.createDatabase(&quot;myDB&quot;, 1)
-      val db = dbman.getDatabase(&quot;myDB&quot;);
-      reload(db)
-      db
-    } catch {
-      case _: BabuDBException =&gt; dbman.getDatabase(&quot;myDB&quot;);
-    }
+  override def shutdown = stop
+}
+
+class BabuDBLoader[A &lt;: Keyed] @Inject() (val dbName: String, val loader: Loader[A], val serializer: Serializer[A]) extends Loader[A] with BabuDB[A] {
+
+  def load = {
+    val res = db.prefixLookup(0, &quot;&quot;.getBytes, null)
+    res.get.map { x =&gt; serializer.deserialize(x.getValue) }.toIterable
   }
 
-  def reload(db: Database) = {
-    for (record &lt;- loader.load)
-      db.singleInsert(0, record.key.getBytes, serialize(record), null)
-  }
-
-  def serialize(record: A) = {
-    val baos = new ByteArrayOutputStream(1024)
-    val o = new ObjectOutputStream(baos)
-
-    o writeObject record
-    val bar = baos.toByteArray
-    o.close
-    bar
-  }
-
-  def deserialize(bytes: Array[Byte]): A = {
-    val o = new ObjectInputStream(new ByteArrayInputStream(bytes))
-    val res = o.readObject.asInstanceOf[A]
-    o.close
-    res
-  }
+  override def shutdown = stop
 }</code></pre>
       </td>
     </tr>

@@ -35,7 +35,10 @@
       <td class="code">
         <pre class="scala"><code>package it.cnr.aquamaps
 
-import io.Source.fromFile</code></pre>
+import io.Source.fromFile
+
+import com.google.inject._
+import net.lag.configgy.Config</code></pre>
       </td>
     </tr>
     <tr id="section-1">
@@ -63,13 +66,11 @@ case class Partition(val start: String, val size: Long)</code></pre>
 
       </td>
       <td class="code">
-        <pre class="scala"><code>class StaticPartitioner extends Partitioner {
+        <pre class="scala"><code>class StaticPartitioner @Inject() (val rangesFile: String) extends Partitioner {
   def toPartition(line: String) = {
     val Array(s, k) = line.trim split &quot; &quot;
     Partition(k, s.toInt)
   }
-
-  val rangesFile = &quot;octo/client/rangesSmall&quot;
 
   def partitions = fromFile(rangesFile).getLines map toPartition
 }</code></pre>

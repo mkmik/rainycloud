@@ -39,6 +39,7 @@ import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
+import net.lag.configgy.Config
 
 import java.io.File</code></pre>
       </td>
@@ -53,7 +54,7 @@ import java.io.File</code></pre>
 
       </td>
       <td class="code">
-        <pre class="scala"><code>case class COMPSsModule() extends AbstractModule with ScalaModule {
+        <pre class="scala"><code>case class COMPSsModule() extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {</code></pre>
       </td>
     </tr>
@@ -90,11 +91,18 @@ import java.io.File</code></pre>
 
       </td>
       <td class="code">
-        <pre class="scala"><code>    val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(&quot;/tmp/hspec.csv.gz&quot;)
-    bind[TableWriter[HSPEC]].toInstance(writer)
-    bind[FileSystemTableWriter[HSPEC]].toInstance(writer)
+        <pre class="scala"><code>    bind[TableWriter[HSPEC]].to[FileSystemTableWriter[HSPEC]]
+
+
+    bind[Emitter[HSPEC]].to[COMPSsCollectorEmitter[HSPEC]]
 
   }
+
+  @Provides
+  def writer(): FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(conf.getString(&quot;hspecFile&quot;).getOrElse(&quot;/tmp/hspec.csv.gz&quot;))
+
+  @Provides @Singleton
+  def emitter(): COMPSsCollectorEmitter[HSPEC] = new COMPSsCollectorEmitter(conf.getString(&quot;hspecFile&quot;).getOrElse(&quot;/tmp/hspec.csv.gz&quot;))
 
 }</code></pre>
       </td>

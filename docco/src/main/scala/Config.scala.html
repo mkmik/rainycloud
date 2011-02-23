@@ -48,9 +48,11 @@
         <pre class="scala"><code>import com.google.inject._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
+import net.lag.configgy.Config
 
-case class AquamapsModule() extends AbstractModule with ScalaModule {
-  def configure() {</code></pre>
+case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCloudModule {
+  def configure() {
+    bind[Config].toInstance(conf)</code></pre>
       </td>
     </tr>
     <tr id="section-2">
@@ -63,7 +65,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>    bind[Partitioner].to[StaticPartitioner]
+        <pre class="scala"><code>    bind[Partitioner].toInstance(new StaticPartitioner(conf.getString(&quot;ranges&quot;).getOrElse(&quot;octo/client/ranges&quot;)))
     bind[Generator].to[HSPECGenerator]
     bind[HspecAlgorithm].to[RandomHSpecAlgorithm]</code></pre>
       </td>
@@ -78,8 +80,8 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>    bind[HSPENLoader].to[TableHSPENLoader]
-    bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader(&quot;data/hspen.csv.gz&quot;))
+        <pre class="scala"><code>    bind[Loader[HSPEN]].to[TableHSPENLoader]
+    bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader(conf.getString(&quot;hspenFile&quot;).getOrElse(&quot;data/hspen.csv.gz&quot;)))
     bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]</code></pre>
       </td>
     </tr>
@@ -93,11 +95,10 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>    bind[HCAFLoader].to[TableHCAFLoader]
-    bind[Loader[HCAF]].to[HCAFLoader]
-    bind[TableReader[HCAF]].toInstance(new FileSystemTableReader(&quot;data/hcaf.csv.gz&quot;))
+        <pre class="scala"><code>    bind[Loader[HCAF]].to[TableHCAFLoader]
+    bind[TableReader[HCAF]].toInstance(new FileSystemTableReader(conf.getString(&quot;hcafFile&quot;).getOrElse(&quot;data/hcaf.csv.gz&quot;)))
     bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
-    bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]]</code></pre>
+    bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]].in[Singleton]</code></pre>
       </td>
     </tr>
     <tr id="section-5">
@@ -110,8 +111,8 @@ case class AquamapsModule() extends AbstractModule with ScalaModule {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(&quot;/tmp/hspec.csv.gz&quot;))
-    bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
+        <pre class="scala"><code>    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(conf.getString(&quot;hspecFile&quot;).getOrElse(&quot;/tmp/hspec.csv.gz&quot;)))
+    bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
     bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]].in[Singleton]</code></pre>
       </td>
     </tr>

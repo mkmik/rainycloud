@@ -49,7 +49,8 @@
 import org.apache.cassandra.thrift.{ Column, ColumnPath }
 import org.apache.log4j.Logger
 
-import stopwatch.Stopwatch</code></pre>
+import stopwatch.Stopwatch
+import com.googlecode.avro.marker._</code></pre>
       </td>
     </tr>
     <tr id="section-2">
@@ -82,13 +83,15 @@ import stopwatch.Stopwatch</code></pre>
       </td>
       <td class="code">
         <pre class="scala"><code>@serializable
-class HCAF(val csquareCode: String) extends Keyed {
+case class HCAF(var csquareCode: String) extends Keyed with AvroRecord {
   override def toString() = &quot;HCAF(%s)&quot;.format(csquareCode)
 
   def key = csquareCode
 }
 
 object HCAF {
+  implicit def makeHcaf = HCAF(&quot;&quot;)
+
   val columns = List(&quot;CsquareCode&quot;, &quot;OceanArea&quot;, &quot;CenterLat&quot;, &quot;CenterLong&quot;, &quot;FAOAreaM&quot;, &quot;DepthMin&quot;, &quot;DepthMax&quot;, &quot;SSTAnMean&quot;, &quot;SBTAnMean&quot;, &quot;SalinityMean&quot;, &quot;SalinityBMean&quot;, &quot;PrimProdMean&quot;, &quot;IceConAnn&quot;, &quot;LandDist&quot;, &quot;EEZFirst&quot;, &quot;LME&quot;, &quot;DepthMean&quot;)
 
   val condition = &quot;OceanArea &gt; 0&quot;
@@ -119,12 +122,17 @@ object HCAF {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>class HSPEN(val speciesId: String) {
+        <pre class="scala"><code>@serializable
+case class HSPEN(var speciesId: String) extends Keyed with AvroRecord {
   override def toString() = &quot;HSPEN(%s)&quot;.format(speciesId)
+  
+  def key = speciesId
 }
 
 object HSPEN {
   private val log = Logger.getLogger(this.getClass);
+
+  implicit def makeHspen = HSPEN(&quot;&quot;)
 
   val columns = List(&quot;key&quot;, &quot;Layer&quot;, &quot;SpeciesID&quot;, &quot;FAOAreas&quot;, &quot;Pelagic&quot;, &quot;NMostLat&quot;, &quot;SMostLat&quot;, &quot;WMostLong&quot;, &quot;EMostLong&quot;, &quot;DepthMin&quot;, &quot;DepthMax&quot;, &quot;DepthPrefMin&quot;, &quot;DepthPrefMax&quot;, &quot;TempMin&quot;, &quot;TempMax&quot;, &quot;TempPrefMin&quot;, &quot;TempPrefMax&quot;, &quot;SalinityMin&quot;, &quot;SalinityMax&quot;, &quot;SalinityPrefMin&quot;, &quot;SalinityPrefMax&quot;, &quot;PrimProdMin&quot;, &quot;PrimProdMax&quot;, &quot;PrimProdPrefMin&quot;, &quot;PrimProdPrefMax&quot;, &quot;IceConMin&quot;, &quot;IceConMax&quot;, &quot;IceConPrefMin&quot;, &quot;IceConPrefMax&quot;, &quot;LandDistMin&quot;, &quot;LandDistMax&quot;, &quot;LandDistPrefMin&quot;, &quot;MeanDepth&quot;, &quot;LandDistPrefMax&quot;)
 
@@ -160,7 +168,7 @@ object HSPEN {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>case class HSPEC(val speciesId: String, val csquareCode: String) extends CassandraConfig with CassandraCreator {
+        <pre class="scala"><code>case class HSPEC(var speciesId: String, var csquareCode: String) extends CassandraConfig with CassandraCreator with AvroRecord {
   override def keyspaceName = &quot;Aquamaps&quot;
   override def columnFamily = &quot;hspec&quot;
 

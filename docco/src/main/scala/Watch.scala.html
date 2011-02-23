@@ -67,6 +67,13 @@ import stopwatch.TimeUnit._</code></pre>
 object Watch {
   val server = new stopwatch.web.Server
 
+  def timed[A](caption: String)(body: =&gt; A) = {
+    val start = System.currentTimeMillis
+    val res = body
+    println(&quot;executed %s in %sms&quot;.format(caption, System.currentTimeMillis - start))
+    res
+  }
+
   def run = {
     // register StopwatchGroups you want to monitor
     server.groups ::= Stopwatch

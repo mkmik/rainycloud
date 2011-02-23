@@ -53,7 +53,10 @@
         <pre class="scala"><code>import com.google.inject.Guice
 import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
-import com.google.inject.util.Modules
+import com.google.inject.util.{Modules =&gt; GuiceModules}
+import net.lag.configgy.{Config, Configgy}
+import org.github.scopt.OptionParser
+import org.github.scopt.OptionParser._
 
 class EntryPoint @Inject() (
   val partitioner: Partitioner,
@@ -80,16 +83,62 @@ class EntryPoint @Inject() (
       </td>
       <td class="code">
         <pre class="scala"><code>object Main {
-  def main(argv: Array[String]) = {
-    //val injector = Guice createInjector AquamapsModule()
-    val injector = Guice createInjector (Modules `override` AquamapsModule() `with` COMPSsModule())  
+
+  val parser = new OptionParser(&quot;scopt&quot;) {
+    opt(&quot;r&quot;, &quot;ranges&quot;, &quot;range file&quot;, {v: String =&gt; Configgy.config.setString(&quot;ranges&quot;, v)})
+    opt(&quot;m&quot;, &quot;module&quot;, &quot;add a module to runtime&quot;, {v: String =&gt; val c= Configgy.config; c.setList(&quot;modules&quot;, (c.getList(&quot;modules&quot;).toList ++ List(v)).distinct) })
+  }
+
+
+  def main(args: Array[String]) {
+    Configgy.configure(&quot;rainycloud.conf&quot;)
+    val conf = Configgy.config
+
+    if (!parser.parse(args)) 
+      return
+
+    val mods = Modules.enabledModules(conf)
+    printSomeFeedback(mods, conf)</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <p>Configure our Guice context with the main modules overrided with optional modules obtained from config file + cmdline.</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>    val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (mods :_*))
 
     val entryPoint = injector.instance[EntryPoint]
-
     entryPoint.run
-    println(&quot;exiting&quot;)
-    System.exit(0)
-    println(&quot;exiting 2&quot;)
+
+    cleanup(injector)
+  }
+
+  def printSomeFeedback(mods: Seq[Module], conf: Config) {
+    println(conf.getList(&quot;modules&quot;))
+    println(&quot;Available modules: %s&quot;.format(Modules.modules.values.mkString(&quot;, &quot;)))
+    println(&quot;Enabled modules: %s&quot;.format(mods.mkString(&quot;, &quot;)))
+  }
+
+  def cleanup(injector: Injector) {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <p>currently Guice lifecycle support is lacking, so we have to perform some cleanup</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>    println(&quot;done&quot;)
+    injector.instance[Fetcher[HCAF]].shutdown
+    injector.instance[Loader[HSPEN]].shutdown
   }
 }</code></pre>
       </td>
