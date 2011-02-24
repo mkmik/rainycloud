@@ -56,7 +56,7 @@ class COMPSsCollectorEmitter[A] @Inject() (val outputFileName: String) extends E
 
   /*! The actual merging is invoked upon emitter flush, which is called at the end of the job. */
   def flush {
-    println("merging results into %s".format("outputFileName"))
+    println("merging results into %s".format(outputFileName))
     val output = new FileSystemTableWriter(outputFileName)
     timed("merging") {
       for {
