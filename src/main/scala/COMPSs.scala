@@ -28,10 +28,12 @@ import P2XML._
 class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter: COMPSsCollectorEmitter[HSPEC]) extends Generator {
 
   def computeInPartition(p: Partition) {
-    val tmpFile = mkTmp
+    val tmpFile = mkTmp(".xml")
     XML.save(tmpFile, p.toXml)
 
-    val outputFile = delegate.computeInPartition(tmpFile)
+    val outputFile = mkTmp(".csv.gz")
+
+    delegate.computeInPartition(tmpFile, outputFile)
 
     /*! Keep it for later */
     emitter.add(outputFile)
@@ -45,8 +47,8 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
       emitter.emit(hspec)
   }
 
-  def mkTmp = {
-    val file = File.createTempFile("rainycloud", ".xml")
+  def mkTmp(ext: String) = {
+    val file = File.createTempFile("rainycloud", ext)
     file.deleteOnExit()
     file.toString
   }
@@ -89,32 +91,31 @@ object COMPSsCollectorEmitter {
 
 /*! Now here's the magic. This method accepts files and converts them back to our native parameters and delegates to another Generator (I still don't know if we have to pass java `Files` or file names.) */
 trait FileParamsGenerator {
-  def computeInPartition(fileName: String): String
+  def computeInPartition(fileName: String, outputFileName: String)
 }
 
 /*! The `FileParamsGenerator` above is just an abstract trait, we need a way to find the backend generator.
  If we are running within a real application it's easy: just let Guice inject it! */
-class SimpleFileParamsGenerator @Inject() (val delegate: Generator, val emitter: Emitter[HSPEC], val writer: FileSystemTableWriter[HSPEC]) extends FileParamsGenerator {
-  def computeInPartition(fileName: String): String = {
+class SimpleFileParamsGenerator @Inject() (val delegate: Generator, val emitter: Emitter[HSPEC]) extends FileParamsGenerator {
+  def computeInPartition(fileName: String, outputFileName: String) {
     delegate.computeInPartition(XML.load(fileName).toPartition)
     emitter.flush
-    writer.name
   }
 }
 
 /*! But what if COMPSs requires only static method invocations because it wouldn't know how to spawn the instances on the remote worker ? */
 class StaticFileParamsGenerator extends FileParamsGenerator {
-  def computeInPartition(fileName: String): String = StaticFileParamsGenerator.staticDelegate(fileName)
+  def computeInPartition(fileName: String, outputFileName: String) = StaticFileParamsGenerator.staticDelegate(fileName, outputFileName)
 }
 
 /*! The static delegate also returns the output filename so that COMPSs can move the data for us. */
 object StaticFileParamsGenerator {
 
-  case class COMPSsWorkerModule() extends AbstractModule with ScalaModule {
+  case class COMPSsWorkerModule(val outputFileName: String) extends AbstractModule with ScalaModule {
     def configure() {
       /*! Let's write to a temporary file, so that the same machine can host several instances of this worker. In order to do this
        we override the Guice config and inject another TableWriter. */
-      val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(mkTmp)
+      val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(outputFileName)
 
       bind[TableWriter[HSPEC]].toInstance(writer)
       bind[FileSystemTableWriter[HSPEC]].toInstance(writer)
@@ -122,28 +123,19 @@ object StaticFileParamsGenerator {
       /*! The static method will just delegate the work to the `SimpleFileParamsGenerator` */
       bind[FileParamsGenerator].to[SimpleFileParamsGenerator]
     }
-
-    def mkTmp = {
-      val file = File.createTempFile("rainycloud-worker-", ".csv")
-      file.deleteOnExit()
-      file.toString
-    }
   }
 
-  /*! We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context) */
-//  def injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(), BabuDBModule()))
-  def injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(), COMPSsWorkerHDFSModule(), BabuDBModule()))
-
-  def staticDelegate(fileName: String): String = {
-    withInjector { injector =>
+  def staticDelegate(fileName: String, outputFileName: String) {
+    withInjector(outputFileName) { injector =>
       val generator = injector.instance[FileParamsGenerator]
-      generator.computeInPartition(fileName)
+      generator.computeInPartition(fileName, outputFileName)
     }
   }
 
   /*! Currently Guice has no support for shutting down an injector, so we have to do it manually */
-  def withInjector[A](body: Injector => A) = {
-    val i = injector
+  def withInjector[A](outputFileName: String)(body: Injector => A) = {
+    /*! We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context) */
+    val i = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(outputFileName), COMPSsWorkerHDFSModule(), BabuDBModule()))
     val res = body(i)
     i.instance[Fetcher[HCAF]].shutdown
     i.instance[Loader[HSPEN]].shutdown
