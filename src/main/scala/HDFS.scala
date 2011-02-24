@@ -47,6 +47,7 @@ class HDFSTableReader[A] @Inject() (val name: String) extends TableReader[A] wit
 
 /*! Same for writer */
 class HDFSTableWriter[A] @Inject() (val name: String) extends TableWriter[A] with HDFSCommon {
+  println("writing to %s".format(name))
   def writer = new BufferedWriter(new OutputStreamWriter(maybeZip(fs.create(path))))
 
   def maybeZip(stream: OutputStream) = {
