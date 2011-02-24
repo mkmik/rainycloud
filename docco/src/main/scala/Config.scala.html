@@ -52,7 +52,8 @@ import net.lag.configgy.Config
 
 case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
-    bind[Config].toInstance(conf)</code></pre>
+    bind[Config].toInstance(conf)
+    bind[EntryPoint].to[SimpleEntryPoint]</code></pre>
       </td>
     </tr>
     <tr id="section-2">
@@ -95,9 +96,9 @@ case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCl
 
       </td>
       <td class="code">
-        <pre class="scala"><code>    bind[Loader[HCAF]].to[TableHCAFLoader]
+        <pre class="scala"><code>    bind[Loader[HCAF]].to[TableHCAFLoader].in[Singleton]
     bind[TableReader[HCAF]].toInstance(new FileSystemTableReader(conf.getString(&quot;hcafFile&quot;).getOrElse(&quot;data/hcaf.csv.gz&quot;)))
-    bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]]
+    bind[PositionalSource[HCAF]].to[CSVPositionalSource[HCAF]].in[Singleton]
     bind[Fetcher[HCAF]].to[MemoryFetcher[HCAF]].in[Singleton]</code></pre>
       </td>
     </tr>

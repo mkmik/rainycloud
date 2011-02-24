@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>HDFS.scala</title>
+  <link href="http://circumflex.ru/css/docco.css"
+        rel="stylesheet"
+        type="text/css"
+        media="screen, projection"/>
+  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;HDFS.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      
+      </td>
+      <td class="code">
+        <pre class="scala"><code>package it.cnr.aquamaps
+
+import com.google.inject._
+import uk.me.lings.scalaguice.InjectorExtensions._
+import com.google.inject.name._
+import uk.me.lings.scalaguice.ScalaModule
+
+import java.io.{ InputStream, InputStreamReader, OutputStream, OutputStreamWriter, BufferedReader, BufferedWriter }
+import java.util.zip._
+
+import java.net.URI
+import org.apache.hadoop.fs._
+import org.apache.hadoop.conf._
+
+case class HDFSModule() extends AbstractModule with ScalaModule with RainyCloudModule {
+  def configure() {
+    bind[TableReader[HCAF]].toInstance(new HDFSTableReader(conf.getString(&quot;hcafFile&quot;).getOrElse(&quot;data/hcaf.csv.gz&quot;)))
+    bind[TableReader[HSPEN]].toInstance(new HDFSTableReader(conf.getString(&quot;hspenFile&quot;).getOrElse(&quot;data/hspen.csv.gz&quot;)))
+
+    bind[TableWriter[HSPEC]].toInstance(new HDFSTableWriter(conf.getString(&quot;hspecFile&quot;).getOrElse(&quot;/tmp/hspec.csv.gz&quot;)))
+  }
+
+}
+
+
+case class COMPSsWorkerHDFSModule() extends AbstractModule with ScalaModule with RainyCloudModule {
+  def configure() {
+    bind[TableReader[HCAF]].toInstance(new HDFSTableReader(conf.getString(&quot;hcafFile&quot;).getOrElse(&quot;data/hcaf.csv.gz&quot;)))
+    bind[TableReader[HSPEN]].toInstance(new HDFSTableReader(conf.getString(&quot;hspenFile&quot;).getOrElse(&quot;data/hspen.csv.gz&quot;)))
+  }
+
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>We can read data from the hdfs filesystem. Gzip files are supported</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class HDFSTableReader[A] @Inject() (val name: String) extends TableReader[A] with HDFSCommon {
+  def reader = new BufferedReader(new InputStreamReader(maybeUnzip(fs.open(path))))
+
+  def maybeUnzip(stream: InputStream) = {
+    if (name endsWith &quot;.gz&quot;)
+      new GZIPInputStream(stream)
+    else
+      stream
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>Same for writer</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>class HDFSTableWriter[A] @Inject() (val name: String) extends TableWriter[A] with HDFSCommon {
+  println(&quot;writing to %s&quot;.format(name))
+  def writer = new BufferedWriter(new OutputStreamWriter(maybeZip(fs.create(path))))
+
+  def maybeZip(stream: OutputStream) = {
+    if (name endsWith &quot;.gz&quot;)
+      new GZIPOutputStream(stream)
+    else
+      stream
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <p>Well, I cheated, here are the helpers for the reader and writer</p>
+
+      </td>
+      <td class="code">
+        <pre class="scala"><code>trait HDFSCommon {
+  val conf: Configuration = new Configuration()
+  val name: String
+
+  def fs = FileSystem.get(new URI(name), conf)
+  def path = new Path(new URI(name).getPath)
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

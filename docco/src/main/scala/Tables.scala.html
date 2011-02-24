@@ -168,7 +168,7 @@ object HSPEN {
 
       </td>
       <td class="code">
-        <pre class="scala"><code>case class HSPEC(var speciesId: String, var csquareCode: String) extends CassandraConfig with CassandraCreator with AvroRecord {
+        <pre class="scala"><code>case class HSPEC(var speciesId: String, var csquareCode: String) extends Keyed with CassandraConfig with CassandraCreator with AvroRecord {
   override def keyspaceName = &quot;Aquamaps&quot;
   override def columnFamily = &quot;hspec&quot;
 
