@@ -39,14 +39,6 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
     emitter.add(outputFile)
   }
 
-  /*! Well this is a rather stupid way to merge the remote output into our single result. `Emitter` should be extended to support bulk emits. */
-  def slowMerge(outputFile: String) {
-    val loader = new TableHSPECLoader(new CSVPositionalSource(new FileSystemTableReader(outputFile)))
-
-    for (hspec <- loader.load)
-      emitter.emit(hspec)
-  }
-
   def mkTmp(ext: String) = {
     val file = File.createTempFile("rainycloud", ext)
     file.deleteOnExit()
@@ -84,7 +76,7 @@ object COMPSsCollectorEmitter {
   /*! We assume we can perform a nice low level concatenation of the parts. */
   def merge(fileName: String, out: Writer) {
     timed("merging %s".format(fileName)) {
-      for (in <- managed(new FileReader(fileName)))
+      for (in <- managed(new FileSystemTableReader(fileName).reader))
         IOUtils.copy(in, out)
     }
   }
