@@ -47,7 +47,7 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
 }
 
 /*! We would like to defer the merging of the results until we spawned all the tasks */
-class COMPSsCollectorEmitter[A] @Inject() (val outputFileName: String) extends Emitter[A] {
+class COMPSsCollectorEmitter[A] @Inject() (val tableWriter: TableWriter[A]) extends Emitter[A] {
   var list: List[String] = List()
 
   def emit(record: A) = throw new IllegalArgumentException("this emitter cannot be used directly")
@@ -56,11 +56,10 @@ class COMPSsCollectorEmitter[A] @Inject() (val outputFileName: String) extends E
 
   /*! The actual merging is invoked upon emitter flush, which is called at the end of the job. */
   def flush {
-    println("merging results into %s".format(outputFileName))
-    val output = new FileSystemTableWriter(outputFileName)
+    println("merging results into %s".format(tableWriter))
     timed("merging") {
       for {
-        fw <- managed(output.writer)
+        fw <- managed(tableWriter.writer)
         file <- list
       } merge(file, fw)
     }
