@@ -12,6 +12,8 @@ import net.lag.configgy.Config
 case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
     bind[Config].toInstance(conf)
+    bind[EntryPoint].to[SimpleEntryPoint]
+
     /*!## Basic components
 
     We select partitioner which loads the pre-made partitions from a plain text file, an implementation of the `Generator` and

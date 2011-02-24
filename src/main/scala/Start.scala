@@ -22,11 +22,16 @@ import com.google.inject.util.{Modules => GuiceModules}
 import net.lag.configgy.{Config, Configgy}
 import org.github.scopt.OptionParser
 import org.github.scopt.OptionParser._
+import java.io.File
 
-class EntryPoint @Inject() (
+trait EntryPoint {
+  def run
+}
+
+class SimpleEntryPoint @Inject() (
   val partitioner: Partitioner,
   val generator: Generator,
-  val emitter: Emitter[HSPEC]) {
+  val emitter: Emitter[HSPEC]) extends EntryPoint {
 
   def run = {
     for (p <- partitioner.partitions)
@@ -70,7 +75,10 @@ object Main {
   }
 
   def loadConfiguration = {
-    Configgy.configure("rainycloud.conf")
+    if(new File("rainycloud.conf").exists())
+      Configgy.configure("rainycloud.conf")
+    else
+      Configgy.configureFromString("")
     Configgy.config
   }
 

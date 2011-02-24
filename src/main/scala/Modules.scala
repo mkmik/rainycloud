@@ -11,7 +11,8 @@ trait RainyCloudModule {
 object Modules {
   val modules = Map("BabuDB" -> BabuDBModule(),
     "COMPSs" -> COMPSsModule(),
-    "HDFS" -> HDFSModule())
+    "HDFS" -> HDFSModule(),
+    "MapReduce" -> MapReduceModule())
 
   def enabledModules(conf: Config): Seq[Module] = for {
     name <- conf.getList("modules")
