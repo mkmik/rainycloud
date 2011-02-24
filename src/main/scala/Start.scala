@@ -41,24 +41,13 @@ class EntryPoint @Inject() (
   This is the java `main` method. It instantiated a fully configured entrypoint with Guice, and runs it. */
 object Main {
 
-  val parser = new OptionParser("scopt") {
-    opt("r", "ranges", "range file", {v: String => Configgy.config.setString("ranges", v)})
-    opt("m", "module", "add a module to runtime", {v: String => val c= Configgy.config; c.setList("modules", (c.getList("modules").toList ++ List(v)).distinct) })
-  }
-
-
   def main(args: Array[String]) {
-    Configgy.configure("rainycloud.conf")
-    val conf = Configgy.config
+    val conf = loadConfiguration
 
     if (!parser.parse(args)) 
       return
 
-    val mods = Modules.enabledModules(conf)
-    printSomeFeedback(mods, conf)
-
-    /*! Configure our Guice context with the main modules overrided with optional modules obtained from config file + cmdline. */
-    val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (mods :_*))
+    val injector = createInjector(conf)
 
     val entryPoint = injector.instance[EntryPoint]
     entryPoint.run
@@ -66,8 +55,26 @@ object Main {
     cleanup(injector)
   }
 
+  val parser = new OptionParser("scopt") {
+    opt("s", "storage", "storage type (local, hdfs)", {v: String => Configgy.config.setString("storage", v)})
+    opt("r", "ranges", "range file", {v: String => Configgy.config.setString("ranges", v)})
+    opt("m", "module", "add a module to runtime", {v: String => val c= Configgy.config; c.setList("modules", (c.getList("modules").toList ++ List(v)).distinct) })
+  }
+
+  def createInjector(conf: Config) = {
+    val mods = Modules.enabledModules(conf)
+    printSomeFeedback(mods, conf)
+
+    /*! Configure our Guice context with the main modules overrided with optional modules obtained from config file + cmdline. */    
+    Guice createInjector (GuiceModules `override` AquamapsModule() `with` (mods :_*))
+  }
+
+  def loadConfiguration = {
+    Configgy.configure("rainycloud.conf")
+    Configgy.config
+  }
+
   def printSomeFeedback(mods: Seq[Module], conf: Config) {
-    println(conf.getList("modules"))
     println("Available modules: %s".format(Modules.modules.values.mkString(", ")))
     println("Enabled modules: %s".format(mods.mkString(", ")))
   }
