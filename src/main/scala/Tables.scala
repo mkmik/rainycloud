@@ -106,7 +106,7 @@ object HSPEN {
  The companion object contains conversion methods.
  */
 
-case class HSPEC(var speciesId: String, var csquareCode: String) extends CassandraConfig with CassandraCreator with AvroRecord {
+case class HSPEC(var speciesId: String, var csquareCode: String) extends Keyed with CassandraConfig with CassandraCreator with AvroRecord {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
 

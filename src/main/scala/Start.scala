@@ -61,7 +61,7 @@ object Main {
   }
 
   val parser = new OptionParser("scopt") {
-    opt("s", "storage", "storage type (local, hdfs)", {v: String => Configgy.config.setString("storage", v)})
+    opt("s", "storage", "storage type (local, hdfs)", {v: String => Configgy.config.setString("storage", v)}) // TODO: this won't work! includes are already processed %!@#$
     opt("r", "ranges", "range file", {v: String => Configgy.config.setString("ranges", v)})
     opt("m", "module", "add a module to runtime", {v: String => val c= Configgy.config; c.setList("modules", (c.getList("modules").toList ++ List(v)).distinct) })
   }

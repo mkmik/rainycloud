@@ -164,6 +164,7 @@ class MapReduceTaskChain[KIN, VIN, KOUT, VOUT] extends Cloneable {
       confModifiers map ((mod : ConfModifier) => mod(conf));
 
       val job  = new Job(conf, task.name);
+
       job setJarByClass          classOf[MapOnlyTask[_,_,_,_]];
       task initJob job ;
 
@@ -174,6 +175,8 @@ class MapReduceTaskChain[KIN, VIN, KOUT, VOUT] extends Cloneable {
       lib.input.FileInputFormat.addInputPath(job, new Path(prev.nextInput.dirName));
       lib.output.FileOutputFormat.setOutputPath(job, new Path(output.dirName));
 
+      lib.input.FileInputFormat.setMaxInputSplitSize(job, 524288)
+      lib.input.FileInputFormat.setMinInputSplitSize(job, 524288)
 
       job waitForCompletion true;
       return true;

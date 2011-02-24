@@ -10,6 +10,7 @@ import scala.collection.JavaConversions._
 import com.google.inject._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
+import net.lag.configgy.{Config, Configgy}
 
 import java.io.StringReader
 
@@ -33,21 +34,23 @@ object HCAFMapper extends TypedMapper[LongWritable, Text, Text, LongWritable] {
   val hspenFile = "hdfs://node1.hadoop.research-infrastructures.eu/user/admin/rainycloud/hspen.csv.gz"
   val hspen = new TableHSPENLoader(new CSVPositionalSource(new HDFSTableReader(hspenFile))).load
 
+  class HadoopEmitter[A <: Keyed](val context: ContextType) extends Emitter[A] {
+    def emit(record: A) = context.write(record.key, 1L)
+    def flush {}
+  }
+
   override def map(k: LongWritable, v: Text, context: ContextType) {
-
-    val source = new CSVPositionalSource[HCAF](new StringTableReader(v))
-    val loader = new TableHCAFLoader(source)
-    val records = loader.load
-
+    val hcafLoader = new TableHCAFLoader(new CSVPositionalSource(new StringTableReader(v)))
+    val fetcher = new Fetcher[HCAF] { def fetch(start: String, size: Long) = hcafLoader.load}
+    val hspenLoader = new Loader[HSPEN] { def load = hspen }
+    val emitter = new HadoopEmitter[HSPEC](context)
     val algorithm = new RandomHSpecAlgorithm()
 
-    for {
-      hcaf <- records
-      hspec <- algorithm.compute(hcaf, hspen)
-    } context.write(hspec.key, 1L)
-
+    val generator = new HSPECGenerator(hspenLoader, emitter, fetcher, algorithm)
+    generator.computeInPartition(new Partition(null, 0))
   }
 }
+
 
 class StringTableReader[A](val string: String) extends TableReader[A] {
   def reader = new StringReader(string)
@@ -56,9 +59,11 @@ class StringTableReader[A](val string: String) extends TableReader[A] {
 class MapReduceEntryPoint extends EntryPoint {
 
   def run {
+    val conf = Configgy.config
+
     val c = MapReduceTaskChain.init() -->
       //IO.Text[LongWritable, Text]("data/hcaf-small.csv.gz").input -->
-      IO.Text[LongWritable, Text]("hdfs://node1.hadoop.research-infrastructures.eu/user/admin/rainycloud/hcaf-small.csv.gz").input -->
+      IO.Text[LongWritable, Text](conf.getString("hcafFile").getOrElse("hdfs://node1.hadoop.research-infrastructures.eu/user/admin/rainycloud/hcaf.csv")).input -->
       HCAFMapper -->
       IO.Text[Text, LongWritable]("hdfs://node1.hadoop.research-infrastructures.eu/tmp/outdir").output
     c.execute()
