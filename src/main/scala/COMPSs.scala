@@ -10,6 +10,7 @@ import com.google.inject.util.{ Modules => GuiceModules }
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
 import Watch.timed
+import net.lag.logging.Logger
 import java.io._
 import org.apache.commons.io.IOUtils
 import resource._
@@ -26,7 +27,6 @@ import P2XML._
 /*! In order to connect to the rest of the system, first we implement the `Generator` interface. We receive partitions from the entry point here, convert the parameters
  * into files, amd delegate to another interface whose signature COMPSs knowns how to handle (files as parameters). */
 class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter: COMPSsCollectorEmitter[HSPEC]) extends Generator {
-
   def computeInPartition(p: Partition) {
     val tmpFile = mkTmp(".xml")
     XML.save(tmpFile, p.toXml)
@@ -48,6 +48,8 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
 
 /*! We would like to defer the merging of the results until we spawned all the tasks */
 class COMPSsCollectorEmitter[A] @Inject() (val tableWriter: TableWriter[A]) extends Emitter[A] {
+  private val log = Logger(classOf[COMPSsCollectorEmitter[A]])
+
   var list: List[String] = List()
 
   def emit(record: A) = throw new IllegalArgumentException("this emitter cannot be used directly")
@@ -56,7 +58,7 @@ class COMPSsCollectorEmitter[A] @Inject() (val tableWriter: TableWriter[A]) exte
 
   /*! The actual merging is invoked upon emitter flush, which is called at the end of the job. */
   def flush {
-    println("merging results into %s".format(tableWriter))
+    log.info("merging results into %s".format(tableWriter))
     timed("merging") {
       for {
         fw <- managed(tableWriter.writer)

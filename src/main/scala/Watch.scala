@@ -6,6 +6,8 @@ import stopwatch.Stopwatch
 import stopwatch.StopwatchGroup
 import stopwatch.StopwatchRange
 import stopwatch.TimeUnit._
+import net.lag.logging.Logger
+
 
 /*! This is a nice and easy to use utility to take measurements of code execution.
  
@@ -26,12 +28,14 @@ trait Watch {
 }
 
 object Watch {
+  private val log = Logger(classOf[Watch])
+
   val server = new stopwatch.web.Server
 
   def timed[A](caption: String)(body: => A) = {
     val start = System.currentTimeMillis
     val res = body
-    println("executed %s in %sms".format(caption, System.currentTimeMillis - start))
+    log.info("executed %s in %sms".format(caption, System.currentTimeMillis - start))
     res
   }
 
@@ -45,7 +49,7 @@ object Watch {
       //		server.start()
     } catch {
       case _ =>
-        println("couldn't start stopwatch web monitoring")
+        log.error("couldn't start stopwatch web monitoring")
     }
   }
 }

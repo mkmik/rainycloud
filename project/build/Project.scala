@@ -26,7 +26,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 
   val codaRepo = "Coda Hale's Repository" at "http://repo.codahale.com/"
   val fuseRepo = "fuse repo" at "http://repo.fusesource.com/maven2-all/"
-  val akkaRepo = "akka repo" at "http://akka.io/repository"
+  //val akkaRepo = "akka repo" at "http://akka.io/repository"
   //val fruit    = "guiceyfruit repo" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
 
   // avro
@@ -52,7 +52,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val guice = "com.google.inject" % "guice" % "3.0-rc2"
   val guiceScala = "uk.me.lings" % "scala-guice_2.8.0" % "0.1"
 
-  val configgy = "net.lag" % "configgy" % "2.0.2-nologgy" % "compile" //ApacheV2
+  val configgy = "net.lag" % "configgy" % "2.0.0" % "compile" //ApacheV2
   val scopt = "eed3si9n" %% "scopt" % "1.0"
   val scalaArm = "com.github.jsuereth.scala-arm" %% "scala-arm" % "0.2"
 

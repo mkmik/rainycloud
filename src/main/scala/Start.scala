@@ -20,6 +20,7 @@ import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.util.{Modules => GuiceModules}
 import net.lag.configgy.{Config, Configgy}
+import net.lag.logging.Logger
 import org.github.scopt.OptionParser
 import org.github.scopt.OptionParser._
 
@@ -39,7 +40,9 @@ class EntryPoint @Inject() (
 /*!## Guice startup
  
   This is the java `main` method. It instantiated a fully configured entrypoint with Guice, and runs it. */
+class Main
 object Main {
+  private val log = Logger(classOf[Main])
 
   def main(args: Array[String]) {
     val conf = loadConfiguration
@@ -75,13 +78,13 @@ object Main {
   }
 
   def printSomeFeedback(mods: Seq[Module], conf: Config) {
-    println("Available modules: %s".format(Modules.modules.values.mkString(", ")))
-    println("Enabled modules: %s".format(mods.mkString(", ")))
+    log.info("Available modules: %s".format(Modules.modules.values.mkString(", ")))
+    log.info("Enabled modules: %s".format(mods.mkString(", ")))
   }
 
   def cleanup(injector: Injector) {
     /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
-    println("done")
+    log.info("done")
     injector.instance[Fetcher[HCAF]].shutdown
     injector.instance[Loader[HSPEN]].shutdown
   }

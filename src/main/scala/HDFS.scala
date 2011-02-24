@@ -4,6 +4,7 @@ import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
+import net.lag.logging.Logger
 
 import java.io.{ InputStream, InputStreamReader, OutputStream, OutputStreamWriter, BufferedReader, BufferedWriter }
 import java.util.zip._
@@ -47,7 +48,9 @@ class HDFSTableReader[A] @Inject() (val name: String) extends TableReader[A] wit
 
 /*! Same for writer */
 class HDFSTableWriter[A] @Inject() (val name: String) extends TableWriter[A] with HDFSCommon {
-  println("writing to %s".format(name))
+  private val log = Logger(classOf[HDFSTableWriter[A]])
+
+  log.debug("writing to %s".format(name))
   def writer = new BufferedWriter(new OutputStreamWriter(maybeZip(fs.create(path))))
 
   def maybeZip(stream: OutputStream) = {
