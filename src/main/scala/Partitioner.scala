@@ -13,6 +13,7 @@ trait Partitioner {
   def partitions: Iterator[Partition]
 }
 
+@serializable
 case class Partition(val start: String, val size: Long)
 
 
