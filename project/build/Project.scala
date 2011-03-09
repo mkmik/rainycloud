@@ -25,7 +25,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val scalaToolsReleases = "Scala-Tools Maven2 Release Repository" at "http://scala-tools.org/repo-releases"
 
   val codaRepo = "Coda Hale's Repository" at "http://repo.codahale.com/"
-  val fuseRepo = "fuse repo" at "http://repo.fusesource.com/maven2-all/"
+//  val fuseRepo = "fuse repo" at "http://repo.fusesource.com/maven2-all/"
   val akkaRepo = "akka repo" at "http://akka.io/repository"
   //val fruit    = "guiceyfruit repo" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
 

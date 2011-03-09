@@ -160,6 +160,7 @@ class MapReduceTaskChain[KIN, VIN, KOUT, VOUT] extends Cloneable {
 
     if(task != null) {
       val conf = getConf; 
+      conf set ("mapred.map.output.compression.codec", "com.hadoop.compression.lzo.LzoCodec")
       // Off the bat, apply the modifications from all the ConfModifiers we have queued up at this node.
       confModifiers map ((mod : ConfModifier) => mod(conf));
 
