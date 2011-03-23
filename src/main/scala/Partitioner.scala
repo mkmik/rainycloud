@@ -21,11 +21,11 @@ case class Partition(val start: String, val size: Long)
 
  The simples partitioner is the StaticPartitioner, which simply reads key ranges from a precomputed file
  */
-class StaticPartitioner @Inject() (val rangesFile: String) extends Partitioner {
+class StaticPartitioner @Inject() (val ranges: Iterator[String]) extends Partitioner {
   def toPartition(line: String) = {
     val Array(s, k) = line.trim split " "
     Partition(k, s.toInt)
   }
 
-  def partitions = fromFile(rangesFile).getLines map toPartition
+  def partitions = ranges map toPartition
 }

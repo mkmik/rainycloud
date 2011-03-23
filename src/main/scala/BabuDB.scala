@@ -22,6 +22,8 @@ import net.lag.logging.Logger
 import HCAF._
 import HSPEN._
 
+import net.lag.configgy.Configgy
+
 case class BabuDBModule() extends AbstractModule with ScalaModule {
   def configure() {
     bind[Loader[HSPEN]].annotatedWith(named("forBabu")).to(classOf[TableHSPENLoader]).in(classOf[Singleton])
@@ -47,7 +49,9 @@ trait BabuDB[A <: Keyed] {
   val dbName: String
   val serializer: Serializer[A]
 
-  val databaseSystem = BabuDBFactory.createBabuDB(new ConfigBuilder().setDataPath("/tmp/babudb").setLogAppendSyncMode(DiskLogger.SyncMode.ASYNC).build())
+  val dataPath = Configgy.config.getString("babudbdir").getOrElse("/tmp/babudb")
+
+  val databaseSystem = BabuDBFactory.createBabuDB(new ConfigBuilder().setDataPath(dataPath).setLogAppendSyncMode(DiskLogger.SyncMode.ASYNC).build())
   val dbman = databaseSystem.getDatabaseManager();
 
   val db = getDb

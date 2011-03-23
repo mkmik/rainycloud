@@ -67,3 +67,7 @@ So you can use the provided data/hcaf-small.csv.gz (copy it over the hcaf.csv.gz
 The other way is to reduce the number of partitions:
 
     java -jar ./target/scala_2.8.1/rainycloud_2.8.1-assembly-1.0.jar -r octo/client/rangesSmall
+
+* how can I run one instance of the "worker", computing only one partition
+
+    java -jar ./target/scala_2.8.1/rainycloud_2.8.1-assembly-1.0.jar  -e "100 1000" --hcaf data/hcaf.csv.gz --hspen data/hspen.csv.gz --hspec /tmp/out.gz
