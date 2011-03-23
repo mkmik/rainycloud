@@ -8,6 +8,7 @@ import com.google.inject._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
 import net.lag.configgy.Config
+import io.Source.fromFile
 
 case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
@@ -17,7 +18,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCl
     We select partitioner which loads the pre-made partitions from a plain text file, an implementation of the `Generator` and
     `HspecAlgorithm` components.
     */
-    bind[Partitioner].toInstance(new StaticPartitioner(conf.getString("ranges").getOrElse("octo/client/ranges")))
+    bind[Partitioner].toInstance(new StaticPartitioner(ranges))
     bind[Generator].to[HSPECGenerator]
     bind[HspecAlgorithm].to[RandomHSpecAlgorithm]
 
@@ -55,5 +56,13 @@ case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCl
      This is the octobot entry point, which is loaded from a different entry point (in fact we could move this to separate guice module)
      */
     bind[Bot].to[HSPECGeneratorOctobot]
+  }
+
+  def ranges: Iterator[String] = {
+    val ranges = conf.getList("inlineranges")
+    if(ranges.isEmpty)
+      fromFile(conf.getString("ranges").getOrElse("octo/client/ranges")).getLines
+    else
+      ranges.toIterator
   }
 }
