@@ -3,11 +3,8 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8">
   <title>Serializer.scala</title>
-  <link href="http://circumflex.ru/css/docco.css"
-        rel="stylesheet"
-        type="text/css"
-        media="screen, projection"/>
-  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
   </script>
   <script type="text/javascript">
     hljs.initHighlightingOnLoad();
@@ -15,11 +12,12 @@
 </head>
 <body>
 <div id="container">
+  <div id="background"></div>
   <table cellspacing="0" cellpadding="0">
     <thead>
     <tr>
       <th class="docs">
-        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Serializer.scala</h1>
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Serializer.scala</h1>
       </th>
       <th class="code"></th>
     </tr>
@@ -30,10 +28,10 @@
         <div class="octowrap">
           <a class="octothorpe" href="#section-0">#</a>
         </div>
-      
+      <p></p>
       </td>
       <td class="code">
-        <pre class="scala"><code>package it.cnr.aquamaps
+        <pre><code>package it.cnr.aquamaps
 
 import com.google.inject._
 import com.google.inject.name._
@@ -49,11 +47,10 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-1">#</a>
         </div>
-      <p>Let's define a way to serialize our records in a compact byte stream.</p>
-
+      <p>! Let's define a way to serialize our records in a compact byte stream.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>trait Serializer[A] {
+        <pre><code>trait Serializer[A] {
   def serialize(record: A): Array[Byte]
   def deserialize(bytes: Array[Byte]): A
 }</code></pre>
@@ -64,11 +61,11 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-2">#</a>
         </div>
-      <p>Avro is a very fast and compact serializer which has some rough edges. In particular records have  to implement the AvroRecord interface, have only mutable fields, and provide an empty constructor.</p>
-
+      <p>! Avro is a very fast and compact serializer which has some rough edges. In particular records have
+ to implement the AvroRecord interface, have only mutable fields, and provide an empty constructor.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>abstract class AvroSerializer[A &lt;: AvroRecord] @Inject() extends Serializer[A] {
+        <pre><code>abstract class AvroSerializer[A &lt;: AvroRecord] @Inject() extends Serializer[A] {
   def makeRecord: A
   def serialize(record: A): Array[Byte] = record.toBytes
   def deserialize(bytes: Array[Byte]): A = makeRecord.parse(bytes)
@@ -80,11 +77,10 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-3">#</a>
         </div>
-      <p>We use implicits to get an empty record when needed</p>
-
+      <p>! We use implicits to get an empty record when needed</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>object AvroSerializer {
+        <pre><code>object AvroSerializer {
   def apply[A &lt;: AvroRecord]()(implicit a: A): AvroSerializer[A] = new AvroSerializer[A] { def makeRecord = a }
 }</code></pre>
       </td>
@@ -94,11 +90,10 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-4">#</a>
         </div>
-      <p>Otherwise we can rely on good old java serialization</p>
-
+      <p>! Otherwise we can rely on good old java serialization</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>class SerializableSerializer[A] @Inject() extends Serializer[A] {
+        <pre><code>class SerializableSerializer[A] @Inject() extends Serializer[A] {
   def serialize(record: A): Array[Byte] = {
     val baos = new ByteArrayOutputStream(1024)
     val res = for (o &lt;- managed(new ObjectOutputStream(baos)))

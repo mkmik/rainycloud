@@ -3,11 +3,8 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8">
   <title>Tables.scala</title>
-  <link href="http://circumflex.ru/css/docco.css"
-        rel="stylesheet"
-        type="text/css"
-        media="screen, projection"/>
-  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
   </script>
   <script type="text/javascript">
     hljs.initHighlightingOnLoad();
@@ -15,11 +12,12 @@
 </head>
 <body>
 <div id="container">
+  <div id="background"></div>
   <table cellspacing="0" cellpadding="0">
     <thead>
     <tr>
       <th class="docs">
-        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Tables.scala</h1>
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Tables.scala</h1>
       </th>
       <th class="code"></th>
     </tr>
@@ -30,10 +28,10 @@
         <div class="octowrap">
           <a class="octothorpe" href="#section-0">#</a>
         </div>
-      
+      <p></p>
       </td>
       <td class="code">
-        <pre class="scala"><code>package it.cnr.aquamaps</code></pre>
+        <pre><code>package it.cnr.aquamaps</code></pre>
       </td>
     </tr>
     <tr id="section-1">
@@ -41,11 +39,13 @@
         <div class="octowrap">
           <a class="octothorpe" href="#section-1">#</a>
         </div>
-      <p>Here we define our data model.  We have 3 tables: HCAF, HSPEN and the to be generated HSPEC</p>
+      <p>!</p>
 
+<p>Here we define our data model.
+We have 3 tables: HCAF, HSPEN and the to be generated HSPEC</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>import CassandraConversions._
+        <pre><code>import CassandraConversions._
 import org.apache.cassandra.thrift.{ Column, ColumnPath }
 import org.apache.log4j.Logger
 
@@ -58,11 +58,12 @@ import com.googlecode.avro.marker._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-2">#</a>
         </div>
-      <p>Tables which have primary key will have to implement this trait.</p>
+      <p>!</p>
 
+<p>Tables which have primary key will have to implement this trait.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>trait Keyed {
+        <pre><code>trait Keyed {
   def key: String
 }</code></pre>
       </td>
@@ -72,17 +73,17 @@ import com.googlecode.avro.marker._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-3">#</a>
         </div>
-      <h2>HCAF</h2>
-<p>HCAF is the biggest of the three table, but we actually only need to fetch the ocean squares. With the 0.5 deg resolution cells we have:</p>
-<ul>
-  <li>hcaf_*:       259'200</li>
-  <li>hcaf ocean:   178'204</li>
-</ul>
-<p>HCAF Table has the csquareCode as key. The companion object contains conversion methods</p>
+      <p>!## HCAF</p>
 
+<p>HCAF is the biggest of the three table, but we actually only need to fetch the ocean squares. With the 0.5 deg resolution cells we have:</p>
+
+<p>hcaf_*:       259'200
+hcaf ocean:   178'204</p>
+
+<p>HCAF Table has the csquareCode as key. The companion object contains conversion methods</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>@serializable
+        <pre><code>@serializable
 case class HCAF(var csquareCode: String) extends Keyed with AvroRecord {
   override def toString() = &quot;HCAF(%s)&quot;.format(csquareCode)
 
@@ -113,16 +114,16 @@ object HCAF {
         <div class="octowrap">
           <a class="octothorpe" href="#section-4">#</a>
         </div>
-      <h2>HSPEN</h2>
-<p>The HSPEN table describes species and can be loaded in memory:</p>
-<ul>
-  <li>hspen:          9'263</li>
-</ul>
-<p>The HSPEN Table doesn't need a key. The companion object contains conversion methods</p>
+      <p>!## HSPEN</p>
 
+<p>The HSPEN table describes species and can be loaded in memory:</p>
+
+<p>hspen:          9'263</p>
+
+<p>The HSPEN Table doesn't need a key. The companion object contains conversion methods</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>@serializable
+        <pre><code>@serializable
 case class HSPEN(var speciesId: String) extends Keyed with AvroRecord {
   override def toString() = &quot;HSPEN(%s)&quot;.format(speciesId)
   
@@ -154,21 +155,23 @@ object HSPEN {
         <div class="octowrap">
           <a class="octothorpe" href="#section-5">#</a>
         </div>
-      <h2>HSPEC</h2>
-<p>The HSPEC table is the cartesian product of HSPEN and HCAF and can potentially:</p>
-<ul>
-  <li>total:    1'650'703'652</li>
-</ul>
-<p>Fortunately we only care about the non-zero probability out cells, which are currently less:</p>
-<ul>
-  <li>output:    56'582'558</li>
-</ul>
-<p>The HSPEC Table is declared as a case so that it inherits the Product trait, this way we can easily serialize  all the fields as CSV</p>
-<p>The companion object contains conversion methods.</p>
+      <p>!## HSPEC</p>
 
+<p>The HSPEC table is the cartesian product of HSPEN and HCAF and can potentially:</p>
+
+<p>total:    1'650'703'652</p>
+
+<p>Fortunately we only care about the non-zero probability out cells, which are currently less:</p>
+
+<p>output:    56'582'558</p>
+
+<p>The HSPEC Table is declared as a case so that it inherits the Product trait, this way we can easily serialize
+all the fields as CSV</p>
+
+<p>The companion object contains conversion methods.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>case class HSPEC(var speciesId: String, var csquareCode: String) extends Keyed with CassandraConfig with CassandraCreator with AvroRecord {
+        <pre><code>case class HSPEC(var speciesId: String, var csquareCode: String) extends CassandraConfig with CassandraCreator with AvroRecord {
   override def keyspaceName = &quot;Aquamaps&quot;
   override def columnFamily = &quot;hspec&quot;
 
@@ -191,11 +194,10 @@ object HSPEC {
         <div class="octowrap">
           <a class="octothorpe" href="#section-6">#</a>
         </div>
-      <p>These are rarely needed, since we normally don't read back generated HSPEC here</p>
-
+      <p>! These are rarely needed, since we normally don't read back generated HSPEC here</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>  def fromTableRow(row: Array[String]): HSPEC = build(Map(columns zip row: _*))
+        <pre><code>  def fromTableRow(row: Array[String]): HSPEC = build(Map(columns zip row: _*))
 
   def build(x: Map[String, String]) = {
     new HSPEC(x.get(&quot;SpeciesID&quot;).getOrElse(&quot;no species&quot;),

@@ -3,11 +3,8 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8">
   <title>COMPSs.scala</title>
-  <link href="http://circumflex.ru/css/docco.css"
-        rel="stylesheet"
-        type="text/css"
-        media="screen, projection"/>
-  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
   </script>
   <script type="text/javascript">
     hljs.initHighlightingOnLoad();
@@ -15,11 +12,12 @@
 </head>
 <body>
 <div id="container">
+  <div id="background"></div>
   <table cellspacing="0" cellpadding="0">
     <thead>
     <tr>
       <th class="docs">
-        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;COMPSs.scala</h1>
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;COMPSs.scala</h1>
       </th>
       <th class="code"></th>
     </tr>
@@ -30,10 +28,10 @@
         <div class="octowrap">
           <a class="octothorpe" href="#section-0">#</a>
         </div>
-      
+      <p></p>
       </td>
       <td class="code">
-        <pre class="scala"><code>package it.cnr.aquamaps
+        <pre><code>package it.cnr.aquamaps
 
 import com.google.inject._
 import scala.xml.{ Node, Text, XML }
@@ -45,6 +43,7 @@ import com.google.inject.util.{ Modules =&gt; GuiceModules }
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
 import Watch.timed
+import net.lag.logging.Logger
 import java.io._
 import org.apache.commons.io.IOUtils
 import resource._</code></pre>
@@ -55,12 +54,12 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-1">#</a>
         </div>
-      <h1>COMPSs support</h1>
-<p>COMPSs currently only support files as communication method between remote spawns.</p>
+      <p>!# COMPSs support</p>
 
+<p>COMPSs currently only support files as communication method between remote spawns.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code></code></pre>
+        <pre><code></code></pre>
       </td>
     </tr>
     <tr id="section-2">
@@ -68,11 +67,10 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-2">#</a>
         </div>
-      <p>Hencefore we needa way to serialize Partitions to and from xml: this import adds the <code>toXml</code> and <code>toPartition</code> methods to <code>Partition</code> and <code>xml.Node</code> respectively, see bottom.</p>
-
+      <p>! Hencefore we needa way to serialize Partitions to and from xml: this import adds the <code>toXml</code> and <code>toPartition</code> methods to <code>Partition</code> and <code>xml.Node</code> respectively, see bottom.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>import P2XML._</code></pre>
+        <pre><code>import P2XML._</code></pre>
       </td>
     </tr>
     <tr id="section-3">
@@ -80,12 +78,11 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-3">#</a>
         </div>
-      <p>In order to connect to the rest of the system, first we implement the <code>Generator</code> interface. We receive partitions from the entry point here, convert the parameters  * into files, amd delegate to another interface whose signature COMPSs knowns how to handle (files as parameters).</p>
-
+      <p>! In order to connect to the rest of the system, first we implement the <code>Generator</code> interface. We receive partitions from the entry point here, convert the parameters
+ * into files, amd delegate to another interface whose signature COMPSs knowns how to handle (files as parameters).</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter: COMPSsCollectorEmitter[HSPEC]) extends Generator {
-
+        <pre><code>class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter: COMPSsCollectorEmitter[HSPEC]) extends Generator {
   def computeInPartition(p: Partition) {
     val tmpFile = mkTmp(&quot;.xml&quot;)
     XML.save(tmpFile, p.toXml)
@@ -100,11 +97,10 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-4">#</a>
         </div>
-      <p>Keep it for later</p>
-
+      <p>! Keep it for later</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>    emitter.add(outputFile)
+        <pre><code>    emitter.add(outputFile)
   }
 
   def mkTmp(ext: String) = {
@@ -120,11 +116,12 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-5">#</a>
         </div>
-      <p>We would like to defer the merging of the results until we spawned all the tasks</p>
-
+      <p>! We would like to defer the merging of the results until we spawned all the tasks</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>class COMPSsCollectorEmitter[A] @Inject() (val tableWriter: TableWriter[A]) extends Emitter[A] {
+        <pre><code>class COMPSsCollectorEmitter[A] @Inject() (val tableWriter: TableWriter[A]) extends Emitter[A] {
+  private val log = Logger(classOf[COMPSsCollectorEmitter[A]])
+
   var list: List[String] = List()
 
   def emit(record: A) = throw new IllegalArgumentException(&quot;this emitter cannot be used directly&quot;)
@@ -137,12 +134,11 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-6">#</a>
         </div>
-      <p>The actual merging is invoked upon emitter flush, which is called at the end of the job.</p>
-
+      <p>! The actual merging is invoked upon emitter flush, which is called at the end of the job.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>  def flush {
-    println(&quot;merging results into %s&quot;.format(tableWriter))
+        <pre><code>  def flush {
+    log.info(&quot;merging results into %s&quot;.format(tableWriter))
     timed(&quot;merging&quot;) {
       for {
         fw &lt;- managed(tableWriter.writer)
@@ -157,11 +153,10 @@ import resource._</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-7">#</a>
         </div>
-      <p>We have to call a static method for COMPSs to be able to track this call and managed dependencies.</p>
-
+      <p>! We have to call a static method for COMPSs to be able to track this call and managed dependencies.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>  def merge(fileName: String, out: Writer) {
+        <pre><code>  def merge(fileName: String, out: Writer) {
     COMPSsCollectorEmitter.merge(fileName, out)
   }
 }
@@ -174,11 +169,10 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-8">#</a>
         </div>
-      <p>We assume we can perform a nice low level concatenation of the parts.</p>
-
+      <p>! We assume we can perform a nice low level concatenation of the parts.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>  def merge(fileName: String, out: Writer) {
+        <pre><code>  def merge(fileName: String, out: Writer) {
     timed(&quot;merging %s&quot;.format(fileName)) {
       for (in &lt;- managed(new FileSystemTableReader(fileName).reader))
         IOUtils.copy(in, out)
@@ -192,11 +186,10 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-9">#</a>
         </div>
-      <p>Now here's the magic. This method accepts files and converts them back to our native parameters and delegates to another Generator (I still don't know if we have to pass java <code>Files</code> or file names.)</p>
-
+      <p>! Now here's the magic. This method accepts files and converts them back to our native parameters and delegates to another Generator (I still don't know if we have to pass java <code>Files</code> or file names.)</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>trait FileParamsGenerator {
+        <pre><code>trait FileParamsGenerator {
   def computeInPartition(fileName: String, outputFileName: String)
 }</code></pre>
       </td>
@@ -206,11 +199,11 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-10">#</a>
         </div>
-      <p>The <code>FileParamsGenerator</code> above is just an abstract trait, we need a way to find the backend generator.  If we are running within a real application it's easy: just let Guice inject it!</p>
-
+      <p>! The <code>FileParamsGenerator</code> above is just an abstract trait, we need a way to find the backend generator.
+ If we are running within a real application it's easy: just let Guice inject it!</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>class SimpleFileParamsGenerator @Inject() (val delegate: Generator, val emitter: Emitter[HSPEC]) extends FileParamsGenerator {
+        <pre><code>class SimpleFileParamsGenerator @Inject() (val delegate: Generator, val emitter: Emitter[HSPEC]) extends FileParamsGenerator {
   def computeInPartition(fileName: String, outputFileName: String) {
     delegate.computeInPartition(XML.load(fileName).toPartition)
     emitter.flush
@@ -223,11 +216,10 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-11">#</a>
         </div>
-      <p>But what if COMPSs requires only static method invocations because it wouldn't know how to spawn the instances on the remote worker ?</p>
-
+      <p>! But what if COMPSs requires only static method invocations because it wouldn't know how to spawn the instances on the remote worker ?</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>class StaticFileParamsGenerator extends FileParamsGenerator {
+        <pre><code>class StaticFileParamsGenerator extends FileParamsGenerator {
   def computeInPartition(fileName: String, outputFileName: String) = StaticFileParamsGenerator.staticDelegate(fileName, outputFileName)
 }</code></pre>
       </td>
@@ -237,11 +229,10 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-12">#</a>
         </div>
-      <p>The static delegate also returns the output filename so that COMPSs can move the data for us.</p>
-
+      <p>! The static delegate also returns the output filename so that COMPSs can move the data for us.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>object StaticFileParamsGenerator {
+        <pre><code>object StaticFileParamsGenerator {
 
   case class COMPSsWorkerModule(val outputFileName: String) extends AbstractModule with ScalaModule {
     def configure() {</code></pre>
@@ -252,11 +243,11 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-13">#</a>
         </div>
-      <p>Let's write to a temporary file, so that the same machine can host several instances of this worker. In order to do this        we override the Guice config and inject another TableWriter.</p>
-
+      <p>! Let's write to a temporary file, so that the same machine can host several instances of this worker. In order to do this
+       we override the Guice config and inject another TableWriter.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>      val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(outputFileName)
+        <pre><code>      val writer: FileSystemTableWriter[HSPEC] = new FileSystemTableWriter(outputFileName)
 
       bind[TableWriter[HSPEC]].toInstance(writer)
       bind[FileSystemTableWriter[HSPEC]].toInstance(writer)</code></pre>
@@ -267,11 +258,10 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-14">#</a>
         </div>
-      <p>The static method will just delegate the work to the <code>SimpleFileParamsGenerator</code></p>
-
+      <p>! The static method will just delegate the work to the <code>SimpleFileParamsGenerator</code></p>
       </td>
       <td class="code">
-        <pre class="scala"><code>      bind[FileParamsGenerator].to[SimpleFileParamsGenerator]
+        <pre><code>      bind[FileParamsGenerator].to[SimpleFileParamsGenerator]
     }
   }
 
@@ -288,11 +278,10 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-15">#</a>
         </div>
-      <p>Currently Guice has no support for shutting down an injector, so we have to do it manually</p>
-
+      <p>! Currently Guice has no support for shutting down an injector, so we have to do it manually</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>  def withInjector[A](outputFileName: String)(body: Injector =&gt; A) = {</code></pre>
+        <pre><code>  def withInjector[A](outputFileName: String)(body: Injector =&gt; A) = {</code></pre>
       </td>
     </tr>
     <tr id="section-16">
@@ -300,11 +289,10 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-16">#</a>
         </div>
-      <p>We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context)</p>
-
+      <p>! We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context)</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>    val i = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(outputFileName), COMPSsWorkerHDFSModule(), BabuDBModule()))
+        <pre><code>    val i = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(outputFileName), COMPSsWorkerHDFSModule(), BabuDBModule()))
     val res = body(i)
     i.instance[Fetcher[HCAF]].shutdown
     i.instance[Loader[HSPEN]].shutdown
@@ -318,12 +306,12 @@ object COMPSsCollectorEmitter {</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-17">#</a>
         </div>
-      <h2>Serialization</h2>
-<p>These are details, we need some (de)serialization for partition descriptors. Let's go for a readable choice:</p>
+      <p>!## Serialization</p>
 
+<p> These are details, we need some (de)serialization for partition descriptors. Let's go for a readable choice:</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>class P2XML(val p: Partition) {
+        <pre><code>class P2XML(val p: Partition) {
   def toXml() = {
     &lt;partition&gt;
       &lt;start&gt;{ p.start }&lt;/start&gt;

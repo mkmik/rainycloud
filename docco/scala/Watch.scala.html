@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Watch.scala</title>
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <div id="background"></div>
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Watch.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      <p></p>
+      </td>
+      <td class="code">
+        <pre><code>package it.cnr.aquamaps
+
+import stopwatch.web.Server
+
+import stopwatch.Stopwatch
+import stopwatch.StopwatchGroup
+import stopwatch.StopwatchRange
+import stopwatch.TimeUnit._
+import net.lag.logging.Logger</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>! This is a nice and easy to use utility to take measurements of code execution.</p>
+
+<p> It has been disabled
+until we have a way to allocate a tcp port for each worker. I don't want to put the burdain of
+allocating a port number in a configuration file, just to be able to run more instances of this toy.</p>
+
+<p>VisualVM sampling can be useful to monitor the performance of the code without this kind of interference at source level.</p>
+      </td>
+      <td class="code">
+        <pre><code>trait Watch {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>disabled because it opens a tcp port and it conflicts with
+multiple instances</p>
+      </td>
+      <td class="code">
+        <pre><code></code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <p>Watch.run</p>
+      </td>
+      <td class="code">
+        <pre><code>  Stopwatch.enabled = true
+  Stopwatch.range = StopwatchRange(0 seconds, 15 seconds, 500 millis)
+}
+
+object Watch {
+  private val log = Logger(classOf[Watch])
+
+  val server = new stopwatch.web.Server
+
+  def timed[A](caption: String)(body: =&gt; A) = {
+    val start = System.currentTimeMillis
+    val res = body
+    log.info(&quot;executed %s in %sms&quot;.format(caption, System.currentTimeMillis - start))
+    res
+  }
+
+  def run = {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <p>register StopwatchGroups you want to monitor</p>
+      </td>
+      <td class="code">
+        <pre><code>    server.groups ::= Stopwatch</code></pre>
+      </td>
+    </tr>
+    <tr id="section-5">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-5">#</a>
+        </div>
+      <p>configure port number</p>
+      </td>
+      <td class="code">
+        <pre><code>    server.port = 9999
+    try {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-6">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-6">#</a>
+        </div>
+      <pre><code>    server.start()</code></pre>
+      </td>
+      <td class="code">
+        <pre><code>    } catch {
+      case _ =&gt;
+        log.error(&quot;couldn't start stopwatch web monitoring&quot;)
+    }
+  }
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

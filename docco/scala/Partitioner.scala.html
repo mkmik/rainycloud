@@ -3,11 +3,8 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8">
   <title>Partitioner.scala</title>
-  <link href="http://circumflex.ru/css/docco.css"
-        rel="stylesheet"
-        type="text/css"
-        media="screen, projection"/>
-  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
   </script>
   <script type="text/javascript">
     hljs.initHighlightingOnLoad();
@@ -15,11 +12,12 @@
 </head>
 <body>
 <div id="container">
+  <div id="background"></div>
   <table cellspacing="0" cellpadding="0">
     <thead>
     <tr>
       <th class="docs">
-        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Partitioner.scala</h1>
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Partitioner.scala</h1>
       </th>
       <th class="code"></th>
     </tr>
@@ -30,10 +28,10 @@
         <div class="octowrap">
           <a class="octothorpe" href="#section-0">#</a>
         </div>
-      
+      <p></p>
       </td>
       <td class="code">
-        <pre class="scala"><code>package it.cnr.aquamaps
+        <pre><code>package it.cnr.aquamaps
 
 import io.Source.fromFile
 
@@ -46,14 +44,16 @@ import net.lag.configgy.Config</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-1">#</a>
         </div>
-      <p>A partitioner creates a partition of the key space. It returns partitions which are describes by ranges over keys.</p>
+      <p>!</p>
 
+<p>A partitioner creates a partition of the key space. It returns partitions which are describes by ranges over keys.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>trait Partitioner {
+        <pre><code>trait Partitioner {
   def partitions: Iterator[Partition]
 }
 
+@serializable
 case class Partition(val start: String, val size: Long)</code></pre>
       </td>
     </tr>
@@ -62,17 +62,18 @@ case class Partition(val start: String, val size: Long)</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-2">#</a>
         </div>
-      <p>The simples partitioner is the StaticPartitioner, which simply reads key ranges from a precomputed file</p>
+      <p>!</p>
 
+<p>The simples partitioner is the StaticPartitioner, which simply reads key ranges from a precomputed file</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>class StaticPartitioner @Inject() (val rangesFile: String) extends Partitioner {
+        <pre><code>class StaticPartitioner @Inject() (val ranges: Iterator[String]) extends Partitioner {
   def toPartition(line: String) = {
     val Array(s, k) = line.trim split &quot; &quot;
     Partition(k, s.toInt)
   }
 
-  def partitions = fromFile(rangesFile).getLines map toPartition
+  def partitions = ranges map toPartition
 }</code></pre>
       </td>
     </tr>

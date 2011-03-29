@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>COMPSsObject.scala</title>
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <div id="background"></div>
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;COMPSsObject.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      <p></p>
+      </td>
+      <td class="code">
+        <pre><code>package it.cnr.aquamaps
+
+import com.google.inject._
+import scala.xml.{ Node, Text, XML }
+import scala.xml.Utility.trim
+import io.Source.fromFile
+import java.io.File
+import com.google.inject._
+import com.google.inject.util.{ Modules =&gt; GuiceModules }
+import uk.me.lings.scalaguice.InjectorExtensions._
+import uk.me.lings.scalaguice.ScalaModule
+import Watch.timed
+import net.lag.logging.Logger
+import java.io._
+import org.apache.commons.io.IOUtils
+import resource._
+import collection.mutable.ArrayBuffer</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>!# COMPSs object passing support.</p>
+
+<p>COMPSs now supports also java objects as communication method between remote spawns.</p>
+      </td>
+      <td class="code">
+        <pre><code>class COMPSsObjectGenerator @Inject() (val delegate: ObjectParamsGenerator[HSPEC], val emitter: Emitter[HSPEC]) extends Generator {
+  def computeInPartition(p: Partition) {
+    val records = delegate.computeInPartition(p)
+    for(r &lt;- records)
+      emitter.emit(r)
+  }
+}
+
+trait ObjectParamsGenerator[A] {
+ def computeInPartition(p: Partition): Array[A]
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>! But what if COMPSs requires only static method invocations because it wouldn't know how to spawn the instances on the remote worker ?</p>
+      </td>
+      <td class="code">
+        <pre><code>class StaticObjectParamsGenerator extends ObjectParamsGenerator[HSPEC] {
+  def computeInPartition(p: Partition) = StaticObjectParamsGenerator.staticDelegate(p)
+}
+
+class MemoryEmitter[A] @Inject() (val records: ArrayBuffer[A]) extends Emitter[A] {
+
+  def emit(record: A) {
+    records += record
+  }
+
+  def flush {
+    
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <p>! The static delegate also returns an array of HSPECs so that COMPSs can move the data for us.</p>
+      </td>
+      <td class="code">
+        <pre><code>object StaticObjectParamsGenerator {
+  case class COMPSsWorkerModule() extends AbstractModule with ScalaModule {
+    def configure() {
+      bind[ArrayBuffer[HSPEC]].in[Singleton]
+      bind[Emitter[HSPEC]].to[MemoryEmitter[HSPEC]]
+    }
+  }
+
+  def staticDelegate(p: Partition) = {
+    withInjector { injector =&gt;
+      val generator = injector.instance[Generator]
+      generator.computeInPartition(p)
+
+      val buffer = injector.instance[ArrayBuffer[HSPEC]]
+      buffer.toArray
+    }
+  }
+
+  def withInjector[A](body: Injector =&gt; A) = {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <p>! We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context)</p>
+      </td>
+      <td class="code">
+        <pre><code>    val i = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(), COMPSsWorkerHDFSModule(), BabuDBModule()))
+    val res = body(i)
+    i.instance[Fetcher[HCAF]].shutdown
+    i.instance[Loader[HSPEN]].shutdown
+    res
+  }
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

@@ -3,11 +3,8 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8">
   <title>Cassandra.scala</title>
-  <link href="http://circumflex.ru/css/docco.css"
-        rel="stylesheet"
-        type="text/css"
-        media="screen, projection"/>
-  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
   </script>
   <script type="text/javascript">
     hljs.initHighlightingOnLoad();
@@ -15,11 +12,12 @@
 </head>
 <body>
 <div id="container">
+  <div id="background"></div>
   <table cellspacing="0" cellpadding="0">
     <thead>
     <tr>
       <th class="docs">
-        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Cassandra.scala</h1>
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Cassandra.scala</h1>
       </th>
       <th class="code"></th>
     </tr>
@@ -30,10 +28,10 @@
         <div class="octowrap">
           <a class="octothorpe" href="#section-0">#</a>
         </div>
-      
+      <p></p>
       </td>
       <td class="code">
-        <pre class="scala"><code>package it.cnr.aquamaps
+        <pre><code>package it.cnr.aquamaps
 import org.apache.log4j.Logger
 
 import me.prettyprint.cassandra.service.{ CassandraHostConfigurator, CassandraClientPoolFactory }
@@ -50,12 +48,12 @@ import stopwatch.Stopwatch</code></pre>
         <div class="octowrap">
           <a class="octothorpe" href="#section-1">#</a>
         </div>
-      <h2>Parked</h2>
-<p>This code works but has to be refactored to follow the new design of <code>Loader</code>/<code>Fetcher</code>/<code>Emitter</code></p>
+      <p>!## Parked</p>
 
+<p> This code works but has to be refactored to follow the new design of <code>Loader</code>/<code>Fetcher</code>/<code>Emitter</code></p>
       </td>
       <td class="code">
-        <pre class="scala"><code>trait CassandraConfig {
+        <pre><code>trait CassandraConfig {
   def keyspaceName: String
   def columnFamily: String
 

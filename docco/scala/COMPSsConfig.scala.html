@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>COMPSsConfig.scala</title>
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <div id="background"></div>
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;COMPSsConfig.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      <p></p>
+      </td>
+      <td class="code">
+        <pre><code>package it.cnr.aquamaps
+
+import com.google.inject._
+import uk.me.lings.scalaguice.InjectorExtensions._
+import com.google.inject.name._
+import uk.me.lings.scalaguice.ScalaModule
+import net.lag.configgy.Config
+
+import java.io.File</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>!## Wiring</p>
+
+<p> If we want to use COMPs we should use this Guice wiring configuration.
+  This configuration is meant to override the AquamapModule in <a href="Config.scala.html">Config.scala</a>.</p>
+      </td>
+      <td class="code">
+        <pre><code>case class COMPSsModule() extends AbstractModule with ScalaModule with RainyCloudModule {
+  def configure() {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>! This overrides the default <code>Generator</code> to use a specific wrapper for COMPSs. The <code>COMPsGenerator</code> converts the parameters into file and then delegates
+     the rest of the work toa FileParamsGenerator.</p>
+      </td>
+      <td class="code">
+        <pre><code>    bind[Generator].to[COMPSsGenerator]</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <p>! The <code>StaticFileParamsGenerator</code> invokes a static method with a filename parameters, we can configure COMPSs to use that place as pointcut.</p>
+      </td>
+      <td class="code">
+        <pre><code>    bind[FileParamsGenerator].to[StaticFileParamsGenerator]
+
+    bind[Emitter[HSPEC]].to[COMPSsCollectorEmitter[HSPEC]]
+
+  }
+
+  @Provides @Singleton
+  def emitter(tableWriter: TableWriter[HSPEC]): COMPSsCollectorEmitter[HSPEC] = new COMPSsCollectorEmitter(tableWriter)
+
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <p>!## Wiring</p>
+
+<p>This case is even easier, we can handle the Object-passing convention by just overriding the Generator</p>
+      </td>
+      <td class="code">
+        <pre><code>case class COMPSsObjectModule() extends AbstractModule with ScalaModule with RainyCloudModule {
+  def configure() {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-5">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-5">#</a>
+        </div>
+      <p>! This overrides the default <code>Generator</code> to use a specific wrapper for COMPSs. The <code>COMPsGenerator</code> converts the parameters into file and then delegates
+     the rest of the work toa FileParamsGenerator.</p>
+      </td>
+      <td class="code">
+        <pre><code>    bind[Generator].to[COMPSsObjectGenerator]
+
+    bind[ObjectParamsGenerator[HSPEC]].to[StaticObjectParamsGenerator]
+  }
+
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

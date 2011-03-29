@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Start.scala</title>
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <div id="background"></div>
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Start.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      <p></p>
+      </td>
+      <td class="code">
+        <pre><code>package it.cnr.aquamaps</code></pre>
+      </td>
+    </tr>
+    <tr id="section-1">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-1">#</a>
+        </div>
+      <p>!## Application Entry point</p>
+
+<p>This is the application global entrypoint.</p>
+
+<p>The basic algorithm is very simple: for each partition invoke the 'computeInPartition' method of the <code>Generator</code> instance.</p>
+
+<p>The partition is described by a key range. The generator then fetches a number of <code>HCAF</code> records according to the specified partition
+and executes an <code>HspecAlgorithm</code> for each pair of <code>HSPEC</code> x <code>HSPEN</code> records, which are emitted by an emitter. See <a href="Tables.scala.html">data model</a>.</p>
+
+<p>There may be different implementations of <code>Generator</code>, for example one which puts request in a queue, and the real generator is a pool of workers
+consuming the queue; or a plain local instance which executes the work locally (and perhaps transparently remotized by COMPSs)</p>
+
+<p>See docs for <a href="Generator.scala.html#section-1">Generator</a>, <a href="Algorithm.scala.html">HspecAlgorithm</a> and <a href="Generator.scala.html#section-10">Emitter</a>, for further details.</p>
+      </td>
+      <td class="code">
+        <pre><code>import com.google.inject.Guice
+import com.google.inject._
+import uk.me.lings.scalaguice.InjectorExtensions._
+import com.google.inject.util.{Modules =&gt; GuiceModules}
+import net.lag.configgy.{Config, Configgy}
+import net.lag.logging.Logger
+import org.github.scopt.OptionParser
+import org.github.scopt.OptionParser._
+
+class EntryPoint @Inject() (
+  val partitioner: Partitioner,
+  val generator: Generator,
+  val emitter: Emitter[HSPEC]) {
+
+  def run = {
+    for (p &lt;- partitioner.partitions)
+      generator.computeInPartition(p)
+
+    emitter.flush
+  }
+}</code></pre>
+      </td>
+    </tr>
+    <tr id="section-2">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-2">#</a>
+        </div>
+      <p>!## Guice startup</p>
+
+<p>  This is the java <code>main</code> method. It instantiated a fully configured entrypoint with Guice, and runs it.</p>
+      </td>
+      <td class="code">
+        <pre><code>class Main
+object Main {
+  private val log = Logger(classOf[Main])
+
+  def main(args: Array[String]) {
+    val conf = loadConfiguration
+
+    if (!parser.parse(args)) 
+      return
+
+    val injector = createInjector(conf)
+
+    val entryPoint = injector.instance[EntryPoint]
+    entryPoint.run
+
+    cleanup(injector)
+  }
+
+  val parser = new OptionParser(&quot;scopt&quot;) {
+    opt(&quot;s&quot;, &quot;storage&quot;, &quot;storage type (local, hdfs)&quot;, {v: String =&gt; Configgy.config.setString(&quot;storage&quot;, v)})
+    opt(&quot;r&quot;, &quot;ranges&quot;, &quot;range file&quot;, {v: String =&gt; Configgy.config.setString(&quot;ranges&quot;, v)})
+    opt(&quot;e&quot;, &quot;inlineranges&quot;, &quot;inline ranges&quot;, {v: String =&gt; Configgy.config.setList(&quot;inlineranges&quot;, v.split(&quot;,&quot;))})
+    opt(&quot;hcaf&quot;, &quot;hcaf file&quot;, {v: String =&gt; Configgy.config.setString(&quot;hcafFile&quot;, v)})
+    opt(&quot;hspen&quot;, &quot;hspen file&quot;, {v: String =&gt; Configgy.config.setString(&quot;hspenFile&quot;, v)})
+    opt(&quot;hspec&quot;, &quot;hspec file&quot;, {v: String =&gt; Configgy.config.setString(&quot;hspecFile&quot;, v)})
+    opt(&quot;m&quot;, &quot;module&quot;, &quot;add a module to runtime&quot;, {v: String =&gt; val c= Configgy.config; c.setList(&quot;modules&quot;, (c.getList(&quot;modules&quot;).toList ++ List(v)).distinct) })
+  }
+
+  def createInjector(conf: Config) = {
+    val mods = Modules.enabledModules(conf)
+    printSomeFeedback(mods, conf)</code></pre>
+      </td>
+    </tr>
+    <tr id="section-3">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-3">#</a>
+        </div>
+      <p>! Configure our Guice context with the main modules overrided with optional modules obtained from config file + cmdline.</p>
+      </td>
+      <td class="code">
+        <pre><code>    Guice createInjector (GuiceModules `override` AquamapsModule() `with` (mods :_*))
+  }
+
+  def loadConfiguration = {
+    Configgy.configure(&quot;rainycloud.conf&quot;)
+    Configgy.config
+  }
+
+  def printSomeFeedback(mods: Seq[Module], conf: Config) {
+    log.info(&quot;Available modules: %s&quot;.format(Modules.modules.values.mkString(&quot;, &quot;)))
+    log.info(&quot;Enabled modules: %s&quot;.format(mods.mkString(&quot;, &quot;)))
+  }
+
+  def cleanup(injector: Injector) {</code></pre>
+      </td>
+    </tr>
+    <tr id="section-4">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-4">#</a>
+        </div>
+      <p>! currently Guice lifecycle support is lacking, so we have to perform some cleanup</p>
+      </td>
+      <td class="code">
+        <pre><code>    log.info(&quot;done&quot;)
+    injector.instance[Fetcher[HCAF]].shutdown
+    injector.instance[Loader[HSPEN]].shutdown
+  }
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>

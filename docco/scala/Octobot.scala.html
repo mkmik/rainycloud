@@ -3,11 +3,8 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8">
   <title>Octobot.scala</title>
-  <link href="http://circumflex.ru/css/docco.css"
-        rel="stylesheet"
-        type="text/css"
-        media="screen, projection"/>
-  <script type="text/javascript" src="http://circumflex.ru/js/highlight.pack.js">
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
   </script>
   <script type="text/javascript">
     hljs.initHighlightingOnLoad();
@@ -15,11 +12,12 @@
 </head>
 <body>
 <div id="container">
+  <div id="background"></div>
   <table cellspacing="0" cellpadding="0">
     <thead>
     <tr>
       <th class="docs">
-        <h1><a href="../../../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Octobot.scala</h1>
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Octobot.scala</h1>
       </th>
       <th class="code"></th>
     </tr>
@@ -30,10 +28,10 @@
         <div class="octowrap">
           <a class="octothorpe" href="#section-0">#</a>
         </div>
-      
+      <p></p>
       </td>
       <td class="code">
-        <pre class="scala"><code>package it.cnr.aquamaps</code></pre>
+        <pre><code>package it.cnr.aquamaps</code></pre>
       </td>
     </tr>
     <tr id="section-1">
@@ -41,12 +39,12 @@
         <div class="octowrap">
           <a class="octothorpe" href="#section-1">#</a>
         </div>
-      <h2>Octobot</h2>
-<p>This code is used only when running a scenario with the octobot workers</p>
+      <p>!## Octobot</p>
 
+<p>This code is used only when running a scenario with the octobot workers</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>import org.json.simple.JSONObject
+        <pre><code>import org.json.simple.JSONObject
 
 import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
@@ -61,11 +59,11 @@ trait Bot {
         <div class="octowrap">
           <a class="octothorpe" href="#section-2">#</a>
         </div>
-      <p>We receive a partition (start + size) via JSON. We just convert the parameters from  json to a partition instance and delegate the work to the Generator</p>
-
+      <p>! We receive a partition (start + size) via JSON. We just convert the parameters from
+ json to a partition instance and delegate the work to the Generator</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>class HSPECGeneratorOctobot @Inject() (val generator: Generator) extends Bot {
+        <pre><code>class HSPECGeneratorOctobot @Inject() (val generator: Generator) extends Bot {
   def processTask(task: JSONObject)  = generator.computeInPartition(partition(task.get(&quot;start&quot;), task.get(&quot;size&quot;)))
 
   def partition(start: Any, size: Any) = new Partition(start.asInstanceOf[String], size.asInstanceOf[Long])
@@ -77,12 +75,12 @@ trait Bot {
         <div class="octowrap">
           <a class="octothorpe" href="#section-3">#</a>
         </div>
-      <h2>Entry point</h2>
-<p>This is the octopbot entry point.</p>
+      <p>!## Entry point</p>
 
+<p>This is the octopbot entry point.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>object HSPECGeneratorOctopus {</code></pre>
+        <pre><code>object HSPECGeneratorOctopus {</code></pre>
       </td>
     </tr>
     <tr id="section-4">
@@ -90,11 +88,10 @@ trait Bot {
         <div class="octowrap">
           <a class="octothorpe" href="#section-4">#</a>
         </div>
-      <p>We construct the Guice injector only once and then reuse the instances.</p>
-
+      <p>! We construct the Guice injector only once and then reuse the instances.</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>  val injector = Guice createInjector AquamapsModule()
+        <pre><code>  val injector = Guice createInjector AquamapsModule()
   val bot = injector.instance[Bot]</code></pre>
       </td>
     </tr>
@@ -103,11 +100,10 @@ trait Bot {
         <div class="octowrap">
           <a class="octothorpe" href="#section-5">#</a>
         </div>
-      <p>Octobot will invoke the 'run' static method for each incoming job</p>
-
+      <p>! Octobot will invoke the 'run' static method for each incoming job</p>
       </td>
       <td class="code">
-        <pre class="scala"><code>  def run(task: JSONObject) = bot.processTask(task)
+        <pre><code>  def run(task: JSONObject) = bot.processTask(task)
 }</code></pre>
       </td>
     </tr>

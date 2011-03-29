@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8">
+  <title>Modules.scala</title>
+  <link rel="stylesheet" href="../.docco/main.css"/>
+  <script type="text/javascript" src="../.docco/highlight.js">
+  </script>
+  <script type="text/javascript">
+    hljs.initHighlightingOnLoad();
+  </script>
+</head>
+<body>
+<div id="container">
+  <div id="background"></div>
+  <table cellspacing="0" cellpadding="0">
+    <thead>
+    <tr>
+      <th class="docs">
+        <h1><a href="../index.html" title="Back to index">&larr;</a>&nbsp;&nbsp;Modules.scala</h1>
+      </th>
+      <th class="code"></th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr id="section-0">
+      <td class="docs">
+        <div class="octowrap">
+          <a class="octothorpe" href="#section-0">#</a>
+        </div>
+      <p></p>
+      </td>
+      <td class="code">
+        <pre><code>package it.cnr.aquamaps
+
+import com.google.inject.Module
+import net.lag.configgy.Config
+import net.lag.configgy.Configgy
+
+trait RainyCloudModule {
+  val conf = if (Configgy.config != null) Configgy.config else Config.fromString(&quot;&quot;)
+}
+
+object Modules {
+  val modules = Map(&quot;BabuDB&quot; -&gt; BabuDBModule(),
+    &quot;COMPSs&quot; -&gt; COMPSsModule(),
+    &quot;COMPSsObject&quot; -&gt; COMPSsObjectModule(),
+    &quot;HDFS&quot; -&gt; HDFSModule())
+
+  def enabledModules(conf: Config): Seq[Module] = for {
+    name &lt;- conf.getList(&quot;modules&quot;)
+    module &lt;- modules.get(name)
+  } yield module
+
+}</code></pre>
+      </td>
+    </tr>
+  </table>
+</div>
+</body>
+</html>
