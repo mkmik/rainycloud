@@ -7,7 +7,7 @@ import xsbt.ScalaInstance
 
 import java.io.File
 
-class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with AssemblyProject with ScctProject with AutoCompilerPlugins {
+class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with AssemblyProject with ScctProject with AutoCompilerPlugins with DoccoSingle {
   val log4j = "log4j" % "log4j" % "1.2.16"
 
   //val scromiumRepo = "Cliff's Scromium Repo" at "http://cliffmoon.github.com/scromium/repository/"
