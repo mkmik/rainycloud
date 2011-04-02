@@ -20,7 +20,7 @@ case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCl
     */
     bind[Partitioner].toInstance(new StaticPartitioner(ranges))
     bind[Generator].to[HSPECGenerator]
-    bind[HspecAlgorithm].to[RandomHSpecAlgorithm]
+    bind[HspecAlgorithm].to[CompatHSpecAlgorithm]
 
     bind[CSVSerializer].to[CompatCSVSerializer]
 
@@ -66,5 +66,11 @@ case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCl
       fromFile(conf.getString("ranges").getOrElse("octo/client/ranges")).getLines
     else
       ranges.toIterator
+  }
+}
+
+case class RandomAlgoModule() extends AbstractModule with ScalaModule with RainyCloudModule {
+  def configure() {
+    bind[HspecAlgorithm].to[RandomHSpecAlgorithm]
   }
 }

@@ -26,6 +26,10 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 
   val codaRepo = "Coda Hale's Repository" at "http://repo.codahale.com/"
   val fuseRepo = "fuse repo" at "http://repo.fusesource.com/maven2-all/"
+
+  val osgeo = "OSGeo" at "http://download.osgeo.org/webdav/geotools/"
+  //val osgeo = "http://maven.research-infrastructures.eu/nexus/content/repositories/osgeo/"
+  val openGeop = "OpenGeo" at "http://repo.opengeo.org/"
   //val akkaRepo = "akka repo" at "http://akka.io/repository"
   //val fruit    = "guiceyfruit repo" at "http://guiceyfruit.googlecode.com/svn/repo/releases/"
 
@@ -60,6 +64,9 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val supercsv = "org.supercsv" % "supercsv" % "1.20"
 
   val hadoop = "org.apache.hadoop" % "hadoop-core" % "0.20.2"
+
+  val geoscript = "org.geoscript" % "library_2.8.0" % "0.6.1"
+  val forceJsonLib = "net.sf.json-lib" % "json-lib" % "2.3" classifier "jdk15"
 
   override def mainClass = Some("it.cnr.aquamaps.Main")
 }

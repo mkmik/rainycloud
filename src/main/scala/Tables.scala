@@ -33,7 +33,7 @@ trait Keyed {
  */
 @serializable
 case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: String, var depthMin: Double, var depthMax: Double, var depthMean: Double,
-  var sstAnMen: Double, var sbtAnMean: Double, var salinityMean: Double, var SilinityBMean: Double,
+  var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var SilinityBMean: Double,
   var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed with AvroRecord {
 
   override def toString() = "HCAF(%s)".format(csquareCode)
@@ -42,13 +42,13 @@ case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: 
 }
 
 trait ParseHelper {
- def parse(value: Option[String]) = value match {
+  def parse(value: Option[String]) = value match {
     case Some("") => 0.0
     case Some(x) => x.toDouble
     case None => 0.0
   }
 
- def parseBool(value: Option[String]) = value match {
+  def parseBool(value: Option[String]) = value match {
     case Some("1") => true
     case Some("0") => false
     case Some("y") => true
@@ -101,7 +101,11 @@ object HCAF extends ParseHelper {
  The HSPEN Table doesn't need a key. The companion object contains conversion methods
  */
 @serializable
-case class HSPEN(var speciesId: String, var layer: String, var faoAreas: String) extends Keyed with AvroRecord {
+case class HSPEN(var speciesId: String, var layer: String, var faoAreas: List[String],
+  var pelagic: Boolean, var nMostLat: Double, var sMostLat: Double, var wMostLong: Double, var eMostLong: Double,
+  var depthMin: Double, var depthMax: Double, var depthPrefMin: Double, var depthPrefMax: Double,
+  var tempMin: Double, var tempMax: Double, var tempPrefMin: Double, var tempPrefMax: Double,
+  var salinityMin: Double, var salinityMax: Double, var salinityPrefMin: Double, var salinityPrefMax: Double) extends Keyed with AvroRecord {
   override def toString() = "HSPEN(%s)".format(speciesId)
 
   def key = speciesId
@@ -110,7 +114,7 @@ case class HSPEN(var speciesId: String, var layer: String, var faoAreas: String)
 object HSPEN extends ParseHelper {
   private val log = Logger.getLogger(this.getClass);
 
-  implicit def makeHspen = HSPEN("", "", "")
+  implicit def makeHspen = HSPEN("", "", List(), false, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
   val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
 
@@ -122,10 +126,30 @@ object HSPEN extends ParseHelper {
 
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
+    def getBool(name: String) = parseBool(x.get(name))
 
     new HSPEN(x.get("SpeciesID").getOrElse("no species"),
       x.get("Layer").getOrElse("no layer"),
-      x.get("FAOAreas").getOrElse("no areas"))
+      x.get("FAOAreas").getOrElse("").split(",").toList.map { _.trim },
+      getBool("Pelagic"),
+      get("NMostLat"),
+      get("SMostLat"),
+      get("WMostLat"),
+      get("EMostLat"),
+      get("depthMin"),
+      get("depthMax"),
+      get("depthPrefMin"),
+      get("depthPrefMax"),
+      get("tempMin"),
+      get("tempMax"),
+      get("tempPrefMin"),
+      get("tempMax"),
+      get("salinityMin"),
+      get("salinityMax"),
+      get("salinityPrefMin"),
+      get("salinityPrefMax")
+
+)
   }
 
 }
@@ -146,8 +170,8 @@ object HSPEN extends ParseHelper {
  The companion object contains conversion methods.
  */
 
-case class HSPEC(var speciesId: String, var csquareCode: String, var probability: Double, var inBox: Boolean, var inFao: Boolean, 
-                 var faoAreaM: String, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator with AvroRecord {
+case class HSPEC(var speciesId: String, var csquareCode: String, var probability: Double, var inBox: Boolean, var inFao: Boolean,
+  var faoAreaM: String, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator with AvroRecord {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
 

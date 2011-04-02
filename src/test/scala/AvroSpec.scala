@@ -20,10 +20,10 @@ import com.googlecode.avro.marker._
 object AvroSpec extends Specification with Mockito {
   "avro" should {
     "serialize and deserialize" in {
-      val record = HCAF("wow")
+      val record = HCAF.makeHcaf()
       val serialized = record.toBytes
 
-      val deserialized = HCAF("").parse(serialized)
+      val deserialized = HCAF.makeHcaf().parse(serialized)
 
       deserialized must beEqual(record)
     }

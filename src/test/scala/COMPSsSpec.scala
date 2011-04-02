@@ -47,8 +47,8 @@ object COMPSsSpec extends Specification with Mockito {
        access from the test code. */
       @Provides
       def fpg(generator: Generator): FileParamsGenerator = {
-        val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` StaticFileParamsGenerator.COMPSsWorkerModule())
-        new SimpleFileParamsGenerator(generator, injector.instance[Emitter[HSPEC]], injector.instance[FileSystemTableWriter[HSPEC]])
+        val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` StaticFileParamsGenerator.COMPSsWorkerModule("/tmp/hspec-tmp.csv.gz"))
+        new SimpleFileParamsGenerator(generator, injector.instance[Emitter[HSPEC]])
       }
 
     }

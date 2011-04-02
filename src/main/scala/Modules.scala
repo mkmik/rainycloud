@@ -12,6 +12,7 @@ object Modules {
   val modules = Map("BabuDB" -> BabuDBModule(),
     "COMPSs" -> COMPSsModule(),
     "COMPSsObject" -> COMPSsObjectModule(),
+    "RandomAlgo" -> RandomAlgoModule(),
     "HDFS" -> HDFSModule())
 
   def enabledModules(conf: Config): Seq[Module] = for {
