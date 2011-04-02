@@ -8,13 +8,13 @@ Output file in:
 
 
 
-Partitions are described in the 'ranges.txt' file. Each line defines a partition. A single partition can be passed as parameter:
+Partitions are described in the 'huge-ranges.txt' file. Each line defines a partition. A single partition can be passed as parameter:
 
     java -jar rainycloud_2.8.1-assembly-1.0.jar  -e "100 1000"
 
 or you can put one or more partitions in a file and run them sequentially:
 
-    java -jar rainycloud_2.8.1-assembly-1.0.jar  -r ranges.txt
+    java -jar rainycloud_2.8.1-assembly-1.0.jar  -r huge-ranges.txt
   
 
 The output file defaults to hspec.csv.gz, but can be overridden with:

@@ -12,7 +12,7 @@ trait HspecAlgorithm {
  records in output, which is about 1/30 of the full cartesian product of the `HSPEC` and `HSPEN` table for 0.5 degree resolution.
  So let's choose randomly. */
 class RandomHSpecAlgorithm extends HspecAlgorithm {
-  val random: Random = new Random
+  val random: Random = new Random(123)
 
   override def compute(hcaf: HCAF, hspen: Iterable[HSPEN]): Iterable[HSPEC] = {
 
