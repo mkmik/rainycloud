@@ -18,7 +18,9 @@ class RandomHSpecAlgorithm extends HspecAlgorithm {
 
     hspen.flatMap { pen =>
       if (random.nextInt(30) == 0)
-        List(new HSPEC(csquareCode = hcaf.csquareCode, speciesId = pen.speciesId))
+        List(new HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = pen.speciesId, probability = random.nextInt(10000),
+          inBox = random.nextBoolean, inFao = random.nextBoolean,
+          lme = random.nextInt(10), eez = random.nextInt(10)))
       else
         Nil
     }
@@ -28,11 +30,13 @@ class RandomHSpecAlgorithm extends HspecAlgorithm {
 
 /*! Or, if you want to generate all 1.8 billion output records (for stress testing for example), use this impl. */
 class AllHSpecAlgorithm extends HspecAlgorithm {
-  val random: Random = new Random
+  val random: Random = new Random(123)
 
   // compute all HSPECs from the given HCAF and all the HSPENs
   override def compute(hcaf: HCAF, hspen: Iterable[HSPEN]): Iterable[HSPEC] = {
-    hspen.map { pen => new HSPEC(csquareCode = hcaf.csquareCode, speciesId = pen.speciesId)}
+    hspen.map { pen => new HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = pen.speciesId, probability = random.nextInt(10000),
+          inBox = random.nextBoolean, inFao = random.nextBoolean,
+          lme = random.nextInt(10), eez = random.nextInt(10)) }
   }
 
 }

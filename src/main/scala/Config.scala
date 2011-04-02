@@ -22,6 +22,8 @@ case class AquamapsModule() extends AbstractModule with ScalaModule with RainyCl
     bind[Generator].to[HSPECGenerator]
     bind[HspecAlgorithm].to[RandomHSpecAlgorithm]
 
+    bind[CSVSerializer].to[CompatCSVSerializer]
+
     /*!## HSPEN database
 
     HSPEN data is loaded from a gzipped csv file located in the filesystem. Each worker should load this file once.

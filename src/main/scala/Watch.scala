@@ -34,6 +34,7 @@ object Watch {
 
   def timed[A](caption: String)(body: => A) = {
     val start = System.currentTimeMillis
+    log.info("executing %s".format(caption))
     val res = body
     log.info("executed %s in %sms".format(caption, System.currentTimeMillis - start))
     res

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-GLUE=80
+GLUE=40
 
 def chunks(l, n):
     """ Yield successive n-sized chunks from l.
