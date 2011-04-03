@@ -62,15 +62,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
         val preparedSeaIce = -9999
 
         if (inFao && inBox) {
-          val landValue = 1.0
-          val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
-          val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
-          val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
-          val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
-          val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
-
-          val probability = landValue * sstValue * depthValue * salinityValue * primaryProductsValue * seaIceConcentration
-
+          val probability = computeProbability(hcaf, hspen)
           if (probability != 0)
             List(HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = probability,
               inBox = inBox, inFao = inFao, lme = hcaf.lme, eez = hcaf.eezFirst))
@@ -81,6 +73,40 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
         }
       }
     }
+  }
+
+  /*! This might seem ugly, but we have to avoid computing useless stuff, we quit as soon as we found a zero value. The computations are also ordered putting
+   the ones that defaults frequently first. */
+  @inline
+  final def computeProbability(hcaf: HCAF, hspen: HSPEN): Double = {
+    val landValue = 1.0
+
+    val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
+    if (depthValue == 0)
+//      println("WHO: depth")
+      return 0
+
+    val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
+    if (sstValue == 0)
+      //println("WHO: sst")
+      return 0
+
+    val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
+    if (primaryProductsValue == 0)
+      //println("WHO: primprod")
+      return 0
+
+    val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
+    if (salinityValue == 0)
+      //println("WHO: salinity")
+      return 0
+
+
+    val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
+    if (seaIceConcentration == 0)
+      return 0
+
+    return landValue * sstValue * depthValue * salinityValue * primaryProductsValue * seaIceConcentration
   }
 
   @inline
@@ -137,12 +163,11 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
 
   @inline
   final def getSalinity(hcafSalinitySMean: Double, hcafSalinityBMean: Double, layer: String, hspenSalinity: Envelope) = {
-    val smean = if (layer == "s")
-      hcafSalinitySMean
-    else if (layer == "b")
-      hcafSalinityBMean
-    else
-      -9999
+    val smean = layer match {
+      case "s" => hcafSalinitySMean
+      case "b" => hcafSalinityBMean
+      case _ => -9999
+    }
 
     if (smean == -9999 || hspenSalinity.min == -9999)
       1.0

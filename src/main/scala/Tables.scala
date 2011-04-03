@@ -142,8 +142,10 @@ object HSPEN extends ParseHelper {
 
     def getEnvelope(name: String) = Envelope(get(name + "Min"), get(name + "Max"), get(name + "PrefMin"), get(name + "PrefMax"))
 
+    def layer(layer: String) = if(layer.isEmpty()) " " else layer
+
     new HSPEN(x.get("SpeciesID").getOrElse("no species"),
-      x.get("Layer").getOrElse("no layer"),
+      layer(x.get("Layer").getOrElse("")),
       x.get("FAOAreas").getOrElse("").split(",").toList.map { _.trim }.toSet,
       getBool("Pelagic"),
       get("NMostLat"),
