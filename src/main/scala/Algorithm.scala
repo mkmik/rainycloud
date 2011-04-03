@@ -62,6 +62,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
         val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
         val depth = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
         val salinity = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
+        val primaryProduction = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
         null
       } else Nil
     }
@@ -125,7 +126,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     else
       -9999
 
-    if (smean == -9999 || hspenSalinity.min == null)
+    if (smean == -9999 || hspenSalinity.min == -9999)
       1.0
     else if (smean < hspenSalinity.min)
       0.0
@@ -135,6 +136,21 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       1.0
     else if (smean > hspenSalinity.prefMax && smean <= hspenSalinity.max)
       (hspenSalinity.max - smean) / (hspenSalinity.max - hspenSalinity.prefMax)
+    else
+      0.0
+  }
+
+  def getPrimaryProduction(hcafPrimProdMean: Double, hspenPrimProd: Envelope) = {
+    if (hcafPrimProdMean == 0)
+      1.0
+    else if (hcafPrimProdMean < hspenPrimProd.min)
+      0.0
+    else if ((hcafPrimProdMean >= hspenPrimProd.min) && (hcafPrimProdMean < hspenPrimProd.prefMin))
+      (hcafPrimProdMean - hspenPrimProd.min) / (hspenPrimProd.prefMin - hspenPrimProd.min)
+    else if ((hcafPrimProdMean >= hspenPrimProd.prefMin) && (hcafPrimProdMean <= hspenPrimProd.prefMax))
+      1.0
+    else if ((hcafPrimProdMean > hspenPrimProd.prefMax) && (hcafPrimProdMean <= hspenPrimProd.max))
+      (hspenPrimProd.max - hcafPrimProdMean) / (hspenPrimProd.max - hspenPrimProd.prefMax)
     else
       0.0
   }
