@@ -61,7 +61,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
         val landValue = 1.0
         val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
         val depth = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
-
+        val salinity = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
         null
       } else Nil
     }
@@ -88,7 +88,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       0.0
   }
 
-  def getDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean): Double = {
+  def getDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean) = {
     val hcafDepth = if (hspenMeanDepth)
       CellEnvelope(_hcafDepth.mean, _hcafDepth.mean, _hcafDepth.mean)
     else
@@ -115,7 +115,28 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
         } else 0.0
       } else 0.0
     } else 0.0
+  }
 
+  def getSalinity(hcafSalinitySMean: Double, hcafSalinityBMean: Double, layer: String, hspenSalinity: Envelope) = {
+    val smean = if (layer == "s")
+      hcafSalinitySMean
+    else if (layer == "b")
+      hcafSalinityBMean
+    else
+      -9999
+
+    if (smean == -9999 || hspenSalinity.min == null)
+      1.0
+    else if (smean < hspenSalinity.min)
+      0.0
+    else if (smean >= hspenSalinity.min && smean < hspenSalinity.prefMin)
+      (smean - hspenSalinity.min) / (hspenSalinity.prefMin - hspenSalinity.min)
+    else if (smean >= hspenSalinity.prefMin && smean <= hspenSalinity.prefMax)
+      1.0
+    else if (smean > hspenSalinity.prefMax && smean <= hspenSalinity.max)
+      (hspenSalinity.max - smean) / (hspenSalinity.max - hspenSalinity.prefMax)
+    else
+      0.0
   }
 
   def rectangle(n: Double, s: Double, w: Double, e: Double) = Polygon(LineString(Point(n, w), Point(n, e), Point(s, e), Point(s, w), Point(n, w)), Nil)

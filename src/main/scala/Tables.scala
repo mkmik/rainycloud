@@ -40,7 +40,7 @@ object CellEnvelope {
 @serializable
 case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: String,
   var depth: CellEnvelope,
-  var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var SalinityBMean: Double,
+  var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var salinityBMean: Double,
   var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed with AvroRecord {
 
   override def toString() = "HCAF(%s)".format(csquareCode)
