@@ -40,11 +40,12 @@ class HSPECGenerator @Inject() (
     val startTime = System.currentTimeMillis
 
     timed("partition %s".format(p.start)) {
+      val hcaf = fetcher.fetch(p.start, p.size)
       val records = for {
         /*! * fetch hspen rows */
         hs <- hspen
         /*! * for each hacf row compute a list of output hspec rows*/
-        hspec <- algorithm.compute(fetcher.fetch(p.start, p.size), hs)
+        hspec <- algorithm.compute(hcaf, hs)
         /*! * emit each generated hspec row using our pluggable emitter */
       } emitter.emit(hspec)
     }

@@ -83,7 +83,8 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     }
   }
 
-  def getSST(sstAnMean: Double, sbtAnMean: Double, temp: Envelope, layer: String) = {
+  @inline
+  final def getSST(sstAnMean: Double, sbtAnMean: Double, temp: Envelope, layer: String) = {
     val tempFld = layer match {
       case "s" => sstAnMean
       case "b" => sbtAnMean
@@ -104,7 +105,8 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       0.0
   }
 
-  def getDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean) = {
+  @inline
+  final def getDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean) = {
     val hcafDepth = if (hspenMeanDepth)
       CellEnvelope(_hcafDepth.mean, _hcafDepth.mean, _hcafDepth.mean)
     else
@@ -133,7 +135,8 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     } else 0.0
   }
 
-  def getSalinity(hcafSalinitySMean: Double, hcafSalinityBMean: Double, layer: String, hspenSalinity: Envelope) = {
+  @inline
+  final def getSalinity(hcafSalinitySMean: Double, hcafSalinityBMean: Double, layer: String, hspenSalinity: Envelope) = {
     val smean = if (layer == "s")
       hcafSalinitySMean
     else if (layer == "b")
@@ -155,7 +158,8 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       0.0
   }
 
-  def getPrimaryProduction(hcafPrimProdMean: Double, hspenPrimProd: Envelope) = {
+  @inline
+  final def getPrimaryProduction(hcafPrimProdMean: Double, hspenPrimProd: Envelope) = {
     if (hcafPrimProdMean == 0)
       1.0
     else if (hcafPrimProdMean < hspenPrimProd.min)
