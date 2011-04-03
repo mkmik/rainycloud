@@ -114,10 +114,10 @@ object Envelope {
  The HSPEN Table doesn't need a key. The companion object contains conversion methods
  */
 @serializable
-case class HSPEN(var speciesId: String, var layer: String, var faoAreas: List[String],
+case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[String],
   var pelagic: Boolean, var nMostLat: Double, var sMostLat: Double, var wMostLong: Double, var eMostLong: Double,
   var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
-  var meanDepth: Boolean) extends Keyed with AvroRecord {
+  var meanDepth: Boolean) extends Keyed {
   override def toString() = "HSPEN(%s)".format(speciesId)
 
   def key = speciesId
@@ -126,7 +126,7 @@ case class HSPEN(var speciesId: String, var layer: String, var faoAreas: List[St
 object HSPEN extends ParseHelper {
   private val log = Logger.getLogger(this.getClass);
 
-  implicit def makeHspen = HSPEN("", "", List(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), false)
+  implicit def makeHspen = HSPEN("", "", Set(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), false)
 
   val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
 
@@ -144,7 +144,7 @@ object HSPEN extends ParseHelper {
 
     new HSPEN(x.get("SpeciesID").getOrElse("no species"),
       x.get("Layer").getOrElse("no layer"),
-      x.get("FAOAreas").getOrElse("").split(",").toList.map { _.trim },
+      x.get("FAOAreas").getOrElse("").split(",").toList.map { _.trim }.toSet,
       getBool("Pelagic"),
       get("NMostLat"),
       get("SMostLat"),

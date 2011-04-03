@@ -5,7 +5,7 @@ import org.geoscript.geometry._
 
 /*! The core computation of a `HSPEC` row from a pair of `HCAF` and `HSPEN` rows is defined in this trait. */
 trait HspecAlgorithm {
-  def compute(hcaf: HCAF, hspen: Iterable[HSPEN]): Iterable[HSPEC]
+  def compute(hcaf: Iterable[HCAF], hspen: HSPEN): Iterable[HSPEC]
 }
 
 /*! We are focusing now the scalability aspects of this scenario not on the actualy algorithm, which requires too much
@@ -15,11 +15,10 @@ trait HspecAlgorithm {
 class RandomHSpecAlgorithm extends HspecAlgorithm {
   val random: Random = new Random(123)
 
-  override def compute(hcaf: HCAF, hspen: Iterable[HSPEN]): Iterable[HSPEC] = {
-
-    hspen.flatMap { pen =>
+  override def compute(hcaf: Iterable[HCAF], hspen: HSPEN): Iterable[HSPEC] = {
+    hcaf.flatMap { hcaf =>
       if (random.nextInt(30) == 0)
-        List(new HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = pen.speciesId, probability = random.nextInt(10000),
+        List(new HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = random.nextInt(10000),
           inBox = random.nextBoolean, inFao = random.nextBoolean,
           lme = random.nextInt(10), eez = random.nextInt(10)))
       else
@@ -34,9 +33,9 @@ class AllHSpecAlgorithm extends HspecAlgorithm {
   val random: Random = new Random(123)
 
   // compute all HSPECs from the given HCAF and all the HSPENs
-  override def compute(hcaf: HCAF, hspen: Iterable[HSPEN]): Iterable[HSPEC] = {
-    hspen.map { pen =>
-      new HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = pen.speciesId, probability = random.nextInt(10000),
+  override def compute(hcaf: Iterable[HCAF], hspen: HSPEN): Iterable[HSPEC] = {
+    hcaf.map { hcaf =>
+      new HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = random.nextInt(10000),
         inBox = random.nextBoolean, inFao = random.nextBoolean,
         lme = random.nextInt(10), eez = random.nextInt(10))
     }
@@ -48,32 +47,38 @@ class AllHSpecAlgorithm extends HspecAlgorithm {
 class CompatHSpecAlgorithm extends HspecAlgorithm {
 
   // compute all HSPECs from the given HCAF and all the HSPENs
-  override def compute(hcaf: HCAF, hspen: Iterable[HSPEN]): Iterable[HSPEC] = {
-    hspen flatMap { hspen =>
-      val boundary = rectangle(hspen.nMostLat, hspen.sMostLat, hspen.wMostLong, hspen.eMostLong)
+  override def compute(hcaf: Iterable[HCAF], hspen: HSPEN): Iterable[HSPEC] = {
+    val boundary = rectangle(hspen.nMostLat, hspen.sMostLat, hspen.wMostLong, hspen.eMostLong)
+    val faoAreas = hspen.faoAreas
 
-      val inFao = hspen.faoAreas contains hcaf.faoAreaM
-      val inBox = boundary contains Point(hcaf.centerLat, hcaf.centerLong)
+    hcaf flatMap { hcaf =>
 
-      val preparedSeaIce = -9999
-
-      if (inFao && inBox) {
-        val landValue = 1.0
-        val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
-        val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
-        val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
-        val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
-        val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
-
-        val probability = landValue * sstValue * depthValue * salinityValue * primaryProductsValue * seaIceConcentration
-
-        if (probability != 0)
-          List(HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = probability,
-            inBox = inBox, inFao = inFao, lme = hcaf.lme, eez = hcaf.eezFirst))
-        else
-          Nil
-      } else {
+      val inFao = faoAreas contains hcaf.faoAreaM
+      if (!inFao)
         Nil
+      else {
+        val inBox = boundary contains Point(hcaf.centerLat, hcaf.centerLong)
+
+        val preparedSeaIce = -9999
+
+        if (inFao && inBox) {
+          val landValue = 1.0
+          val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
+          val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
+          val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
+          val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
+          val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
+
+          val probability = landValue * sstValue * depthValue * salinityValue * primaryProductsValue * seaIceConcentration
+
+          if (probability != 0)
+            List(HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = probability,
+              inBox = inBox, inFao = inFao, lme = hcaf.lme, eez = hcaf.eezFirst))
+          else
+            Nil
+        } else {
+          Nil
+        }
       }
     }
   }

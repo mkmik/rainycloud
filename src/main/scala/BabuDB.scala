@@ -29,7 +29,8 @@ case class BabuDBModule() extends AbstractModule with ScalaModule {
     bind[Loader[HSPEN]].annotatedWith(named("forBabu")).to(classOf[TableHSPENLoader]).in(classOf[Singleton])
 
     bind[Serializer[HCAF]].toInstance(AvroSerializer[HCAF]())
-    bind[Serializer[HSPEN]].toInstance(AvroSerializer[HSPEN]())
+    //bind[Serializer[HSPEN]].toInstance(AvroSerializer[HSPEN]())
+    bind[Serializer[HSPEN]].toInstance(new SerializableSerializer[HSPEN]())
   }
 
   @Provides
