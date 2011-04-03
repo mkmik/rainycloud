@@ -60,10 +60,17 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       if (inFao && inBox) {
         val landValue = 1.0
         val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
-        val depth = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
-        val salinity = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
-        val primaryProduction = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
-        null
+        val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
+        val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
+        val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
+        val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
+
+        val probability = landValue * sstValue * depthValue * salinityValue * primaryProductsValue * seaIceConcentration;
+        if (probability != 0)
+          List(HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = probability,
+            inBox = inBox, inFao = inFao, lme = hcaf.lme, eez = hcaf.eezFirst))
+        else
+          Nil
       } else Nil
     }
   }
@@ -104,7 +111,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       0.0
     else if ((hcafDepth.max < hspenDepth.prefMin) && (hcafDepth.max >= hspenDepth.min))
       (hcafDepth.max - hspenDepth.min) / (hspenDepth.prefMin - hspenDepth.min)
-    else if (pelagic != 0)
+    else if (pelagic)
       1.0
     else if (hspenDepth.prefMax != -9999) {
       if (hcafDepth.max >= hspenDepth.prefMin && hcafDepth.min <= hspenDepth.prefMax)
