@@ -74,13 +74,13 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       case _ => -9999.0
     }
 
-    if (tempFld == -9999) 
+    if (tempFld == -9999)
       1.0
     else if (tempFld < temp.min)
       0.0
     else if (tempFld >= temp.min && tempFld < temp.prefMin)
       (tempFld - temp.min) / (temp.prefMin - temp.min)
-    else if (tempFld >= temp.prefMin && tempFld <= temp.prefMax) 
+    else if (tempFld >= temp.prefMin && tempFld <= temp.prefMax)
       1.0
     else if (tempFld > temp.prefMax && tempFld <= temp.max)
       (temp.max - tempFld) / (temp.max - temp.prefMax)
@@ -88,7 +88,34 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       0.0
   }
 
-  def getDepth(hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Double) = {
+  def getDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean): Double = {
+    val hcafDepth = if (hspenMeanDepth)
+      CellEnvelope(_hcafDepth.mean, _hcafDepth.mean, _hcafDepth.mean)
+    else
+      CellEnvelope(_hcafDepth.min, _hcafDepth.max, _hcafDepth.mean)
+
+    // Check on hspenMeanDepth added from HSPEC version 2 (used from release 1.7)
+    if (hspenDepth.min == -9999)
+      1.0
+    else if (hcafDepth.max == -9999)
+      1.0
+    else if (hcafDepth.max < hspenDepth.min)
+      0.0
+    else if ((hcafDepth.max < hspenDepth.prefMin) && (hcafDepth.max >= hspenDepth.min))
+      (hcafDepth.max - hspenDepth.min) / (hspenDepth.prefMin - hspenDepth.min)
+    else if (pelagic != 0)
+      1.0
+    else if (hspenDepth.prefMax != -9999) {
+      if (hcafDepth.max >= hspenDepth.prefMin && hcafDepth.min <= hspenDepth.prefMax)
+        1.0
+      else if (hcafDepth.min >= hspenDepth.prefMax) {
+        if ((hcafDepth.max.intValue()) - hspenDepth.prefMax.intValue() != 0) {
+          val tempdepth = (hspenDepth.max - hcafDepth.min) / (hspenDepth.max.toInt - hspenDepth.prefMax.toInt)
+          if (tempdepth < 0) 0.0 else tempdepth
+        } else 0.0
+      } else 0.0
+    } else 0.0
+
   }
 
   def rectangle(n: Double, s: Double, w: Double, e: Double) = Polygon(LineString(Point(n, w), Point(n, e), Point(s, e), Point(s, w), Point(n, w)), Nil)

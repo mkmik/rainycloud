@@ -52,7 +52,7 @@ trait ParseHelper {
   def parse(value: Option[String]) = value match {
     case Some("") => 0.0
     case Some(x) => x.toDouble
-    case None => 0.0
+    case None => -9999.0
   }
 
   def parseBool(value: Option[String]) = value match {
@@ -116,7 +116,7 @@ object Envelope {
 case class HSPEN(var speciesId: String, var layer: String, var faoAreas: List[String],
   var pelagic: Boolean, var nMostLat: Double, var sMostLat: Double, var wMostLong: Double, var eMostLong: Double,
   var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
-  var meanDepth: Double) extends Keyed with AvroRecord {
+  var meanDepth: Boolean) extends Keyed with AvroRecord {
   override def toString() = "HSPEN(%s)".format(speciesId)
 
   def key = speciesId
@@ -125,7 +125,7 @@ case class HSPEN(var speciesId: String, var layer: String, var faoAreas: List[St
 object HSPEN extends ParseHelper {
   private val log = Logger.getLogger(this.getClass);
 
-  implicit def makeHspen = HSPEN("", "", List(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), 0)
+  implicit def makeHspen = HSPEN("", "", List(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), false)
 
   val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
 
@@ -154,7 +154,7 @@ object HSPEN extends ParseHelper {
       getEnvelope("Salinity"),
       getEnvelope("PrimProd"),
       getEnvelope("LandDist"),
-      get("MeanDepth"))
+      getBool("MeanDepth"))
   }
 
 }
