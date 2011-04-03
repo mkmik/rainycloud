@@ -65,13 +65,16 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
         val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
         val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
 
-        val probability = landValue * sstValue * depthValue * salinityValue * primaryProductsValue * seaIceConcentration;
+        val probability = landValue * sstValue * depthValue * salinityValue * primaryProductsValue * seaIceConcentration
+
         if (probability != 0)
           List(HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = probability,
             inBox = inBox, inFao = inFao, lme = hcaf.lme, eez = hcaf.eezFirst))
         else
           Nil
-      } else Nil
+      } else {
+        Nil
+      }
     }
   }
 

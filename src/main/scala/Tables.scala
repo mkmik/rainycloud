@@ -60,6 +60,7 @@ trait ParseHelper {
     case Some("0") => false
     case Some("y") => true
     case Some("n") => false
+    case Some("") => false
     case None => false
   }
 }
@@ -147,8 +148,8 @@ object HSPEN extends ParseHelper {
       getBool("Pelagic"),
       get("NMostLat"),
       get("SMostLat"),
-      get("WMostLat"),
-      get("EMostLat"),
+      get("WMostLong"),
+      get("EMostLong"),
       getEnvelope("Depth"),
       getEnvelope("Temp"),
       getEnvelope("Salinity"),
