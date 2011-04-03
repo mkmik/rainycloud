@@ -59,15 +59,15 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
 
       if (inFao && inBox) {
         val landValue = 1.0
-        val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.tempMin, hspen.tempMax, hspen.tempPrefMin, hspen.tempPrefMax, hspen.layer)
-        val depth = getDepth(hcaf.depthMax, hcaf.depthMin, hspen.pelagic, hspen.depthMax, hspen.depthMin, hspen.depthPrefMax, hspen.depthPrefMin)
+        val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
+        val depth = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
 
         null
       } else Nil
     }
   }
 
-  def getSST(sstAnMean: Double, sbtAnMean: Double, tempMin: Double, tempMax: Double, tempPrefMin: Double, tempPrefMax: Double, layer: String) = {
+  def getSST(sstAnMean: Double, sbtAnMean: Double, temp: Envelope, layer: String) = {
     val tempFld = layer match {
       case "s" => sstAnMean
       case "b" => sbtAnMean
@@ -76,19 +76,19 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
 
     if (tempFld == -9999) 
       1.0
-    else if (tempFld < tempMin)
+    else if (tempFld < temp.min)
       0.0
-    else if (tempFld >= tempMin && tempFld < tempPrefMin)
-      (tempFld - tempMin) / (tempPrefMin - tempMin)
-    else if (tempFld >= tempPrefMin && tempFld <= tempPrefMax) 
+    else if (tempFld >= temp.min && tempFld < temp.prefMin)
+      (tempFld - temp.min) / (temp.prefMin - temp.min)
+    else if (tempFld >= temp.prefMin && tempFld <= temp.prefMax) 
       1.0
-    else if (tempFld > tempPrefMax && tempFld <= tempMax)
-      (tempMax - tempFld) / (tempMax - tempPrefMax)
+    else if (tempFld > temp.prefMax && tempFld <= temp.max)
+      (temp.max - tempFld) / (temp.max - temp.prefMax)
     else
       0.0
   }
 
-  def getDepth(hcafDepthMax: Double, hcafDepthMin: Double, pelagic: Boolean, hspenDepthMax: Double, hspenDepthMin: Double, hspenDepthPrefMax: Double, hspenDepthPrefMin: Double) = {
+  def getDepth(hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Double) = {
   }
 
   def rectangle(n: Double, s: Double, w: Double, e: Double) = Polygon(LineString(Point(n, w), Point(n, e), Point(s, e), Point(s, w), Point(n, w)), Nil)
