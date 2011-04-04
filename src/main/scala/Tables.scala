@@ -22,6 +22,12 @@ trait Keyed {
   def key: String
 }
 
+@serializable
+case class CellEnvelope(var min: Double, var max: Double, var mean: Double) extends AvroRecord()
+object CellEnvelope {
+  def apply(): CellEnvelope = CellEnvelope(0, 0, 0)
+}
+
 /*!## HCAF
  
  HCAF is the biggest of the three table, but we actually only need to fetch the ocean squares. With the 0.5 deg resolution cells we have:
@@ -32,14 +38,35 @@ trait Keyed {
  HCAF Table has the csquareCode as key. The companion object contains conversion methods
  */
 @serializable
-case class HCAF(var csquareCode: String) extends Keyed with AvroRecord {
+case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: Int,
+  var depth: CellEnvelope,
+  var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var salinityBMean: Double,
+  var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed with AvroRecord {
+
   override def toString() = "HCAF(%s)".format(csquareCode)
 
   def key = csquareCode
 }
 
-object HCAF {
-  implicit def makeHcaf = HCAF("")
+trait ParseHelper {
+  def parse(value: Option[String]) = value match {
+    case Some("") => 0.0
+    case Some(x) => x.toDouble
+    case None => -9999.0
+  }
+
+  def parseBool(value: Option[String]) = value match {
+    case Some("1") => true
+    case Some("0") => false
+    case Some("y") => true
+    case Some("n") => false
+    case Some("") => false
+    case None => false
+  }
+}
+
+object HCAF extends ParseHelper {
+  implicit def makeHcaf = HCAF("", 0, 0, 0, CellEnvelope(), 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
   val columns = List("CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM", "DepthMin", "DepthMax", "SSTAnMean", "SBTAnMean", "SalinityMean", "SalinityBMean", "PrimProdMean", "IceConAnn", "LandDist", "EEZFirst", "LME", "DepthMean")
 
@@ -52,8 +79,31 @@ object HCAF {
   def fromCassandra(x: Map[String, Column]): HCAF = build(x mapValues (_.value))
 
   def build(x: Map[String, String]) = {
-    new HCAF(x.get("CsquareCode").getOrElse(""))
+    def get(name: String) = parse(x.get(name))
+    def getEnvelope(name: String) = CellEnvelope(get(name + "Min"), get(name + "Max"), get(name + "Mean"))
+    def faoArea(area: String) = if(area.isEmpty()) -1 else area.toInt
+
+    new HCAF(x.get("CsquareCode").getOrElse(""),
+      get("CenterLat"),
+      get("CenterLong"),
+      faoArea(x.get("FAOAreaM").getOrElse("")),
+      getEnvelope("Depth"),
+      get("SSTAnMean"),
+      get("SBTAnMean"),
+      get("SalinityMean"),
+      get("SalinityBMean"),
+      get("PrimProdMean"),
+      get("IceConnAnn"),
+      get("LandDist"),
+      get("EEZFirst"),
+      get("LME"))
   }
+}
+
+@serializable
+case class Envelope(var min: Double, var max: Double, var prefMin: Double, var prefMax: Double) extends AvroRecord
+object Envelope {
+  def apply(): Envelope = Envelope(0, 0, 0, 0)
 }
 
 /*!## HSPEN
@@ -65,16 +115,19 @@ object HCAF {
  The HSPEN Table doesn't need a key. The companion object contains conversion methods
  */
 @serializable
-case class HSPEN(var speciesId: String) extends Keyed with AvroRecord {
+case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int],
+  var pelagic: Boolean, var nMostLat: Double, var sMostLat: Double, var wMostLong: Double, var eMostLong: Double,
+  var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
+  var meanDepth: Boolean) extends Keyed {
   override def toString() = "HSPEN(%s)".format(speciesId)
-  
+
   def key = speciesId
 }
 
-object HSPEN {
+object HSPEN extends ParseHelper {
   private val log = Logger.getLogger(this.getClass);
 
-  implicit def makeHspen = HSPEN("")
+  implicit def makeHspen = HSPEN("", "", Set(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), false)
 
   val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
 
@@ -85,7 +138,28 @@ object HSPEN {
   def fromCassandra(x: Map[String, Column]): HSPEN = build(x mapValues (_.value))
 
   def build(x: Map[String, String]) = {
-    new HSPEN(x.get("SpeciesID").getOrElse("no species"))
+    def get(name: String) = parse(x.get(name))
+    def getBool(name: String) = parseBool(x.get(name))
+
+    def getEnvelope(name: String) = Envelope(get(name + "Min"), get(name + "Max"), get(name + "PrefMin"), get(name + "PrefMax"))
+
+    def faoArea(area: String) = if(area.isEmpty()) -1 else area.toInt
+    def layer(layer: String) = if(layer.isEmpty()) " " else layer
+
+    new HSPEN(x.get("SpeciesID").getOrElse("no species"),
+      layer(x.get("Layer").getOrElse("")),
+      x.get("FAOAreas").getOrElse("").split(",").toList.map { a => faoArea(a.trim) }.toSet,
+      getBool("Pelagic"),
+      get("NMostLat"),
+      get("SMostLat"),
+      get("WMostLong"),
+      get("EMostLong"),
+      getEnvelope("Depth"),
+      getEnvelope("Temp"),
+      getEnvelope("Salinity"),
+      getEnvelope("PrimProd"),
+      getEnvelope("LandDist"),
+      getBool("MeanDepth"))
   }
 
 }
@@ -106,7 +180,8 @@ object HSPEN {
  The companion object contains conversion methods.
  */
 
-case class HSPEC(var speciesId: String, var csquareCode: String) extends CassandraConfig with CassandraCreator with AvroRecord {
+case class HSPEC(var speciesId: String, var csquareCode: String, var probability: Double, var inBox: Boolean, var inFao: Boolean,
+  var faoAreaM: Int, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator with AvroRecord {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
 
@@ -120,15 +195,25 @@ case class HSPEC(var speciesId: String, var csquareCode: String) extends Cassand
   final def key = "%s:%s".format(speciesId, csquareCode)
 }
 
-object HSPEC {
+object HSPEC extends ParseHelper {
   val columns = List("SpeciesID", "CsquareCode", "Probability", "boundboxYN", "faoareaYN", "FAOAreaM", "LME", "EEZAll")
 
   /*! These are rarely needed, since we normally don't read back generated HSPEC here */
   def fromTableRow(row: Array[String]): HSPEC = build(Map(columns zip row: _*))
 
   def build(x: Map[String, String]) = {
+    def get(name: String) = parse(x.get(name))
+    def getBool(name: String) = parseBool(x.get(name))
+    def faoArea(area: String) = if(area.isEmpty()) -1 else area.toInt
+
     new HSPEC(x.get("SpeciesID").getOrElse("no species"),
-      x.get("CsquareCode").getOrElse("no csquare code"))
+      x.get("CsquareCode").getOrElse("no csquare code"),
+      get("Probability"),
+      getBool("boundingboxYN"),
+      getBool("faoareaYN"),
+      faoArea(x.get("FAOAreaM").getOrElse("")),
+      get("LME"),
+      get("EEZAll"))
   }
 
 }

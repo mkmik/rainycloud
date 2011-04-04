@@ -40,11 +40,12 @@ class HSPECGenerator @Inject() (
     val startTime = System.currentTimeMillis
 
     timed("partition %s".format(p.start)) {
+      val hcaf = fetcher.fetch(p.start, p.size)
       val records = for {
-        /*! * fetch hcaf rows for that partition */
-        hcaf <- fetcher.fetch(p.start, p.size)
+        /*! * fetch hspen rows */
+        hs <- hspen
         /*! * for each hacf row compute a list of output hspec rows*/
-        hspec <- algorithm.compute(hcaf, hspen)
+        hspec <- algorithm.compute(hcaf, hs)
         /*! * emit each generated hspec row using our pluggable emitter */
       } emitter.emit(hspec)
     }
@@ -80,13 +81,27 @@ trait Emitter[A] {
   def flush
 }
 
+/*!## We don't know how to format the value types to CSV */
+trait CSVSerializer {
+  def toCsv(value: Any): String
+}
+
+/*!## But for now it's safe to use the same format as the existing application, true/false as 1/0 */
+class CompatCSVSerializer extends CSVSerializer {
+  def toCsv(value: Any) = value match {
+    case true => "1"
+    case false => "0"
+    case x => x.toString
+  }  
+}
+
 /*!
  If a table is a `Product` (a case class is a Product) then we can serialize it to csv via this emitter.
  */
-class CSVEmitter[A <: Product] @Inject() (val sink: PositionalSink[A]) extends Emitter[A] {
+class CSVEmitter[A <: Product] @Inject() (val sink: PositionalSink[A], val csvSerializer: CSVSerializer) extends Emitter[A] {
   /*! */
 
-  def emit(record: A) = sink.write(record.productIterator.map(_.toString).toArray)
+  def emit(record: A) = sink.write(record.productIterator.map(csvSerializer.toCsv _).toArray)
 
   def flush = sink.flush
 }

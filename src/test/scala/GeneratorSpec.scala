@@ -11,6 +11,8 @@ import uk.me.lings.scalaguice.ScalaModule
 import org.specs.mock.Mockito
 import org.mockito.Matchers._  // to use matchers like anyInt()
 
+import scala.io.Source.fromFile
+
 object GeneratorSpec extends Specification with Mockito {
   case class TestModule() extends AbstractModule with ScalaModule with RainyCloudModule {
     def configure() {
@@ -19,7 +21,7 @@ object GeneratorSpec extends Specification with Mockito {
       bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("data/hspen.csv.gz"))
       bind[PositionalSource[HSPEN]].to[CSVPositionalSource[HSPEN]]
 
-      bind[Partitioner].toInstance(new StaticPartitioner(conf.getString("ranges").getOrElse("octo/client/ranges")))
+      bind[Partitioner].toInstance(new StaticPartitioner(ranges))
 
       bind[Generator].to[HSPECGenerator]
 
@@ -28,6 +30,15 @@ object GeneratorSpec extends Specification with Mockito {
       bind[Emitter[HSPEC]].toInstance(mock[Emitter[HSPEC]])
       bind[Fetcher[HCAF]].toInstance(mock[Fetcher[HCAF]])
     }
+
+    def ranges: Iterator[String] = {
+      val ranges = conf.getList("inlineranges")
+      if(ranges.isEmpty)
+        fromFile(conf.getString("ranges").getOrElse("octo/client/ranges")).getLines
+      else
+        ranges.toIterator
+    }
+
   }
 
   "HSPEC generator" should {
@@ -53,6 +64,12 @@ object GeneratorSpec extends Specification with Mockito {
   }
 
   def setup(fetcher: Fetcher[HCAF]) {
-    fetcher.fetch("1000", 231) returns List(new HCAF("1000:100:1"), new HCAF("1000:100:2"))
+    val h1 = HCAF.makeHcaf
+    h1.csquareCode = "1000:100:1"
+
+    val h2 = HCAF.makeHcaf
+    h2.csquareCode = "1000:100:2"
+
+    fetcher.fetch("1000", 231) returns List(h1, h2)
   }
 }
