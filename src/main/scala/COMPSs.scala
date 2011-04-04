@@ -129,7 +129,7 @@ object StaticFileParamsGenerator {
   /*! Currently Guice has no support for shutting down an injector, so we have to do it manually */
   def withInjector[A](outputFileName: String)(body: Injector => A) = {
     /*! We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context) */
-    val i = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(outputFileName), COMPSsWorkerHDFSModule(), BabuDBModule()))
+    val i = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(outputFileName), COMPSsWorkerHDFSModule(), RandomAlgoModule()))
     val res = body(i)
     i.instance[Fetcher[HCAF]].shutdown
     i.instance[Loader[HSPEN]].shutdown
