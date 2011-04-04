@@ -3,6 +3,8 @@ package it.cnr.aquamaps
 import scala.util.Random
 import org.geoscript.geometry._
 
+import scala.collection.mutable.ListBuffer
+
 /*! The core computation of a `HSPEC` row from a pair of `HCAF` and `HSPEN` rows is defined in this trait. */
 trait HspecAlgorithm {
   def compute(hcaf: Iterable[HCAF], hspen: HSPEN): Iterable[HSPEC]
@@ -45,34 +47,35 @@ class AllHSpecAlgorithm extends HspecAlgorithm {
 
 /*! This is the current (real) algorithm as ported from the FAO PHP code. */
 class CompatHSpecAlgorithm extends HspecAlgorithm {
+  val random: Random = new Random(123)
+
 
   // compute all HSPECs from the given HCAF and all the HSPENs
   override def compute(hcaf: Iterable[HCAF], hspen: HSPEN): Iterable[HSPEC] = {
     val boundary = rectangle(hspen.nMostLat, hspen.sMostLat, hspen.wMostLong, hspen.eMostLong)
     val faoAreas = hspen.faoAreas
 
-    hcaf flatMap { hcaf =>
-
+    val res = new ListBuffer[HSPEC]()
+    hcaf foreach { hcaf =>
       val inFao = faoAreas contains hcaf.faoAreaM
-      if (!inFao)
-        Nil
-      else {
+      //val inFao = random.nextInt(10) < 9
+      if (inFao) {
         val inBox = boundary contains Point(hcaf.centerLat, hcaf.centerLong)
+        //val inBox = true
 
         val preparedSeaIce = -9999
 
-        if (inFao && inBox) {
+        if (inBox) {
           val probability = computeProbability(hcaf, hspen)
           if (probability != 0)
-            List(HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = probability,
-              inBox = inBox, inFao = inFao, lme = hcaf.lme, eez = hcaf.eezFirst))
-          else
-            Nil
-        } else {
-          Nil
+            res += HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = probability,
+                         inBox = inBox, inFao = inFao, lme = hcaf.lme, eez = hcaf.eezFirst)
         }
       }
+
     }
+
+    res.toList
   }
 
   /*! This might seem ugly, but we have to avoid computing useless stuff, we quit as soon as we found a zero value. The computations are also ordered putting
@@ -83,24 +86,19 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
 
     val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
     if (depthValue == 0)
-//      println("WHO: depth")
       return 0
 
     val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
     if (sstValue == 0)
-      //println("WHO: sst")
       return 0
 
     val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
     if (primaryProductsValue == 0)
-      //println("WHO: primprod")
       return 0
 
     val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
     if (salinityValue == 0)
-      //println("WHO: salinity")
       return 0
-
 
     val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
     if (seaIceConcentration == 0)
@@ -108,6 +106,10 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
 
     return landValue * sstValue * depthValue * salinityValue * primaryProductsValue * seaIceConcentration
   }
+
+  @inline
+  final def xgetSST(sstAnMean: Double, sbtAnMean: Double, temp: Envelope, layer: String) = 1.0
+
 
   @inline
   final def getSST(sstAnMean: Double, sbtAnMean: Double, temp: Envelope, layer: String) = {
@@ -130,6 +132,9 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     else
       0.0
   }
+
+  @inline
+  final def xgetDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean) = 1.0
 
   @inline
   final def getDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean) = {
@@ -162,6 +167,10 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
   }
 
   @inline
+  final def xgetSalinity(hcafSalinitySMean: Double, hcafSalinityBMean: Double, layer: String, hspenSalinity: Envelope) = 1.0
+
+
+  @inline
   final def getSalinity(hcafSalinitySMean: Double, hcafSalinityBMean: Double, layer: String, hspenSalinity: Envelope) = {
     val smean = layer match {
       case "s" => hcafSalinitySMean
@@ -182,6 +191,10 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     else
       0.0
   }
+
+  @inline
+  final def xgetPrimaryProduction(hcafPrimProdMean: Double, hspenPrimProd: Envelope) = 1.0
+
 
   @inline
   final def getPrimaryProduction(hcafPrimProdMean: Double, hspenPrimProd: Envelope) = {

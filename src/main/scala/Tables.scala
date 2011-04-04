@@ -38,7 +38,7 @@ object CellEnvelope {
  HCAF Table has the csquareCode as key. The companion object contains conversion methods
  */
 @serializable
-case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: String,
+case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: Int,
   var depth: CellEnvelope,
   var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var salinityBMean: Double,
   var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed with AvroRecord {
@@ -66,7 +66,7 @@ trait ParseHelper {
 }
 
 object HCAF extends ParseHelper {
-  implicit def makeHcaf = HCAF("", 0, 0, "", CellEnvelope(), 0, 0, 0, 0, 0, 0, 0, 0, 0)
+  implicit def makeHcaf = HCAF("", 0, 0, 0, CellEnvelope(), 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
   val columns = List("CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM", "DepthMin", "DepthMax", "SSTAnMean", "SBTAnMean", "SalinityMean", "SalinityBMean", "PrimProdMean", "IceConAnn", "LandDist", "EEZFirst", "LME", "DepthMean")
 
@@ -81,11 +81,12 @@ object HCAF extends ParseHelper {
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
     def getEnvelope(name: String) = CellEnvelope(get(name + "Min"), get(name + "Max"), get(name + "Mean"))
+    def faoArea(area: String) = if(area.isEmpty()) -1 else area.toInt
 
     new HCAF(x.get("CsquareCode").getOrElse(""),
       get("CenterLat"),
       get("CenterLong"),
-      x.get("FAOAreaM").getOrElse(""),
+      faoArea(x.get("FAOAreaM").getOrElse("")),
       getEnvelope("Depth"),
       get("SSTAnMean"),
       get("SBTAnMean"),
@@ -114,7 +115,7 @@ object Envelope {
  The HSPEN Table doesn't need a key. The companion object contains conversion methods
  */
 @serializable
-case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[String],
+case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int],
   var pelagic: Boolean, var nMostLat: Double, var sMostLat: Double, var wMostLong: Double, var eMostLong: Double,
   var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
   var meanDepth: Boolean) extends Keyed {
@@ -142,11 +143,12 @@ object HSPEN extends ParseHelper {
 
     def getEnvelope(name: String) = Envelope(get(name + "Min"), get(name + "Max"), get(name + "PrefMin"), get(name + "PrefMax"))
 
+    def faoArea(area: String) = if(area.isEmpty()) -1 else area.toInt
     def layer(layer: String) = if(layer.isEmpty()) " " else layer
 
     new HSPEN(x.get("SpeciesID").getOrElse("no species"),
       layer(x.get("Layer").getOrElse("")),
-      x.get("FAOAreas").getOrElse("").split(",").toList.map { _.trim }.toSet,
+      x.get("FAOAreas").getOrElse("").split(",").toList.map { a => faoArea(a.trim) }.toSet,
       getBool("Pelagic"),
       get("NMostLat"),
       get("SMostLat"),
@@ -179,7 +181,7 @@ object HSPEN extends ParseHelper {
  */
 
 case class HSPEC(var speciesId: String, var csquareCode: String, var probability: Double, var inBox: Boolean, var inFao: Boolean,
-  var faoAreaM: String, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator with AvroRecord {
+  var faoAreaM: Int, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator with AvroRecord {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
 
@@ -202,13 +204,14 @@ object HSPEC extends ParseHelper {
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
     def getBool(name: String) = parseBool(x.get(name))
+    def faoArea(area: String) = if(area.isEmpty()) -1 else area.toInt
 
     new HSPEC(x.get("SpeciesID").getOrElse("no species"),
       x.get("CsquareCode").getOrElse("no csquare code"),
       get("Probability"),
       getBool("boundingboxYN"),
       getBool("faoareaYN"),
-      x.get("FAOAreaM").getOrElse("no fao area"),
+      faoArea(x.get("FAOAreaM").getOrElse("")),
       get("LME"),
       get("EEZAll"))
   }

@@ -28,7 +28,4 @@ The result of each run of a worker shall be then concatenated in the resulting f
 Real world scenario will use a table storage output etc, this is only meant for testing and demonstration purposes.
 
 
-The first run loads data under the 'data/' directory and creates a temporary directory "babudb" in the current working directory.
-This "babudb" speeds up subsequent invocations of the worker.
-
 (Tested using wine and jre 1.6)
