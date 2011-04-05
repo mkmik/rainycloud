@@ -44,6 +44,19 @@ class Main
 object Main {
   private val log = Logger(classOf[Main])
 
+  val parser = new OptionParser("scopt") {
+    opt("s", "storage", "storage type (local, hdfs)", {v: String => Configgy.config.setString("storage", v)})
+    opt("r", "ranges", "range file", {v: String => Configgy.config.setString("ranges", v)})
+    opt("e", "inlineranges", "inline ranges", {v: String => Configgy.config.setList("inlineranges", v.split(","))})
+    opt("hcaf", "hcaf file", {v: String => Configgy.config.setString("hcafFile", v)})
+    opt("hspen", "hspen file", {v: String => Configgy.config.setString("hspenFile", v)})
+    opt("hspec", "hspec file", {v: String => Configgy.config.setString("hspecFile", v)})
+    opt("m", "module", "add a module to runtime", {v: String => val c= Configgy.config; c.setList("modules", (c.getList("modules").toList ++ List(v)).distinct) })
+  }
+
+  def parseArgs(args: Array[String]) = parser.parse(args)
+
+
   def main(args: Array[String]) {
     val conf = loadConfiguration
 
@@ -56,16 +69,6 @@ object Main {
     entryPoint.run
 
     cleanup(injector)
-  }
-
-  val parser = new OptionParser("scopt") {
-    opt("s", "storage", "storage type (local, hdfs)", {v: String => Configgy.config.setString("storage", v)})
-    opt("r", "ranges", "range file", {v: String => Configgy.config.setString("ranges", v)})
-    opt("e", "inlineranges", "inline ranges", {v: String => Configgy.config.setList("inlineranges", v.split(","))})
-    opt("hcaf", "hcaf file", {v: String => Configgy.config.setString("hcafFile", v)})
-    opt("hspen", "hspen file", {v: String => Configgy.config.setString("hspenFile", v)})
-    opt("hspec", "hspec file", {v: String => Configgy.config.setString("hspecFile", v)})
-    opt("m", "module", "add a module to runtime", {v: String => val c= Configgy.config; c.setList("modules", (c.getList("modules").toList ++ List(v)).distinct) })
   }
 
   def createInjector(conf: Config) = {
