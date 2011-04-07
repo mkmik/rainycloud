@@ -18,6 +18,9 @@ public class COMPSsMain {
         COMPSsGenerator generator = injector.getInstance(COMPSsGenerator.class);
         COMPSsCollectorEmitter<HSPEC> emitter = injector.getInstance(Key.get(new TypeLiteral<COMPSsCollectorEmitter<HSPEC>>() {}));
 
+        String hcafFile = Utils.confGetString("hcafFile", "default");
+        String hspenFile = Utils.confGetString("hspenFile", "default");
+
         Iterator<Partition> p = partitioner.partitions();
         while(p.hasNext()) {
             String tmpFile = generator.mkTmp(".xml");
@@ -25,7 +28,7 @@ public class COMPSsMain {
 
             XML.save(tmpFile, new P2XML(p.next()).toXml(), "UTF-8", false, null);
 
-            StaticFileParamsGenerator.staticDelegate(tmpFile, outputFile);
+            StaticFileParamsGenerator.staticDelegate(tmpFile, outputFile, hcafFile, hspenFile);
 
             /*! Keep it for later */
             emitter.add(outputFile);
