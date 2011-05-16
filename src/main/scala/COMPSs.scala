@@ -10,6 +10,7 @@ import com.google.inject.util.{ Modules => GuiceModules }
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
 import Watch.timed
+import net.lag.configgy.Configgy
 import net.lag.logging.Logger
 import java.io._
 import org.apache.commons.io.IOUtils
@@ -119,6 +120,13 @@ object StaticFileParamsGenerator {
     }
   }
 
+  def staticDelegate(fileName: String, outputFileName: String, hcafFile: String, hspenFile: String) {
+    Configgy.config.setString("hcafFile", hcafFile)
+    Configgy.config.setString("hspenFile", hspenFile)
+
+    staticDelegate(fileName, outputFileName)
+  }
+
   def staticDelegate(fileName: String, outputFileName: String) {
     withInjector(outputFileName) { injector =>
       val generator = injector.instance[FileParamsGenerator]
@@ -129,7 +137,7 @@ object StaticFileParamsGenerator {
   /*! Currently Guice has no support for shutting down an injector, so we have to do it manually */
   def withInjector[A](outputFileName: String)(body: Injector => A) = {
     /*! We have to create a new DI context, since we run in a static method (and possibly on another machine, in a completely disconnected runtime context) */
-    val i = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(outputFileName), COMPSsWorkerHDFSModule(), BabuDBModule()))
+    val i = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (COMPSsWorkerModule(outputFileName), COMPSsWorkerHDFSModule(), RandomAlgoModule()))
     val res = body(i)
     i.instance[Fetcher[HCAF]].shutdown
     i.instance[Loader[HSPEN]].shutdown
