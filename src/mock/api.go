@@ -27,21 +27,67 @@ type Job struct {
 	Metrics map[string]Metric
 }
 
+type Metric	interface {}
+
+type LoadMetric struct {
+	ResID string "resId"
+	Value float32 "value"
+}
+
+
+const (
+	MAX = 1650703652
+	WORKERS = 4
+)
 
 //
+func UpdateMetrics(m map[string]Metric, increment int) {
+
+	now := time.Nanoseconds()/1000000
+	lastTp, ok := m["throughput"].([2]int64)
+	if !ok {
+		panic(fmt.Sprintf("cannot cast '%s' to throughput", m["throughput"]))
+	}
+
+	last := lastTp[0]
+	delta := now - last
+
+	absIncrement := MAX * int64(increment) / 100
+	
+	
+	m["throughput"] = [...]int64{now, absIncrement/delta * 1000}
+	m["load"] = [...]LoadMetric{LoadMetric{"W1", 51.5}, LoadMetric{"W2", 23.4}}
+
+}
+
+func ResetThroughput(m map[string]Metric) {
+	m["throughput"] = [...]int64{time.Nanoseconds()/1000000, 0}
+}
+
 func (this *Job) Run() {
 	fmt.Printf("Running job %s\n", this.Id)
 	this.Status = RUNNING
 
+	ResetThroughput(this.Metrics)
+
 	for {
-		time.Sleep(rand.Int63n(20) * 1e8)
-		
-		increment := rand.Intn(4)
+		time.Sleep(1e9)
+
+		maxPercent := 3		
+		if this.Completion >80 {
+			maxPercent = 0
+		} else if this.Completion < 10 {
+			maxPercent = 1
+		}
+
+		increment := 1 + rand.Intn(maxPercent)
 
 		comp := this.Completion + increment
 		if comp > 100 {
 			comp = 100
 		}
+
+		UpdateMetrics(this.Metrics, increment)
 		
 		this.Completion = comp
 
@@ -49,6 +95,7 @@ func (this *Job) Run() {
 		
 		if comp >= 100 {
 			this.Status = "DONE"
+			ResetThroughput(this.Metrics)
 			break
 		}
 	}
@@ -86,10 +133,6 @@ type JobStatusResponse struct {
 	Metrics map[string]Metric "metrics"
 }
 
-type Metric struct {
-	Name string "name"
-	
-}
 
 var registry JobRegistry = *NewJobRegistry()
 
@@ -119,7 +162,7 @@ func ApiSubmit(ctx *web.Context) string {
 func getStatus(id string) *JobStatusResponse {
 	job, e := registry.Get(id)
 	if e != nil {
-		println("got error", e.String())
+		panic(e.String())
 	}
 	return &JobStatusResponse{job.Id, job.Status, job.Completion, job.Metrics}
 }
