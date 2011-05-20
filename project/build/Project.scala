@@ -78,6 +78,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val forceJsonLib = "net.sf.json-lib" % "json-lib" % "2.3" classifier "jdk15"
 
   val hector = "me.prettyprint" % "hector-core" % "0.7.0-29"
+  val riakClient = "com.basho.riak" % "riak-client" % "0.14.1"
 
 //  override def compileOptions = Optimize :: Nil
 
