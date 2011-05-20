@@ -21,8 +21,8 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.util.{Modules => GuiceModules}
 import net.lag.configgy.{Config, Configgy}
 import net.lag.logging.Logger
-import org.github.scopt.OptionParser
-import org.github.scopt.OptionParser._
+import scopt.OptionParser
+import scopt.OptionParser._
 
 class EntryPoint @Inject() (
   val partitioner: Partitioner,

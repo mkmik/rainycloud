@@ -1,6 +1,6 @@
 package it.cnr.aquamaps;
 
-import org.github.scopt.OptionParser;
+import scopt.OptionParser;
 import net.lag.configgy.Config;
 import com.google.inject.*;
 import scala.collection.Iterator;
