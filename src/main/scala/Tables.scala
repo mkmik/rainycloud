@@ -12,7 +12,7 @@ import org.apache.cassandra.thrift.{ Column, ColumnPath }
 import org.apache.log4j.Logger
 
 import stopwatch.Stopwatch
-import com.googlecode.avro.marker._
+//import com.googlecode.avro.marker._
 
 /*!
  
@@ -22,7 +22,7 @@ trait Keyed {
   def key: String
 }
 
-case class CellEnvelope(var min: Double, var max: Double, var mean: Double) extends AvroRecord()
+case class CellEnvelope(var min: Double, var max: Double, var mean: Double)
 object CellEnvelope {
   def apply(): CellEnvelope = CellEnvelope(0, 0, 0)
 }
@@ -39,7 +39,7 @@ object CellEnvelope {
 case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: Int,
   var depth: CellEnvelope,
   var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var salinityBMean: Double,
-  var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed with AvroRecord {
+  var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed {
 
   override def toString() = "HCAF(%s)".format(csquareCode)
 
@@ -98,7 +98,7 @@ object HCAF extends ParseHelper {
   }
 }
 
-case class Envelope(var min: Double, var max: Double, var prefMin: Double, var prefMax: Double) extends AvroRecord
+case class Envelope(var min: Double, var max: Double, var prefMin: Double, var prefMax: Double)
 object Envelope {
   def apply(): Envelope = Envelope(0, 0, 0, 0)
 }
@@ -177,7 +177,7 @@ object HSPEN extends ParseHelper {
  */
 
 case class HSPEC(var speciesId: String, var csquareCode: String, var probability: Double, var inBox: Boolean, var inFao: Boolean,
-  var faoAreaM: Int, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator with AvroRecord {
+  var faoAreaM: Int, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
 

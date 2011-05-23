@@ -83,9 +83,10 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 //  override def compileOptions = Optimize :: Nil
 
   override def compileOptions = super.compileOptions ++
-  Seq(Unchecked, Optimize) ++
+//  Seq(Unchecked, Optimize) ++
   compileOptions("-encoding", "utf8") ++
   compileOptions("-deprecation")
 
-  override def mainClass = Some("it.cnr.aquamaps.Main")
+  //override def mainClass = Some("it.cnr.aquamaps.Main")
+  override def mainClass = Some("it.cnr.aquamaps.CassandraLoad")
 }
