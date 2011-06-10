@@ -86,6 +86,7 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
     compileOptions("-encoding", "utf8") ++
     compileOptions("-deprecation")
 
-  override def mainClass = Some("it.cnr.aquamaps.Main")
+//  override def mainClass = Some("it.cnr.aquamaps.Main")
   //override def mainClass = Some("it.cnr.aquamaps.CassandraLoad")
+  override def mainClass = Some("it.cnr.aquamaps.ZeromqTest")
 }
