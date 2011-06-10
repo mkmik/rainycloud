@@ -27,18 +27,18 @@ object Zeromq {
   val HEARTBEAT_TIME = 200 * 5 * 10
 
   /*# Command events */
-  case class Submit(val job: Job)
+  case class Submit(val task: Task)
   case class Finish()
   /*# Status feedback events */
   case class Ready(val worker: Worker)
-  //  case class Rejected(val job: Job)
+  //  case class Rejected(val task: Task)
   case class Died(val worker: Worker)
   // a node joins when it sends active heartbeat
   case class Joined(val worker: Worker)
   /*# Commands/actions */
   case class Kill(val worker: String)
 
-  case class Job(val body: String) {
+  case class Task(val body: String) {
     override def toString = body
   }
 
@@ -93,7 +93,7 @@ class PirateClient extends ZeromqHandler {
   socket.bind("tcp://*:5566")
 
   /*# This "actor" implements the communication between the submission client and the workers.
-   It handles worker registration, heartbeating, job book keeping. Higher level job handling is
+   It handles worker registration, heartbeating, task book keeping. Higher level task handling is
    done in the 'sender' actor. */
   spawn {
     val poller = context.poller()
@@ -125,8 +125,8 @@ class PirateClient extends ZeromqHandler {
       }
     }
 
-    def submitJob(worker: Worker, job: Job) {
-      sendParts(worker.name, socket.getIdentity(), "", "SUBMIT", job.toString)
+    def submitTask(worker: Worker, task: Task) {
+      sendParts(worker.name, socket.getIdentity(), "", "SUBMIT", task.toString)
     }
 
     while (true) {
@@ -139,7 +139,7 @@ class PirateClient extends ZeromqHandler {
           case "READY" => workerReady(worker)
           case "HEARTBEAT" => workerAlive(worker)
           case "KILL" => sendParts(recv(), socket.getIdentity(), "", "KILL")
-          case "SUBMIT" => submitJob(worker, Job(recv()))
+          case "SUBMIT" => submitTask(worker, Task(recv()))
           case _ => throw new IllegalArgumentException("unknown command '%s' for worker '%s' in thread %s".format(msg, worker, Thread.currentThread()))
         }
       }
@@ -151,7 +151,7 @@ class PirateClient extends ZeromqHandler {
   //
 
   /*# This actor implements the API between the submission API users and the zmq subsystem.
-   Furthermore it handles the job rejection and retries. */
+   Furthermore it handles the task rejection and retries. */
   class SenderActor extends Actor {
     private val log = Logger(classOf[SenderActor])
 
@@ -160,30 +160,30 @@ class PirateClient extends ZeromqHandler {
     val socket = context.socket(ZMQ.XREQ)
     socket.connect("inproc://client")
 
-    var queuedJobs = Queue[Job]()
+    var queuedTasks = Queue[Task]()
     var readyWorkers = Queue[Worker]()
 
-    def submit(job: Job): Unit = {
-      queuedJobs = queuedJobs enqueue job
+    def submit(task: Task): Unit = {
+      queuedTasks = queuedTasks enqueue task
       flushQueue()
     }
 
     def flushQueue() = {
-      val slots = readyWorkers zip queuedJobs
-      log.debug("FLUSHING QUEUE ready workers: %s, queuedJobs: %s, matched slot size: %s".format(readyWorkers.size, queuedJobs.size, slots.size))
-      for ((worker, job) <- slots) {
-        log.debug("can run %s on %s".format(job, worker))
-        sendToWorker(worker, job)
+      val slots = readyWorkers zip queuedTasks
+      log.debug("FLUSHING QUEUE ready workers: %s, queuedTasks: %s, matched slot size: %s".format(readyWorkers.size, queuedTasks.size, slots.size))
+      for ((worker, task) <- slots) {
+        log.debug("can run %s on %s".format(task, worker))
+        sendToWorker(worker, task)
       }
 
-      queuedJobs = queuedJobs drop (slots.size)
+      queuedTasks = queuedTasks drop (slots.size)
 
       log.debug("ready workers was: %s".format(readyWorkers))
       readyWorkers = readyWorkers drop (slots.size)
       log.debug("ready workers is:  %s".format(readyWorkers))
     }
 
-    def sendToWorker(worker: Worker, job: Job): Unit = sendParts(socket, worker.name, "", "SUBMIT", job.toString)
+    def sendToWorker(worker: Worker, task: Task): Unit = sendParts(socket, worker.name, "", "SUBMIT", task.toString)
 
     def acceptWorker(worker: Worker) = {
       log.debug("Worker %s is now ready.Previous ready workers: %s (%s)".format(worker, readyWorkers, Thread.currentThread()))
@@ -198,7 +198,7 @@ class PirateClient extends ZeromqHandler {
     }
 
     def summary() = {
-      log.info(" -------> Currently %s workers alive (%s), queue length: %s".format(readyWorkers.length, readyWorkers, queuedJobs.length))
+      log.info(" -------> Currently %s workers alive (%s), queue length: %s".format(readyWorkers.length, readyWorkers, queuedTasks.length))
     }
 
     self.receiveTimeout = Some(4000L)
@@ -208,14 +208,14 @@ class PirateClient extends ZeromqHandler {
       case Joined(worker) => log.info("Worker %s has joined".format(worker))
       case Died(worker) => buryWorker(worker)
       case Kill(worker) => sendParts(socket, "dummy", "", "KILL", worker)
-      case Submit(job) => submit(job)
+      case Submit(task) => submit(task)
       case ReceiveTimeout => summary()
     }
   }
 
   val sender = actorOf(new SenderActor()).start
 
-  def dispatch(msg: String) = sender ! Submit(Job(msg))
+  def dispatch(msg: String) = sender ! Submit(Task(msg))
   def kill(worker: String) = sender ! Kill(worker)
 }
 
@@ -250,9 +250,9 @@ class PirateWorker(val name: String) extends ZeromqHandler {
               log.info("W %s was shot in the head, dying".format(name))
               return
             case "SUBMIT" =>
-              val job = recv()
-              log.debug("W %s got submission '%s'".format(name, job))
-              worker ! Submit(Job(job))
+              val task = recv()
+              log.debug("W %s got submission '%s'".format(name, task))
+              worker ! Submit(Task(task))
               log.debug("worker actor messaged")
           }
 
@@ -266,15 +266,15 @@ class PirateWorker(val name: String) extends ZeromqHandler {
     log.warning("W %s died".format(name))
   }).start()
 
-  def executeJob(job: Job): Unit = {
-    log.info("W %s will spawn background job for (about 6 sec)".format(name))
+  def executeTask(task: Task): Unit = {
+    log.info("W %s will spawn background task for (about 6 sec)".format(name))
     spawn {
       log.debug("W %s is working for real (about 6 sec)".format(name))
       for (i <- 1 to 6) {
-        log.debug("W %s is working on step %s of job %s".format(name, i, job))
+        log.debug("W %s is working on step %s of task %s".format(name, i, task))
         Thread.sleep(100)
       }
-      log.info("W %s finished computing job %s".format(name, job))
+      log.info("W %s finished computing task %s".format(name, task))
       worker ! Finish()
     }
   }
@@ -296,7 +296,7 @@ class PirateWorker(val name: String) extends ZeromqHandler {
     }
 
     def receive = {
-      case Submit(job) => log.debug("submitting to execute %s".format(job)); executeJob(job)
+      case Submit(task) => log.debug("submitting to execute %s".format(task)); executeTask(task)
       case Finish() => log.debug("sending back ready"); send(socket, "READY")
       case ReceiveTimeout => log.debug("ww %s inner control timed out".format(name))
     }
@@ -322,7 +322,7 @@ object ZeromqTest extends App {
   val pc = new PirateClient()
 
   def startWorkers() = {
-    for (i <- 1 to 30) {
+    for (i <- 1 to 160) {
       val worker = new PirateWorker("w" + i)
       Thread.sleep(100)
       println("Is it running %s ? %s".format("w" + i, worker.worker.isRunning))
@@ -335,7 +335,7 @@ object ZeromqTest extends App {
   Thread.sleep(4000)
   println("SENDING COMMAND storm")
 
-  for (i <- 1 to 100) {
+  for (i <- 1 to 1000) {
     pc.dispatch("Test Command %s".format(i))
   }
 
