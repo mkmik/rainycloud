@@ -95,7 +95,7 @@ class PirateClient extends ZeromqHandler {
   /*# This "actor" implements the communication between the submission client and the workers.
    It handles worker registration, heartbeating, job book keeping. Higher level job handling is
    done in the 'sender' actor. */
-  val mq = future {
+  spawn {
     val poller = context.poller()
     poller.register(socket, ZMQ.Poller.POLLIN)
 
@@ -155,7 +155,7 @@ class PirateClient extends ZeromqHandler {
   class SenderActor extends Actor {
     private val log = Logger(classOf[SenderActor])
 
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 5, 100.milliseconds)
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
 
     val socket = context.socket(ZMQ.XREQ)
     socket.connect("inproc://client")
@@ -205,7 +205,7 @@ class PirateClient extends ZeromqHandler {
 
     def receive = {
       case Ready(worker) => acceptWorker(worker)
-      case Joined(worker) => log.info("Worker %s is joined".format(worker))
+      case Joined(worker) => log.info("Worker %s has joined".format(worker))
       case Died(worker) => buryWorker(worker)
       case Kill(worker) => sendParts(socket, "dummy", "", "KILL", worker)
       case Submit(job) => submit(job)
@@ -226,12 +226,13 @@ class PirateWorker(val name: String) extends ZeromqHandler {
 
   val socket = context.socket(ZMQ.XREQ)
 
-  val mq = future {
+  new Thread(() => {
     socket.setIdentity(name)
     socket.connect("tcp://localhost:5566")
 
-    log.debug("sending ready from %s".format(name))
+    log.info("sending ready from %s".format(name))
     send("READY")
+    log.info("sent ready from %s".format(name))
 
     val poller = context.poller()
     poller.register(socket, ZMQ.Poller.POLLIN)
@@ -263,7 +264,7 @@ class PirateWorker(val name: String) extends ZeromqHandler {
 
     eventLoop()
     log.warning("W %s died".format(name))
-  }
+  }).start()
 
   def executeJob(job: Job): Unit = {
     log.info("W %s will spawn background job for (about 6 sec)".format(name))
@@ -281,7 +282,7 @@ class PirateWorker(val name: String) extends ZeromqHandler {
   class WorkerActor extends Actor {
     private val log = Logger(classOf[WorkerActor])
 
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 5, 100.milliseconds)
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
 
     val socket = context.socket(ZMQ.XREQ)
 
@@ -321,9 +322,11 @@ object ZeromqTest extends App {
   val pc = new PirateClient()
 
   def startWorkers() = {
-    for (i <- 1 to 3)
-      new PirateWorker("w" + i)
-    //    Thread.sleep(1000)
+    for (i <- 1 to 30) {
+      val worker = new PirateWorker("w" + i)
+      Thread.sleep(100)
+      println("Is it running %s ? %s".format("w" + i, worker.worker.isRunning))
+    }
     //    val pw2 = new PirateWorker("w2")
   }
 
@@ -352,5 +355,4 @@ object ZeromqTest extends App {
   val pw3 = new PirateWorker("w3")
 */
 
-  pc.mq()
 }
