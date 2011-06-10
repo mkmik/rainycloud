@@ -36,13 +36,12 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   // avro
   val radlabRepo = "Radlab Repository" at "http://scads.knowsql.org/nexus/content/groups/public/"
 
-  
   //val avroScala = compilerPlugin("com.googlecode" % "avro-scala-compiler-plugin" % "1.1-SNAPSHOT")
   //val pluginRuntime = "com.googlecode" % "avro-scala-compiler-plugin" % "1.1-SNAPSHOT"
   val avro = "org.apache.hadoop" % "avro" % "1.3.3"
-//  private val pluginDeps = Set("avro-1.3.3.jar", "jackson-core-asl-1.4.2.jar", "jackson-mapper-asl-1.4.2.jar")
+  //  private val pluginDeps = Set("avro-1.3.3.jar", "jackson-core-asl-1.4.2.jar", "jackson-mapper-asl-1.4.2.jar")
 
-/*
+  /*
   override def getScalaInstance(version: String) = {
     val pluginJars = compileClasspath.filter(path => pluginDeps.contains(path.name)).getFiles.toSeq
     withExtraJars(super.getScalaInstance(version), pluginJars)
@@ -80,13 +79,13 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val hector = "me.prettyprint" % "hector-core" % "0.7.0-29"
   val riakClient = "com.basho.riak" % "riak-client" % "0.14.1"
 
-//  override def compileOptions = Optimize :: Nil
+  //  override def compileOptions = Optimize :: Nil
 
   override def compileOptions = super.compileOptions ++
-//  Seq(Unchecked, Optimize) ++
-  compileOptions("-encoding", "utf8") ++
-  compileOptions("-deprecation")
+    //  Seq(Unchecked, Optimize) ++
+    compileOptions("-encoding", "utf8") ++
+    compileOptions("-deprecation")
 
-  //override def mainClass = Some("it.cnr.aquamaps.Main")
-  override def mainClass = Some("it.cnr.aquamaps.CassandraLoad")
+  override def mainClass = Some("it.cnr.aquamaps.Main")
+  //override def mainClass = Some("it.cnr.aquamaps.CassandraLoad")
 }
