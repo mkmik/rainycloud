@@ -5,6 +5,7 @@ import scala.actors.Futures._
 
 import akka.actor.Actor
 import akka.actor.Actor._
+import akka.actor.ActorRef
 import akka.dispatch.Dispatchers
 import akka.util.duration._
 import akka.actor.ReceiveTimeout
@@ -26,27 +27,6 @@ object Zeromq {
 
   val HEARTBEAT_TIME = 200 * 5 * 10
 
-  /*# Command events */
-  case class Submit(val task: Task)
-  case class Finish(val task: Task)
-  /*# Status feedback events */
-  case class Ready(val worker: Worker)
-  case class Success(val taskId: String, val worker: Worker)
-  //  case class Rejected(val task: Task)
-  case class Died(val worker: Worker)
-  // a node joins when it sends active heartbeat
-  case class Joined(val worker: Worker)
-  /*# Commands/actions */
-  case class Kill(val worker: String)
-
-  case class Task(val id: String) {
-    override def toString = id
-  }
-
-  case class Worker(val name: String) {
-    var currentTask : Option[Task] = None
-    override def toString = name
-  }
 }
 
 trait ZeromqHandler {
@@ -85,12 +65,73 @@ trait ZeromqHandler {
 
 }
 
-trait JobSubmitter
+trait JobSubmitterCommon {
+  case class Task(val id: String) {
+    override def toString = id
+  }
 
-class ZeromqTaskSubmitter extends ZeromqHandler with JobSubmitter {
+  case class Worker(val name: String) {
+    var currentTask: Option[Task] = None
+    override def toString = name
+  }
+
+}
+
+trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
+  /*# Command events */
+  case class Submit(val task: Task)
+  case class Finish(val task: Task)
+  /*# Status feedback events */
+  case class Ready(val worker: Worker)
+  case class Success(val taskId: String, val worker: Worker)
+  //  case class Rejected(val task: Task)
+  case class Died(val worker: Worker)
+  // a node joins when it sends active heartbeat
+  case class Joined(val worker: Worker)
+  /*# Commands/actions */
+  case class Kill(val worker: String)
+
+}
+
+trait JobSubmitter {
+
+  case class TaskSpec(val spec: String)
+
+  trait Job {
+    def addTask(spec: TaskSpec)
+    def waitCompletion() = {}
+  }
+
+  def newJob(): Job
+  def newTaskSpec(spec: String) = TaskSpec(spec)
+}
+
+class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon {
   import Zeromq._
 
-  private val log = Logger(classOf[ZeromqTaskSubmitter])
+  private val log = Logger(classOf[ZeromqJobSubmitter])
+
+  class ZeromqJob extends Job {
+    class JobActor extends Actor {
+      var tasks = List[TaskSpec]()
+
+      private val log = Logger(classOf[JobActor])
+
+      self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
+      def receive = {
+        case spec: TaskSpec =>
+          tasks = spec +: tasks
+          submitTask(Task(spec.spec))
+      }
+    }
+    val runningJob = actorOf(new JobActor()).start
+
+    def addTask(spec: TaskSpec) = {
+      runningJob ! spec
+    }
+  }
+
+  def newJob() = new ZeromqJob()
 
   val socket = context.socket(ZMQ.XREP)
   socket.bind("inproc://client")
@@ -173,7 +214,7 @@ class ZeromqTaskSubmitter extends ZeromqHandler with JobSubmitter {
     // statistical
     var completedTasks = 0
 
-    def taskCompleted(taskId: String, worker: Worker) : Unit = {
+    def taskCompleted(taskId: String, worker: Worker): Unit = {
       ongoingTasks.get(taskId) match {
         case Some(task) => taskCompleted(task, worker)
         case None => log.warning("task %s completed but I don't know anything about this task, ignoring".format(taskId))
@@ -206,9 +247,9 @@ class ZeromqTaskSubmitter extends ZeromqHandler with JobSubmitter {
       log.debug("ready workers is:  %s".format(readyWorkers))
     }
 
-    def assignTask(task: Task, worker: Worker) : Unit = {
+    def assignTask(task: Task, worker: Worker): Unit = {
       ongoingTasks += ((task.id, task))
-      assert (worker.currentTask == None)
+      assert(worker.currentTask == None)
       worker.currentTask = Some(task)
       sendToWorker(worker, task)
     }
@@ -225,7 +266,7 @@ class ZeromqTaskSubmitter extends ZeromqHandler with JobSubmitter {
     def buryWorker(worker: Worker) = {
       log.warning("worker '%s' is dead while running".format(worker))
       worker.currentTask match {
-        case Some(task) => 
+        case Some(task) =>
           log.warning("WWWWWWWWWWWWWWW worker %s died while running task %s, resubmitting".format(worker, task))
           submit(task)
         case None => log.info("worker %s died but it wasn't running any task, goodbye".format(worker))
@@ -253,11 +294,11 @@ class ZeromqTaskSubmitter extends ZeromqHandler with JobSubmitter {
 
   val sender = actorOf(new SenderActor()).start
 
-  def dispatch(msg: String) = sender ! Submit(Task(msg))
+  def submitTask(task: Task) = sender ! Submit(task)
   def kill(worker: String) = sender ! Kill(worker)
 }
 
-class ZeromqTaskExecutor(val name: String) extends ZeromqHandler {
+class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobSubmitterCommon {
   import Zeromq._
 
   private val log = Logger(classOf[ZeromqTaskExecutor])
@@ -351,19 +392,19 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler {
 
   def send(socket: ZMQ.Socket, msg: String) = {
     log.debug("SENDING %s from %s".format(msg, name));
-    sendParts(socket, name, "",  msg)
+    sendParts(socket, name, "", msg)
   }
 
   // TODO: cleanup
   def send(socket: ZMQ.Socket, msg: String, arg: String) = {
     log.debug("SENDING %s from %s".format(msg, name));
-    sendParts(socket, name, "",  msg, arg)
+    sendParts(socket, name, "", msg, arg)
   }
 
 }
 
 object ZeromqTest extends App {
-  val pc = new ZeromqTaskSubmitter()
+  val pc = new ZeromqJobSubmitter()
 
   def startWorkers() = {
     for (i <- 1 to 20) {
@@ -379,29 +420,18 @@ object ZeromqTest extends App {
   Thread.sleep(4000)
   println("SENDING COMMAND storm")
 
+  val job = pc.newJob()
+  job.addTask(pc.newTaskSpec("wow1"))
+
+  /*
   for (i <- 1 to 100) {
-    pc.dispatch("Test Command %s".format(i))
+    pc.submitTask(JobSubmitterCommon#Task("Test Command %s".format(i)))
   }
+*/
 
   Thread.sleep(3000)
   for (i <- 1 to 19) {
     pc.kill("w" + i)
   }
-
-  /*  Thread.sleep(4000)
-  startWorkers()
-
-  Thread.sleep(5000)
-  pc.kill("w2")
-
-  Thread.sleep(12000)
-
-  for (i <- 1 to 10) {
-    pc.dispatch("Test Command %s".format(i))
-  }
-
-  Thread.sleep(10000)
-  val pw3 = new PirateWorker("w3")
-*/
 
 }
