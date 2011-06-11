@@ -66,6 +66,15 @@ trait ZeromqHandler {
 }
 
 trait JobSubmitterCommon {
+  
+}
+
+trait ZeromqJobSubmitterExecutorCommon {
+  case class TaskRef(val id: String)
+  case class Finish(val task: TaskRef)
+}
+
+trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
   case class Task(val id: String) {
     override def toString = id
   }
@@ -75,12 +84,9 @@ trait JobSubmitterCommon {
     override def toString = name
   }
 
-}
 
-trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
   /*# Command events */
   case class Submit(val task: Task)
-  case class Finish(val task: Task)
   /*# Status feedback events */
   case class Ready(val worker: Worker)
   case class Success(val taskId: String, val worker: Worker)
@@ -298,10 +304,12 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   def kill(worker: String) = sender ! Kill(worker)
 }
 
-class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobSubmitterCommon {
+class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobSubmitterExecutorCommon {
   import Zeromq._
 
   private val log = Logger(classOf[ZeromqTaskExecutor])
+
+  case class Submit(val task: TaskRef)
 
   val socket = context.socket(ZMQ.XREQ)
 
@@ -331,7 +339,7 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
             case "SUBMIT" =>
               val task = recv()
               log.debug("W %s got submission '%s'".format(name, task))
-              worker ! Submit(Task(task))
+              worker ! Submit(TaskRef(task))
               log.debug("worker actor messaged")
           }
 
@@ -345,7 +353,7 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
     log.warning("W %s died".format(name))
   }).start()
 
-  def executeTask(task: Task): Unit = {
+  def executeTask(task: TaskRef): Unit = {
     log.info("W %s will spawn background task for (about 6 sec)".format(name))
     spawn {
       log.debug("W %s is working for real (about 6 sec)".format(name))
@@ -421,7 +429,8 @@ object ZeromqTest extends App {
   println("SENDING COMMAND storm")
 
   val job = pc.newJob()
-  job.addTask(pc.newTaskSpec("wow1"))
+  for(i <- 1 to 20)
+    job.addTask(pc.newTaskSpec("wow" + i))
 
   /*
   for (i <- 1 to 100) {
