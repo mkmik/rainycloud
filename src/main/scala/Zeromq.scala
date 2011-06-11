@@ -3,6 +3,7 @@ package it.cnr.aquamaps
 import org.zeromq.ZMQ
 import scala.actors.Futures._
 
+import akka.agent.Agent
 import akka.actor.Actor
 import akka.actor.Actor._
 import akka.actor.ActorRef
@@ -66,7 +67,7 @@ trait ZeromqHandler {
 }
 
 trait JobSubmitterCommon {
-  
+
 }
 
 trait ZeromqJobSubmitterExecutorCommon {
@@ -75,7 +76,7 @@ trait ZeromqJobSubmitterExecutorCommon {
 }
 
 trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
-  case class Task(val id: String) {
+  case class Task(val id: String, listener: ActorRef) {
     override def toString = id
   }
 
@@ -84,10 +85,10 @@ trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
     override def toString = name
   }
 
-
   /*# Command events */
   case class Submit(val task: Task)
   /*# Status feedback events */
+  case class Completed(val task: Task)
   case class Ready(val worker: Worker)
   case class Success(val taskId: String, val worker: Worker)
   //  case class Rejected(val task: Task)
@@ -106,10 +107,17 @@ trait JobSubmitter {
   trait Job {
     def addTask(spec: TaskSpec)
     def waitCompletion() = {}
+    /*# Don't allow addition of any new tasks */
+    def seal()
+
+    def totalTasks: Int
+    def completedTasks: Int
+    def completed: Boolean
   }
 
   def newJob(): Job
   def newTaskSpec(spec: String) = TaskSpec(spec)
+
 }
 
 class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon with ZeromqJobSubmitterExecutorCommon {
@@ -119,6 +127,9 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
   class ZeromqJob extends Job {
     class JobActor extends Actor {
+      self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
+      self.receiveTimeout = Some(300L)
+
       var tasks = List[TaskSpec]()
 
       private val log = Logger(classOf[JobActor])
@@ -127,14 +138,39 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       def receive = {
         case spec: TaskSpec =>
           tasks = spec +: tasks
-          submitTask(Task(spec.spec))
+          submitTask(Task(spec.spec, self))
+          totalTasksAgent send (_ + 1)
+        case Completed(task) => completedTasksAgent send (_ + 1)
+        case ReceiveTimeout => checkCompletion()
       }
+
+      def checkCompletion() = {
+        println("..................... checking completion. sealed %s? completedTasks %s vs totalTasks %s".format(isSealed, completedTasks, totalTasks))
+        if (completed)
+          self.stop()
+
+        if (isSealed && (completedTasks == totalTasks))
+          completedAgent send true
+      }
+
     }
     val runningJob = actorOf(new JobActor()).start
+
+    val totalTasksAgent = Agent(0)
+    val completedTasksAgent = Agent(0)
+    val completedAgent = Agent(false)
+    val sealedAgent = Agent(false)
 
     def addTask(spec: TaskSpec) = {
       runningJob ! spec
     }
+
+    def seal = sealedAgent send true
+    def isSealed = sealedAgent()
+
+    def totalTasks = totalTasksAgent()
+    def completedTasks = completedTasksAgent()
+    def completed = completedAgent()
   }
 
   def newJob() = new ZeromqJob()
@@ -231,6 +267,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       log.info("completing task %s".format(task.id))
       ongoingTasks = ongoingTasks - task.id
       completedTasks += 1
+      task.listener ! Completed(task)
     }
 
     def submit(task: Task): Unit = {
@@ -429,8 +466,17 @@ object ZeromqTest extends App {
   println("SENDING COMMAND storm")
 
   val job = pc.newJob()
-  for(i <- 1 to 20)
+  for (i <- 1 to 20)
     job.addTask(pc.newTaskSpec("wow" + i))
+  job.seal()
+
+  Thread.sleep(1000)
+  println(">>>>>>>>>>>>>>>>>>>>Polling for status Checking total tasks")
+  println("Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
+  while (!job.completed) {
+    Thread.sleep(1000)
+    println("Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
+  }
 
   /*
   for (i <- 1 to 100) {
