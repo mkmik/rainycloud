@@ -112,7 +112,7 @@ trait JobSubmitter {
   def newTaskSpec(spec: String) = TaskSpec(spec)
 }
 
-class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon {
+class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon with ZeromqJobSubmitterExecutorCommon {
   import Zeromq._
 
   private val log = Logger(classOf[ZeromqJobSubmitter])
@@ -176,8 +176,8 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       }
     }
 
-    def submitTask(worker: Worker, task: Task) {
-      sendParts(worker.name, socket.getIdentity(), "", "SUBMIT", task.toString)
+    def submitTask(worker: Worker, task: TaskRef) {
+      sendParts(worker.name, socket.getIdentity(), "", "SUBMIT", task.id)
     }
 
     while (true) {
@@ -190,7 +190,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
           case "READY" => workerReady(worker)
           case "HEARTBEAT" => workerAlive(worker)
           case "KILL" => sendParts(recv(), socket.getIdentity(), "", "KILL")
-          case "SUBMIT" => submitTask(worker, Task(recv()))
+          case "SUBMIT" => submitTask(worker, TaskRef(recv()))
           case "SUCCESS" => sender ! Success(recv(), worker)
           case _ => throw new IllegalArgumentException("unknown command '%s' for worker '%s' in thread %s".format(msg, worker, Thread.currentThread()))
         }
@@ -260,7 +260,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       sendToWorker(worker, task)
     }
 
-    def sendToWorker(worker: Worker, task: Task): Unit = sendParts(socket, worker.name, "", "SUBMIT", task.toString)
+    def sendToWorker(worker: Worker, task: Task): Unit = sendParts(socket, worker.name, "", "SUBMIT", task.id)
 
     def acceptWorker(worker: Worker) = {
       log.debug("Worker %s is now ready.Previous ready workers: %s (%s)".format(worker, readyWorkers, Thread.currentThread()))
