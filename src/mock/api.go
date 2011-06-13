@@ -6,6 +6,7 @@ import (
 	"json"
 	"time"
 	"rand"
+	"flag"
 )
 
 ////////////
@@ -23,7 +24,7 @@ const (
 type Job struct {
 	Id string
 	Status JobStatus
-	Completion int
+	Completion float64
 	Metrics map[string]Metric
 }
 
@@ -41,7 +42,7 @@ const (
 )
 
 //
-func UpdateMetrics(m map[string]Metric, increment int) {
+func UpdateMetrics(m map[string]Metric, increment float64) {
 
 	now := time.Nanoseconds()/1000000
 	lastTp, ok := m["throughput"].([2]int64)
@@ -73,14 +74,14 @@ func (this *Job) Run() {
 	for {
 		time.Sleep(1e9)
 
-		maxPercent := 3		
+		maxPercent := *maxPercentParam
 		if this.Completion >80 {
 			maxPercent = 0
 		} else if this.Completion < 10 {
-			maxPercent = 1
+			maxPercent = maxPercent / 2
 		}
 
-		increment := 1 + rand.Intn(maxPercent)
+		increment := *basePercentParam + rand.Float64()*maxPercent
 
 		comp := this.Completion + increment
 		if comp > 100 {
@@ -91,7 +92,7 @@ func (this *Job) Run() {
 		
 		this.Completion = comp
 
-		fmt.Printf("Progressing %s: %d%%\n", this.Id, this.Completion)
+		fmt.Printf("Progressing %s: %d%%\n", this.Id, int(this.Completion))
 		
 		if comp >= 100 {
 			this.Status = "DONE"
@@ -138,7 +139,7 @@ type SubmissionError struct {
 type JobStatusResponse struct {
 	Id string "id"
 	Status JobStatus "status"
-	Completion int "completion"
+	Completion float64 "completion"
 	Metrics map[string]Metric "metrics"
 }
 
@@ -217,7 +218,15 @@ func spawn(port int) {
 	go func() { s.Run(fmt.Sprintf("0.0.0.0:%d", port))}()
 }
 
+var maxPercentParam *float64
+var basePercentParam *float64
+
 func main() {
+	maxPercentParam = flag.Float64("maxPercent", 0.5, "max speed in completion percent per second")
+	basePercentParam = flag.Float64("basePercent", 0.1, "base speed in completion percent per second (never slower than that)")
+
+	flag.Parse()
+
 	spawn(5941)
 	spawn(5942)
 	spawn(5943)
