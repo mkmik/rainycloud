@@ -65,14 +65,13 @@ object Main {
     if (!parser.parse(args)) 
       return
 
+    // factorize this via Guice etc
     if(conf.getBool("worker").getOrElse(false)) {
-      println("WORKER")
       cloud.Worker.main(args)
       return 
     }
 
     if(conf.getBool("submitter").getOrElse(false)) {
-      println("SUBMITTER")
       cloud.Submitter.main(args)
       return 
     }
