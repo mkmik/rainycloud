@@ -120,12 +120,6 @@ trait JobSubmitter {
 
 }
 
-object QuickActor {
-  def actor(body: => Receive): ActorRef = actorOf(new Actor {
-	  def receive() = body
-	}).start()
-}
-
 class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon with ZeromqJobSubmitterExecutorCommon {
   import Zeromq._
 
@@ -142,11 +136,11 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
           tasks = spec +: tasks
           submitTask(Task(spec.spec, self))
           totalTasksAgent send (_ + 1)
-        case Completed(task) => 
+        case Completed(task) =>
           completedTasksAgent send (_ + 1)
           completedTasksAgent.await()
           totalTasksAgent.await()
-          if(isSealed && completedTasks >= totalTasks)
+          if (isSealed && completedTasks >= totalTasks)
             completedAgent send true
       }
     }
