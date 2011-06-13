@@ -141,30 +141,29 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
         case spec: TaskSpec =>
           tasks = spec +: tasks
           submitTask(Task(spec.spec, self))
-          completionTracker ! TrackAdded
-        case Completed(task) => completionTracker ! TrackCompleted
+          totalTasksAgent send (_ + 1)
+        case Completed(task) => 
+          completedTasksAgent send (_ + 1)
+          completedTasksAgent.await()
+          totalTasksAgent.await()
+          if(isSealed && completedTasks >= totalTasks)
+            completedAgent send true
       }
     }
     val runningJob = actorOf(new JobActor()).start
 
-    case class TrackAdded()
-    case class TrackCompleted()
-    var completionTracker = QuickActor.actor {
-      case TrackAdded => totalTasks += 1
-      case TrackCompleted => 
-        completedTasks += 1
-        if (isSealed && (completedTasks >= totalTasks))
-          completedAgent send true
-    }
+    var totalTasksAgent = Agent(0)
+    var completedTasksAgent = Agent(0)
 
-    var totalTasks = 0
-    var completedTasks = 0
     var completedAgent = Agent(false)
     val sealedAgent = Agent(false)
 
     def addTask(spec: TaskSpec) = {
       runningJob ! spec
     }
+
+    def totalTasks = totalTasksAgent()
+    def completedTasks = completedTasksAgent()
 
     def seal = sealedAgent send true
     def isSealed = sealedAgent()
