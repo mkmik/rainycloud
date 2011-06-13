@@ -113,7 +113,16 @@ func Schedule(job *Job) {
 ////////////
 
 type JobRequest struct {
-	Test int64 "test"
+	HspecTableName TableReference "hspecDestinationTableName"
+}
+
+type TableReference struct {
+	JdbcUri string "jdbcUrl"
+	TableName string "tableName"
+}
+
+func (self TableReference) String() string {
+	return fmt.Sprintf("%s ! %s", self.JdbcUri, self.TableName)
 }
 
 type JobResponse struct {
@@ -142,11 +151,12 @@ func ApiSubmit(ctx *web.Context) string {
 	println("Got request: ", string(ctx.Request.ParamData))
 
 	e := json.Unmarshal(ctx.Request.ParamData, &request)
+
 	if e != nil {
 		println("got unmarshal error: ", e.String())
 	}
 
-	println("request:", request.Test)
+	fmt.Printf("request: %s\n", request.HspecTableName)
 
 	id, e := registry.Submit(request)
 	if e != nil {
@@ -190,9 +200,18 @@ func ApiList(ctx *web.Context) string {
 	return string(m)	
 }
 
+func spawn(port int) {
+	var s web.Server
+	s.Post("/api/submit", ApiSubmit)
+	s.Get("/api/status/(.*)", ApiStatus)
+	s.Get("/api/list", ApiList)
+	go func() { s.Run(fmt.Sprintf("0.0.0.0:%d", port))}()
+}
+
 func main() {
-	web.Post("/api/submit", ApiSubmit)
-	web.Get("/api/status/(.*)", ApiStatus)
-	web.Get("/api/list", ApiList)
-	web.Run("0.0.0.0:5941")
+	spawn(5942)
+	spawn(5943)
+
+	c:=make(chan int)
+	<-c
 }
