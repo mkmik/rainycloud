@@ -143,9 +143,7 @@ type JobStatusResponse struct {
 }
 
 
-var registry JobRegistry = *NewJobRegistry()
-
-func ApiSubmit(ctx *web.Context) string {
+func (self Handler) ApiSubmit(ctx *web.Context) string {
 	var request JobRequest
 
 	println("Got request: ", string(ctx.Request.ParamData))
@@ -158,7 +156,7 @@ func ApiSubmit(ctx *web.Context) string {
 
 	fmt.Printf("request: %s\n", request.HspecTableName)
 
-	id, e := registry.Submit(request)
+	id, e := self.registry.Submit(request)
 	if e != nil {
 		println("got submit error: ", e.String())
 	}
@@ -169,29 +167,29 @@ func ApiSubmit(ctx *web.Context) string {
 	return string(m)
 }
 
-func getStatus(id string) *JobStatusResponse {
-	job, e := registry.Get(id)
+func (self Handler) getStatus(id string) *JobStatusResponse {
+	job, e := self.registry.Get(id)
 	if e != nil {
 		panic(e.String())
 	}
 	return &JobStatusResponse{job.Id, job.Status, job.Completion, job.Metrics}
 }
 
-func ApiStatus(ctx *web.Context, id string) string {
+func (self Handler) ApiStatus(ctx *web.Context, id string) string {
 	ctx.ContentType("application/json")
 
-	status := getStatus(id)
+	status := self.getStatus(id)
 
 	m, _ := json.Marshal(status)
 	return string(m)
 }
 
-func ApiList(ctx *web.Context) string {
+func (self Handler) ApiList(ctx *web.Context) string {
 	ctx.ContentType("application/json")
 	
 	res := make([]map[string]string, 0, 100)
 
-	list, _ := registry.List()
+	list, _ := self.registry.List()
 	for _, j := range list {
 		res = append(res, map[string] string{"id": j.Id, "status": string(j.Status)})
 	}
@@ -200,11 +198,22 @@ func ApiList(ctx *web.Context) string {
 	return string(m)	
 }
 
+type Handler struct {
+	registry JobRegistry
+}
+
+func NewHandler() Handler {
+	return Handler{*NewJobRegistry()}
+}
+
 func spawn(port int) {
 	var s web.Server
-	s.Post("/api/submit", ApiSubmit)
-	s.Get("/api/status/(.*)", ApiStatus)
-	s.Get("/api/list", ApiList)
+
+	handler := NewHandler()
+
+	s.Post("/api/submit", web.MethodHandler(handler, "ApiSubmit"))
+	s.Get("/api/status/(.*)", web.MethodHandler(handler, "ApiStatus"))
+	s.Get("/api/list", web.MethodHandler(handler, "ApiList"))
 	go func() { s.Run(fmt.Sprintf("0.0.0.0:%d", port))}()
 }
 
