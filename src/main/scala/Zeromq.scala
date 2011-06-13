@@ -120,6 +120,12 @@ trait JobSubmitter {
 
 }
 
+object QuickActor {
+  def actor(body: => Receive): ActorRef = actorOf(new Actor {
+	  def receive() = body
+	}).start()
+}
+
 class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon with ZeromqJobSubmitterExecutorCommon {
   import Zeromq._
 
@@ -127,38 +133,33 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
   class ZeromqJob extends Job {
     class JobActor extends Actor {
-      self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
-      self.receiveTimeout = Some(300L)
-
       var tasks = List[TaskSpec]()
 
       private val log = Logger(classOf[JobActor])
 
-      self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
       def receive = {
         case spec: TaskSpec =>
           tasks = spec +: tasks
           submitTask(Task(spec.spec, self))
-          totalTasksAgent send (_ + 1)
-        case Completed(task) => completedTasksAgent send (_ + 1)
-        case ReceiveTimeout => checkCompletion()
+          completionTracker ! TrackAdded
+        case Completed(task) => completionTracker ! TrackCompleted
       }
-
-      def checkCompletion() = {
-        println("..................... checking completion. sealed %s? completedTasks %s vs totalTasks %s".format(isSealed, completedTasks, totalTasks))
-        if (completed)
-          self.stop()
-
-        if (isSealed && (completedTasks == totalTasks))
-          completedAgent send true
-      }
-
     }
     val runningJob = actorOf(new JobActor()).start
 
-    val totalTasksAgent = Agent(0)
-    val completedTasksAgent = Agent(0)
-    val completedAgent = Agent(false)
+    case class TrackAdded()
+    case class TrackCompleted()
+    var completionTracker = QuickActor.actor {
+      case TrackAdded => totalTasks += 1
+      case TrackCompleted => 
+        completedTasks += 1
+        if (isSealed && (completedTasks >= totalTasks))
+          completedAgent send true
+    }
+
+    var totalTasks = 0
+    var completedTasks = 0
+    var completedAgent = Agent(false)
     val sealedAgent = Agent(false)
 
     def addTask(spec: TaskSpec) = {
@@ -167,9 +168,6 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
     def seal = sealedAgent send true
     def isSealed = sealedAgent()
-
-    def totalTasks = totalTasksAgent()
-    def completedTasks = completedTasksAgent()
     def completed = completedAgent()
   }
 
@@ -471,12 +469,13 @@ object ZeromqTest extends App {
   job.seal()
 
   Thread.sleep(1000)
-  println(">>>>>>>>>>>>>>>>>>>>Polling for status Checking total tasks")
-  println("Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
+  println(">>>>>>>>>>>>>>>>>>>> Polling for status Checking total tasks")
+  println(">>>>>>>>>>>>>>>>>>>> Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
   while (!job.completed) {
     Thread.sleep(1000)
     println("Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
   }
+  println(">>>>>>>>>>>>>>>>>>>> Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
 
   /*
   for (i <- 1 to 100) {
