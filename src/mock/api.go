@@ -218,6 +218,7 @@ func spawn(port int) {
 }
 
 func main() {
+	spawn(5941)
 	spawn(5942)
 	spawn(5943)
 
