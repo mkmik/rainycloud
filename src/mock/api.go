@@ -26,6 +26,7 @@ type Job struct {
 	Status JobStatus
 	Completion float64
 	Metrics map[string]Metric
+	NWorkers int
 }
 
 type Metric	interface {}
@@ -38,11 +39,10 @@ type LoadMetric struct {
 
 const (
 	MAX = 1650703652
-	WORKERS = 4
 )
 
 //
-func UpdateMetrics(m map[string]Metric, increment float64) {
+func UpdateMetrics(m map[string]Metric, increment float64, workers int) {
 
 	now := time.Nanoseconds()/1000000
 	lastTp, ok := m["throughput"].([2]int64)
@@ -57,7 +57,12 @@ func UpdateMetrics(m map[string]Metric, increment float64) {
 	
 	
 	m["throughput"] = [...]int64{now, absIncrement/delta * 1000}
-	m["load"] = [...]LoadMetric{LoadMetric{"W1", 51.5}, LoadMetric{"W2", 23.4}}
+
+	loads := make([]LoadMetric, workers)
+	for i, _ := range loads {
+		loads[i] = LoadMetric{fmt.Sprintf("W%d", i), 80.0+rand.Float32()*10}
+	}
+	m["load"] = loads
 
 }
 
@@ -74,7 +79,7 @@ func (this *Job) Run() {
 	for {
 		time.Sleep(1e9)
 
-		maxPercent := *maxPercentParam
+		maxPercent := *maxPercentParam * float64(this.NWorkers)
 		if this.Completion >80 {
 			maxPercent = 0
 		} else if this.Completion < 10 {
@@ -88,7 +93,7 @@ func (this *Job) Run() {
 			comp = 100
 		}
 
-		UpdateMetrics(this.Metrics, increment)
+		UpdateMetrics(this.Metrics, increment, this.NWorkers)
 		
 		this.Completion = comp
 
@@ -114,6 +119,7 @@ func Schedule(job *Job) {
 ////////////
 
 type JobRequest struct {
+	NWorkers int "nWorkers"
 	HspecTableName TableReference "hspecDestinationTableName"
 }
 

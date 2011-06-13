@@ -46,7 +46,12 @@ func (this *JobRegistry) handler() {
 	for {
 		select {
 		case sub := <- this.submission:
-			job := Job{cgl.NewUUID().String(), QUEUED, 0, make(map[string]Metric)}
+			workers := sub.request.NWorkers
+			if workers < 1 {
+				workers = 1
+			}
+			
+			job := Job{cgl.NewUUID().String(), QUEUED, 0, make(map[string]Metric), workers}
 			jobMap[job.Id] = &job
 			println("got submission")
 			
