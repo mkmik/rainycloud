@@ -170,6 +170,8 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   socket.bind("inproc://client")
   socket.bind("tcp://*:5566")
 
+  val sender = actorOf(new SenderActor()).start
+
   /*# This "actor" implements the communication between the submission client and the workers.
    It handles worker registration, heartbeating, task book keeping. Higher level task handling is
    done in the 'sender' actor. */
@@ -326,8 +328,6 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   }
   // }}}
 
-  val sender = actorOf(new SenderActor()).start
-
   def submitTask(task: Task) = sender ! Submit(task)
   def kill(worker: String) = sender ! Kill(worker)
 }
@@ -340,6 +340,8 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
   case class Submit(val task: TaskRef)
 
   val socket = context.socket(ZMQ.XREQ)
+
+  val worker = actorOf(new WorkerActor()).start()
 
   new Thread(() => {
     socket.setIdentity(name)
@@ -422,8 +424,6 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
 
   }
 
-  val worker = actorOf(new WorkerActor()).start()
-
   def send(msg: String): Unit = send(socket, msg)
 
   def send(socket: ZMQ.Socket, msg: String) = {
@@ -451,7 +451,7 @@ object ZeromqTest extends App {
     //    val pw2 = new PirateWorker("w2")
   }
 
-  startWorkers()
+//  startWorkers()
 
   Thread.sleep(4000)
   println("SENDING COMMAND storm")

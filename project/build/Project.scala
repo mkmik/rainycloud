@@ -89,4 +89,5 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 //  override def mainClass = Some("it.cnr.aquamaps.Main")
   //override def mainClass = Some("it.cnr.aquamaps.CassandraLoad")
   override def mainClass = Some("it.cnr.aquamaps.ZeromqTest")
+//  override def mainClass = Some("it.cnr.aquamaps.cloud.Worker")
 }
