@@ -23,12 +23,14 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
 
   case class Submit(val task: TaskRef)
 
-  val socket = context.socket(ZMQ.XREQ)
-
   val worker = actorOf(new WorkerActor()).start()
 
+  val socket = context.socket(ZMQ.XREQ)
+
   new Thread(() => {
+
     socket.setIdentity(name)
+    socket.bind("inproc://executor_%s".format(name))
     socket.connect("tcp://localhost:5566")
 
     log.info("registering %s".format(name))
@@ -75,18 +77,11 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
     spawn {
       log.debug("W %s is working for real (mumble mumble)".format(name))
       //        log.debug("W %s is working on step %s of task %s".format(name, i, task))
-        Thread.sleep(10)
+      Thread.sleep(4000)
       //}
       log.info("W %s finished computing task %s".format(name, task))
       worker ! Finish(task)
     }
-  }
-
-  def finished(task: TaskRef) = {
-    taskRunning = false
-
-    send(socket, "SUCCESS", task.id)
-    send(socket, "READY")
   }
 
   class WorkerActor extends Actor {
@@ -94,12 +89,15 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
 
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
 
-    val socket = context.socket(ZMQ.XREQ)
+    val innerSocket = context.socket(ZMQ.XREQ)
 
     override def preStart() = {
       log.debug("pre start WorkerActor %s".format(name))
 
-      socket.setIdentity(name + "_b")
+      innerSocket.setIdentity(name + "_b")
+      //socket.connect("inproc://executor_%s".format(name))
+      //socket.connect("inproc://executor_%s".format(name))
+
       socket.connect("tcp://localhost:5566")
 
       self.receiveTimeout = Some(2000L)
@@ -110,7 +108,14 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
      * executing something right now. */
     def perhapsRecover() = {
       if (!taskRunning)
-        send(socket, "READY")
+        send(innerSocket, "READY")
+    }
+
+    def finished(task: TaskRef) = {
+      taskRunning = false
+
+      send(innerSocket, "SUCCESS", task.id)
+      send(innerSocket, "READY")
     }
 
     def receive = {

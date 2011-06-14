@@ -46,12 +46,14 @@ trait ZeromqHandler {
       }
       data = next
     }
-    throw new RuntimeException("shouldn't be here")
+    log.warning("didn't receive delimiter, something wrong in communication with worker")
+    return ""
   }
 
   def sendParts(parts: Array[Byte]*): Unit = sendParts(socket, parts: _*)
 
   def sendParts(socket: ZMQ.Socket, parts: Array[Byte]*) = {
+    log.debug("   debug: zmq send s(%s) t(%s) (%s) (data %s)".format(socket, Thread.currentThread().getId(), Thread.currentThread(), List(parts.map(x => new String(x)))))
     log.debug("  --------- Sending (thread %s):".format(Thread.currentThread()))
     for (i <- 0 until parts.length) {
       val more = if (i == parts.length - 1) 0 else ZMQ.SNDMORE
@@ -62,7 +64,10 @@ trait ZeromqHandler {
     log.debug("  ---------")
   }
 
-  def recv() = new String(socket.recv(0))
+  def recv() = {
+    log.debug("   debug: zmq recv s(%s) t(%s)".format(socket, Thread.currentThread().getId()))
+    new String(socket.recv(0))
+  }
 
 }
 
@@ -101,8 +106,7 @@ trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
 
 }
 
-trait JobSubmitter {
-
+object JobSubmitter {
   case class TaskSpec(val spec: String)
 
   trait Job {
@@ -115,6 +119,11 @@ trait JobSubmitter {
     def completedTasks: Int
     def completed: Boolean
   }
+}
+
+trait JobSubmitter {
+  import JobSubmitter._
+
 
   def newJob(): Job
   def newTaskSpec(spec: String) = TaskSpec(spec)

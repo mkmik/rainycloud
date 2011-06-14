@@ -83,6 +83,9 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val geoscript = "org.geoscript" % "library_2.8.0" % "0.6.1"
   val forceJsonLib = "net.sf.json-lib" % "json-lib" % "2.3" classifier "jdk15"
 
+//  val jcloudsAzure = "org.jclouds" % "jclouds-azure" % "1.0-beta-8"
+  val jclouds = "org.jclouds" % "jclouds-all" % "1.0.0"
+
   override def compileOptions = Optimize :: Nil
 
   override def mainClass = Some("it.cnr.aquamaps.Main")

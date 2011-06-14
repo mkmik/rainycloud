@@ -5,6 +5,9 @@ import it.cnr.aquamaps._
 import net.lag.logging.Logger
 import net.lag.configgy.{ Config, Configgy }
 
+import akka.agent.Agent
+import java.util.UUID
+
 object Submitter extends App {
   private val log = Logger(Submitter getClass)
 
@@ -17,12 +20,32 @@ object Submitter extends App {
     runTest()
   }
 
-  def runTest() {
-            
+  
+
+  val jobs = Agent(Map[String, JobSubmitter.Job]())
+  
+  
+  def registerJob(job: JobSubmitter.Job) = {
+    val uuid = UUID.randomUUID.toString
+    jobs send (_ + ((uuid, job)))
+    uuid
+  }
+
+  def deleteJob(id: String) = {
+    jobs send (_ - id)
+  }
+
+  def spawnTest() = {
     val job = js.newJob()
-    for (i <- 1 to 40)
+    for (i <- 1 to 10)
       job.addTask(js.newTaskSpec("wow" + i))
     job.seal()
+    registerJob(job)
+    job
+  }
+
+  def runTest() {
+    val job = spawnTest()
       
     Thread.sleep(1000)
     log.info(">>>>>>>>>>>>>>>>>>>> Polling for status Checking total tasks")

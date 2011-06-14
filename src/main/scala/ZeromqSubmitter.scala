@@ -17,6 +17,7 @@ import net.lag.logging.Logger
 
 class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon with ZeromqJobSubmitterExecutorCommon {
   import Zeromq._
+  import JobSubmitter._
 
   private val log = Logger(classOf[ZeromqJobSubmitter])
 
@@ -70,7 +71,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   /*# This "actor" implements the communication between the submission client and the workers.
    It handles worker registration, heartbeating, task book keeping. Higher level task handling is
    done in the 'sender' actor. */
-  spawn {
+  new Thread(() => {
     val poller = context.poller()
     poller.register(socket, ZMQ.Poller.POLLIN)
 
@@ -116,13 +117,13 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
           case "KILL" => sendParts(recv(), socket.getIdentity(), "", "KILL")
           case "SUBMIT" => submitTask(worker, TaskRef(recv()))
           case "SUCCESS" => sender ! Success(recv(), worker)
-          case _ => throw new IllegalArgumentException("unknown command '%s' for worker '%s' in thread %s".format(msg, worker, Thread.currentThread()))
+          case _ => throw new IllegalArgumentException("unknown command '%s' coming from worker '%s' in thread %s".format(msg, worker, Thread.currentThread()))
         }
       }
 
       checkDeaths()
     }
-  }
+  }).start()
 
   //
 
@@ -193,10 +194,20 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
     def sendToWorker(worker: Worker, task: Task): Unit = sendParts(socket, worker.name, "", "SUBMIT", task.id)
 
+    def workerJoined(workerRef: WorkerRef) {
+      workers.get(workerRef.name) match {
+        case None =>
+          log.info("Worker %s has joined".format(workerRef))
+          val worker = Worker(workerRef.name)
+          workers += ((workerRef.name, worker))
+        case _ =>
+      }
+    }
+
     def acceptWorker(workerRef: WorkerRef): Unit = {
       workers.get(workerRef.name) match {
         case None =>
-          log.warning("accepting new worker")
+          log.warning("accepting new worker which hasn't joined yet, strange, anyway, joining it")
           val worker = Worker(workerRef.name)
           workers += ((workerRef.name, worker))
           acceptWorker(worker)
@@ -218,7 +229,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
     def buryWorker(workerRef: WorkerRef): Unit = {
       workers.get(workerRef.name) match {
-        case None => log.warning("an unknown worker died: %s".format(workerRef))
+        case None => log.warning("an unknown worker died ?!?! %s".format(workerRef))
         case Some(worker) => buryWorker(worker)
       }
 
@@ -245,7 +256,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     def receive = {
       case Ready(worker) => acceptWorker(worker)
       case Success(taskId, worker) => taskCompleted(taskId, worker)
-      case Joined(worker) => log.info("Worker %s has joined".format(worker))
+      case Joined(worker) => workerJoined(worker)
       case Died(worker) => buryWorker(worker)
       case Kill(worker) => sendParts(socket, "dummy", "", "KILL", worker)
       case Submit(task) => submit(task)
