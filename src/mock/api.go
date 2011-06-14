@@ -177,7 +177,8 @@ func (self Handler) ApiSubmit(ctx *web.Context) string {
 func (self Handler) getStatus(id string) *JobStatusResponse {
 	job, e := self.registry.Get(id)
 	if e != nil {
-		panic(e.String())
+		return &JobStatusResponse{id, "ERROR", 100, nil}
+//		panic(e.String())
 	}
 	return &JobStatusResponse{job.Id, job.Status, job.Completion, job.Metrics}
 }
