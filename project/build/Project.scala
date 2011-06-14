@@ -7,7 +7,7 @@ import xsbt.ScalaInstance
 
 import java.io.File
 
-class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with AssemblyProject with ScctProject with AutoCompilerPlugins with DoccoSingle {
+class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with AssemblyProject with ScctProject /* with AutoCompilerPlugins */ with DoccoSingle {
   val log4j = "log4j" % "log4j" % "1.2.16"
 
   //val scromiumRepo = "Cliff's Scromium Repo" at "http://cliffmoon.github.com/scromium/repository/"
@@ -35,11 +35,13 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 
   // avro
   val radlabRepo = "Radlab Repository" at "http://scads.knowsql.org/nexus/content/groups/public/"
-  val avroScala = compilerPlugin("com.googlecode" % "avro-scala-compiler-plugin" % "1.1-SNAPSHOT")
-  val pluginRuntime = "com.googlecode" % "avro-scala-compiler-plugin" % "1.1-SNAPSHOT"
-  val avro = "org.apache.hadoop" % "avro" % "1.3.3"
-  private val pluginDeps = Set("avro-1.3.3.jar", "jackson-core-asl-1.4.2.jar", "jackson-mapper-asl-1.4.2.jar")
 
+  //val avroScala = compilerPlugin("com.googlecode" % "avro-scala-compiler-plugin" % "1.1-SNAPSHOT")
+  //val pluginRuntime = "com.googlecode" % "avro-scala-compiler-plugin" % "1.1-SNAPSHOT"
+  val avro = "org.apache.hadoop" % "avro" % "1.3.3"
+  //  private val pluginDeps = Set("avro-1.3.3.jar", "jackson-core-asl-1.4.2.jar", "jackson-mapper-asl-1.4.2.jar")
+
+  /*
   override def getScalaInstance(version: String) = {
     val pluginJars = compileClasspath.filter(path => pluginDeps.contains(path.name)).getFiles.toSeq
     withExtraJars(super.getScalaInstance(version), pluginJars)
@@ -47,18 +49,24 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
 
   def withExtraJars(si: ScalaInstance, extra: Seq[File]) =
     ScalaInstance(si.version, si.libraryJar, si.compilerJar, info.launcher, extra: _*)
+*/
 
   // testing 
-  val specsdep = "org.scala-tools.testing" %% "specs" % "1.6.7.2" % "test->default"
+  //val specsdep = "org.scala-tools.testing" %% "specs" % "1.6.7.2" % "test->default"
+  val specs2 = "org.specs2" %% "specs2" % "1.3"
+  def specs2Framework = new TestFramework("org.specs2.runner.SpecsFramework")
+  override def testFrameworks = super.testFrameworks ++ Seq(specs2Framework)
+
   val mockito = "org.mockito" % "mockito-all" % "1.8.5"
 
-  val metrics = "com.yammer" %% "metrics" % "1.0.7" withSources ()
+  val metrics = "com.yammer.metrics" %% "metrics-core" % "2.0.0-BETA13-SNAPSHOT" withSources ()
+
   val guice = "com.google.inject" % "guice" % "3.0-rc2"
   val guiceScala = "uk.me.lings" % "scala-guice_2.8.0" % "0.1"
 
   val configgy = "net.lag" % "configgy" % "2.0.0" % "compile" //ApacheV2
-  val scopt = "eed3si9n" %% "scopt" % "1.0"
-  val scalaArm = "com.github.jsuereth.scala-arm" %% "scala-arm" % "0.2"
+  val scopt = "com.github.scopt" %% "scopt" % "1.0.0-SNAPSHOT"
+  val scalaArm = "com.github.jsuereth.scala-arm" %% "scala-arm" % "0.3-SNAPSHOT"
 
   val opencsv = "net.sf.opencsv" % "opencsv" % "2.1"
   val supercsv = "org.supercsv" % "supercsv" % "1.20"
@@ -68,7 +76,18 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val geoscript = "org.geoscript" % "library_2.8.0" % "0.6.1"
   val forceJsonLib = "net.sf.json-lib" % "json-lib" % "2.3" classifier "jdk15"
 
-  override def compileOptions = Optimize :: Nil
+  val hector = "me.prettyprint" % "hector-core" % "0.7.0-29"
+  val riakClient = "com.basho.riak" % "riak-client" % "0.14.1"
+
+  //  override def compileOptions = Optimize :: Nil
+
+  override def compileOptions = super.compileOptions ++
+    //  Seq(Unchecked, Optimize) ++
+    compileOptions("-encoding", "utf8") ++
+    compileOptions("-deprecation")
 
   override def mainClass = Some("it.cnr.aquamaps.Main")
+  //override def mainClass = Some("it.cnr.aquamaps.CassandraLoad")
+//  override def mainClass = Some("it.cnr.aquamaps.ZeromqTest")
+//  override def mainClass = Some("it.cnr.aquamaps.cloud.Worker")
 }

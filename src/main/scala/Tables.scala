@@ -12,7 +12,7 @@ import org.apache.cassandra.thrift.{ Column, ColumnPath }
 import org.apache.log4j.Logger
 
 import stopwatch.Stopwatch
-import com.googlecode.avro.marker._
+//import com.googlecode.avro.marker._
 
 /*!
  
@@ -22,8 +22,7 @@ trait Keyed {
   def key: String
 }
 
-@serializable
-case class CellEnvelope(var min: Double, var max: Double, var mean: Double) extends AvroRecord()
+case class CellEnvelope(var min: Double, var max: Double, var mean: Double)
 object CellEnvelope {
   def apply(): CellEnvelope = CellEnvelope(0, 0, 0)
 }
@@ -37,11 +36,10 @@ object CellEnvelope {
 
  HCAF Table has the csquareCode as key. The companion object contains conversion methods
  */
-@serializable
 case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: Int,
   var depth: CellEnvelope,
   var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var salinityBMean: Double,
-  var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed with AvroRecord {
+  var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed {
 
   override def toString() = "HCAF(%s)".format(csquareCode)
 
@@ -76,7 +74,7 @@ object HCAF extends ParseHelper {
 
   def fromCassandra(x: Iterable[Column]): HCAF = Stopwatch("deserialize") { fromCassandra(columnList2map(x)) }
 
-  def fromCassandra(x: Map[String, Column]): HCAF = build(x mapValues (_.value))
+  def fromCassandra(x: Map[String, Column]): HCAF = build(x mapValues (x => byte2string(x.value.array)))
 
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
@@ -100,8 +98,7 @@ object HCAF extends ParseHelper {
   }
 }
 
-@serializable
-case class Envelope(var min: Double, var max: Double, var prefMin: Double, var prefMax: Double) extends AvroRecord
+case class Envelope(var min: Double, var max: Double, var prefMin: Double, var prefMax: Double)
 object Envelope {
   def apply(): Envelope = Envelope(0, 0, 0, 0)
 }
@@ -114,7 +111,6 @@ object Envelope {
 
  The HSPEN Table doesn't need a key. The companion object contains conversion methods
  */
-@serializable
 case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int],
   var pelagic: Boolean, var nMostLat: Double, var sMostLat: Double, var wMostLong: Double, var eMostLong: Double,
   var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
@@ -135,7 +131,7 @@ object HSPEN extends ParseHelper {
 
   def fromCassandra(x: Iterable[Column]): HSPEN = fromCassandra(columnList2map(x))
 
-  def fromCassandra(x: Map[String, Column]): HSPEN = build(x mapValues (_.value))
+  def fromCassandra(x: Map[String, Column]): HSPEN = build(x mapValues (x => bytebuffer2string(x.value)))
 
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
@@ -181,7 +177,7 @@ object HSPEN extends ParseHelper {
  */
 
 case class HSPEC(var speciesId: String, var csquareCode: String, var probability: Double, var inBox: Boolean, var inFao: Boolean,
-  var faoAreaM: Int, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator with AvroRecord {
+  var faoAreaM: Int, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
 

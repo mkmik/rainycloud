@@ -21,8 +21,8 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.util.{Modules => GuiceModules}
 import net.lag.configgy.{Config, Configgy}
 import net.lag.logging.Logger
-import org.github.scopt.OptionParser
-import org.github.scopt.OptionParser._
+import scopt.OptionParser
+import scopt.OptionParser._
 
 class EntryPoint @Inject() (
   val partitioner: Partitioner,
@@ -52,6 +52,8 @@ object Main {
     opt("hspen", "hspen file", {v: String => Configgy.config.setString("hspenFile", v)})
     opt("hspec", "hspec file", {v: String => Configgy.config.setString("hspecFile", v)})
     opt("m", "module", "add a module to runtime", {v: String => val c= Configgy.config; c.setList("modules", (c.getList("modules").toList ++ List(v)).distinct) })
+    opt("w", "worker", "run a worker", {Configgy.config.setBool("worker", true)})
+    opt("submitter", "run a submitter", {Configgy.config.setBool("submitter", true)})
   }
 
   def parseArgs(args: Array[String]) = parser.parse(args)
@@ -62,6 +64,18 @@ object Main {
 
     if (!parser.parse(args)) 
       return
+
+    // factorize this via Guice etc
+    if(conf.getBool("worker").getOrElse(false)) {
+      cloud.Worker.main(args)
+      return 
+    }
+
+    if(conf.getBool("submitter").getOrElse(false)) {
+      cloud.Submitter.main(args)
+      return 
+    }
+
 
     val injector = createInjector(conf)
 

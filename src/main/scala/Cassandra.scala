@@ -1,8 +1,11 @@
 package it.cnr.aquamaps
 import org.apache.log4j.Logger
 
-import me.prettyprint.cassandra.service.{ CassandraHostConfigurator, CassandraClientPoolFactory }
+import me.prettyprint.cassandra.service.{ CassandraHostConfigurator, ThriftCluster }
+import me.prettyprint.hector.api.factory.HFactory
 import org.apache.cassandra.thrift.{ Column, SliceRange, SlicePredicate, ColumnParent, ColumnPath, KeyRange, Mutation, ColumnOrSuperColumn, ConsistencyLevel }
+import me.prettyprint.cassandra.serializers.StringSerializer
+import java.nio.ByteBuffer
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
@@ -29,35 +32,33 @@ trait CassandraConnectionConfig extends CassandraConfig {
 trait Cassandra extends CassandraConnectionConfig {
   private val log = Logger.getLogger(this.getClass);
 
+  import CassandraConversions._
+
   val hostConfigurator = new CassandraHostConfigurator("%s:%s".format(cassandraHost, cassandraPort))
-  val pool = CassandraClientPoolFactory.getInstance.createNew(hostConfigurator)
+  val cluster = new ThriftCluster("Research Infrastructures", hostConfigurator)
 
-  val client = pool borrowClient
-
-  lazy val keyspace = client.getKeyspace(keyspaceName)
+  lazy val keyspace = HFactory.createKeyspace(keyspaceName, cluster)
 
   def rangeSlice(from: String, to: String, size: Long, columns: List[String]) = {
     log.info("getting slice %s %s %s  on  %s %s".format(from, to, size, keyspaceName, columnFamily))
 
-    val ks = keyspace
-    val range = new KeyRange
-    range.setStart_key(from)
-    range.setEnd_key("")
-    range.setCount(size.asInstanceOf[Int])
+    val serializer = StringSerializer.get
+    val rangeSlicesQuery = HFactory.createRangeSlicesQuery(keyspace, serializer, serializer, serializer)
+    rangeSlicesQuery.setColumnFamily(columnFamily)
+    rangeSlicesQuery.setKeys(from, "")
+    rangeSlicesQuery.setRowCount(size.asInstanceOf[Int])
 
-    val sp = new SlicePredicate
-    val clp = new ColumnParent(columnFamily)
+    val result = rangeSlicesQuery.execute()
 
-    sp.setColumn_names(columns.map(_.getBytes))
-
-    ks.getRangeSlices(clp, sp, range)
   }
 
   def batchMutate(mutas: java.util.Map[String, MutationList]) = {
+    val serializer = StringSerializer.get
     log.info("upserting %s rows".format(mutas.size))
 
     Stopwatch("upsert") {
-      keyspace.batchMutate(mutas)
+      val mutator = HFactory.createMutator(keyspace, serializer)
+      //...
     }
   }
 
@@ -66,13 +67,17 @@ trait Cassandra extends CassandraConnectionConfig {
 object CassandraConversions {
   import scala.collection.immutable.HashMap
 
+  implicit def string2bytebuffer(x: String): ByteBuffer = ByteBuffer.wrap(x.getBytes)
+  implicit def bytes2bytebuffer(x: Array[Byte]): ByteBuffer = ByteBuffer.wrap(x)
+
+  implicit def bytebuffer2string(x: ByteBuffer): String = new String(x.array, "utf-8")
   implicit def byte2string(x: Array[Byte]): String = new String(x, "utf-8")
 
   implicit def columnList2map(x: Iterable[Column]): Map[String, Column] = {
-    x.foldLeft(Map[String, Column]()) { (acc, v) => acc + (byte2string(v.name) -> v) }
+    x.foldLeft(Map[String, Column]()) { (acc, v) => acc + (byte2string(v.name.array) -> v) }
   }
 
-  implicit def columnName(x: Column): String = byte2string(x.name)
+  implicit def columnName(x: Column): String = byte2string(x.name.array)
 }
 
 trait CassandraFetcher extends Cassandra {
@@ -118,6 +123,8 @@ trait CassandraSink extends Cassandra {
 }
 
 trait CassandraCreator extends CassandraConfig {
+  import CassandraConversions._
+
   class NewColumnWrapper(val name: String) {
     def -->(value: String) = newColumn(name, value)
   }
@@ -125,7 +132,7 @@ trait CassandraCreator extends CassandraConfig {
   implicit def newColumnWrapper(name: String) = new NewColumnWrapper(name)
 
   def newColumn(name: String, value: String) = {
-    new Column(name.getBytes, value.getBytes, stamp)
+    new Column(name, value, stamp)
   }
 
   def stamp = System.currentTimeMillis
