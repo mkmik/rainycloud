@@ -20,10 +20,10 @@ object Submitter extends App {
     runTest()
   }
 
-  
-
   val jobs = Agent(Map[String, JobSubmitter.Job]())
-  
+  val workers = Agent(Map[String, JobSubmitter.Worker]())
+
+  def queueLength = js.queueLength
   
   def registerJob(job: JobSubmitter.Job) = {
     val uuid = UUID.randomUUID.toString
@@ -34,6 +34,11 @@ object Submitter extends App {
   def deleteJob(id: String) = {
     jobs send (_ - id)
   }
+
+  def killJob(id: String) = {
+//    jobs send (_ - id)
+  }
+
 
   def spawnTest() = {
     val job = js.newJob()

@@ -103,11 +103,11 @@ trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
   case class Joined(val worker: WorkerRef)
   /*# Commands/actions */
   case class Kill(val worker: String)
-
 }
 
 object JobSubmitter {
   case class TaskSpec(val spec: String)
+  case class Worker(val completed: Int)
 
   trait Job {
     def addTask(spec: TaskSpec)
@@ -124,9 +124,9 @@ object JobSubmitter {
 trait JobSubmitter {
   import JobSubmitter._
 
-
   def newJob(): Job
   def newTaskSpec(spec: String) = TaskSpec(spec)
 
+  def queueLength: Int
 }
 

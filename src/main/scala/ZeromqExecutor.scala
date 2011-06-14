@@ -95,10 +95,7 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
       log.debug("pre start WorkerActor %s".format(name))
 
       innerSocket.setIdentity(name + "_b")
-      //socket.connect("inproc://executor_%s".format(name))
-      //socket.connect("inproc://executor_%s".format(name))
-
-      socket.connect("tcp://localhost:5566")
+      innerSocket.connect("tcp://localhost:5566")
 
       self.receiveTimeout = Some(2000L)
     }

@@ -40,6 +40,31 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
 
   get("/") {
     render(<div>
+             <h2>Spool</h2>
+             <table>
+               <tr>
+                 <th>Queue length</th>
+               </tr>
+               <tr>
+                 <td>
+                   { Submitter.queueLength }
+                 </td>
+               </tr>
+             </table>
+             <h2>Workers</h2>
+             <table>
+               <tr>
+                 <th>Id</th>
+                 <th>Completed tasks</th>
+                 <th>Last heartbeat</th>
+               </tr>
+               {
+                 for ((id, worker) <- Submitter.workers()) yield <tr>
+                                                                   <td>{ id }</td>
+                                                                 </tr>
+               }
+             </table>
+             <h2>Jobs</h2>
              <table>
                <tr>
                  <th>Id</th>
@@ -78,5 +103,11 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
     Submitter.deleteJob(params("job"))
     redirect(url("/"))
   }
+
+  get("/job/:job/kill") {
+    Submitter.killJob(params("job"))
+    redirect(url("/"))
+  }
+
 
 }

@@ -67,6 +67,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   socket.bind("tcp://*:5566")
 
   val sender = actorOf(new SenderActor()).start
+  val ss = sender
 
   /*# This "actor" implements the communication between the submission client and the workers.
    It handles worker registration, heartbeating, task book keeping. Higher level task handling is
@@ -127,13 +128,23 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
   //
 
+  object GetQueueLength
+
+  def queueLength: Int = {
+    ss !! GetQueueLength match {
+      case Some(res: Int) => res
+      case _ => -1
+    }
+  }
+
   /*# This actor implements the API between the submission API users and the zmq subsystem.
    Furthermore it handles the task rejection and retries. */
   // {{{
   class SenderActor extends Actor {
+
     private val log = Logger(classOf[SenderActor])
 
-//    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
+    //    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 1500, 4000.milliseconds)
 
     val socket = context.socket(ZMQ.XREQ)
@@ -248,7 +259,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     }
 
     def summary() = {
-      log.info(" -------> Currently %s workers alive (%s), queue length: %s, completed tasks %d".format(readyWorkers.length, readyWorkers, queuedTasks.length, completedTasks))
+      log.debug(" -------> Currently %s workers alive (%s), queue length: %s, completed tasks %d".format(readyWorkers.length, readyWorkers, queuedTasks.length, completedTasks))
     }
 
     self.receiveTimeout = Some(4000L)
@@ -261,6 +272,8 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       case Kill(worker) => sendParts(socket, "dummy", "", "KILL", worker)
       case Submit(task) => submit(task)
       case ReceiveTimeout => summary()
+      case GetQueueLength => self reply queuedTasks.length
+      case msg => log.warning("got unhandled message '%s'", format(msg.toString))
     }
   }
   // }}}
