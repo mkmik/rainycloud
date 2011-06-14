@@ -53,10 +53,11 @@ func UpdateMetrics(m map[string]Metric, increment float64, workers int) {
 	last := lastTp[0]
 	delta := now - last
 
-	absIncrement := MAX * int64(increment) / 100
+	fmt.Printf("increment: %v\n", increment)
+	absIncrement := MAX * increment / 100
 	
 	
-	m["throughput"] = [...]int64{now, absIncrement/delta * 1000}
+	m["throughput"] = [...]int64{now, int64(absIncrement/float64(delta) * 1000)}
 
 	loads := make([]LoadMetric, workers)
 	for i, _ := range loads {
@@ -178,7 +179,6 @@ func (self Handler) getStatus(id string) *JobStatusResponse {
 	job, e := self.registry.Get(id)
 	if e != nil {
 		return &JobStatusResponse{id, "ERROR", 100, nil}
-//		panic(e.String())
 	}
 	return &JobStatusResponse{job.Id, job.Status, job.Completion, job.Metrics}
 }
