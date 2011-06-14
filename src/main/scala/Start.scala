@@ -24,6 +24,8 @@ import net.lag.logging.Logger
 import scopt.OptionParser
 import scopt.OptionParser._
 
+import javax.servlet.Servlet
+
 class EntryPoint @Inject() (
   val partitioner: Partitioner,
   val generator: Generator,
@@ -53,8 +55,10 @@ object Main {
     opt("hspec", "hspec file", { v: String => Configgy.config.setString("hspecFile", v) })
     opt("m", "module", "add a module to runtime", { v: String => val c = Configgy.config; c.setList("modules", (c.getList("modules").toList ++ List(v)).distinct) })
     opt("w", "worker", "run a worker", { Configgy.config.setBool("worker", true) })
-    intOpt("worker-agony", "time until a worker dies (usefult for takeover testing", { v: Int => Configgy.config.setInt("worker-agony", v) })
+    intOpt("worker-agony", "time until a worker dies (usefult for takeover testing)", { v: Int => Configgy.config.setInt("worker-agony", v) })
     opt("submitter", "run a submitter", { Configgy.config.setBool("submitter", true) })
+    opt("web", "run a web server for monitoring, submission interface etc", { Configgy.config.setBool("web", true) })
+    intOpt("port", "port for the web server", { v: Int => Configgy.config.setInt("web-port", v) })
   }
 
   def parseArgs(args: Array[String]) = parser.parse(args)
@@ -66,6 +70,11 @@ object Main {
       return
 
     // factorize this via Guice etc
+
+    if (conf.getBool("web").getOrElse(false)) {
+      WebServer.run(Map("/submitter/*" -> new ZeromqMonitoring()))
+    }
+
     if (conf.getBool("worker").getOrElse(false)) {
       cloud.Worker.main(args)
       return
