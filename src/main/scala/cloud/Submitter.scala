@@ -24,7 +24,7 @@ object Submitter extends App {
   log.info("SENDING COMMAND storm")
 
   val job = pc.newJob()
-  for (i <- 1 to 1000)
+  for (i <- 1 to 40)
     job.addTask(pc.newTaskSpec("wow" + i))
   job.seal()
 

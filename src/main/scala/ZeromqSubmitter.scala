@@ -132,12 +132,14 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   class SenderActor extends Actor {
     private val log = Logger(classOf[SenderActor])
 
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
+//    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 1500, 4000.milliseconds)
 
     val socket = context.socket(ZMQ.XREQ)
     socket.connect("inproc://client")
 
     var ongoingTasks = Map[String, Task]()
+    //var queuedTasks = collection.mutable.Queue[Task]()
     var queuedTasks = Queue[Task]()
     var readyWorkers = Queue[Worker]()
     var workers = Map[String, Worker]()
@@ -161,6 +163,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
     def submit(task: Task): Unit = {
       queuedTasks = queuedTasks enqueue task
+      //queuedTasks enqueue task
       flushQueue()
     }
 
@@ -173,6 +176,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       }
 
       queuedTasks = queuedTasks drop (slots.size)
+      //queuedTasks drop (slots.size)
 
       log.debug("ready workers was: %s".format(readyWorkers))
       readyWorkers = readyWorkers drop (slots.size)

@@ -71,13 +71,12 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
   def executeTask(task: TaskRef): Unit = {
     taskRunning = true
 
-    log.info("W %s will spawn background task for (about 6 sec)".format(name))
+    log.info("W %s will spawn background task".format(name))
     spawn {
-      log.debug("W %s is working for real (about 6 sec)".format(name))
-      for (i <- 1 to 6) {
-        log.debug("W %s is working on step %s of task %s".format(name, i, task))
-        Thread.sleep(100)
-      }
+      log.debug("W %s is working for real (mumble mumble)".format(name))
+      //        log.debug("W %s is working on step %s of task %s".format(name, i, task))
+        Thread.sleep(10)
+      //}
       log.info("W %s finished computing task %s".format(name, task))
       worker ! Finish(task)
     }
