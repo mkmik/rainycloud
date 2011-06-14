@@ -32,9 +32,8 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
     socket.setIdentity(name)
     socket.connect("tcp://localhost:5566")
 
-    log.info("sending ready from %s".format(name))
+    log.info("registering %s".format(name))
     send("READY")
-    log.info("sent ready from %s".format(name))
 
     val poller = context.poller()
     poller.register(socket, ZMQ.Poller.POLLIN)

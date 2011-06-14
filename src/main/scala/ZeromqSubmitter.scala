@@ -190,9 +190,11 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
     def acceptWorker(worker: Worker) = {
       log.debug("Worker %s is now ready.Previous ready workers: %s (%s)".format(worker, readyWorkers, Thread.currentThread()))
-      readyWorkers = readyWorkers enqueue worker
-      log.debug("                        Current ready workers: %s".format(readyWorkers))
-      flushQueue()
+      if (!(readyWorkers contains worker)) {
+        readyWorkers = readyWorkers enqueue worker
+        log.debug("                        Current ready workers: %s".format(readyWorkers))
+        flushQueue()
+      }
     }
 
     def buryWorker(worker: Worker) = {
