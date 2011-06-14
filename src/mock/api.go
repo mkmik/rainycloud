@@ -82,7 +82,7 @@ func (this *Job) Run() {
 
 		maxPercent := *maxPercentParam * float64(this.NWorkers)
 		if this.Completion >80 {
-			maxPercent = 0
+			maxPercent = maxPercent / 10
 		} else if this.Completion < 10 {
 			maxPercent = maxPercent / 2
 		}
