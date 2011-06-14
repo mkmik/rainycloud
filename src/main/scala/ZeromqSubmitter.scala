@@ -15,7 +15,6 @@ import scala.collection.immutable.Queue
 
 import net.lag.logging.Logger
 
-
 class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon with ZeromqJobSubmitterExecutorCommon {
   import Zeromq._
 
@@ -75,15 +74,15 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     val poller = context.poller()
     poller.register(socket, ZMQ.Poller.POLLIN)
 
-    var workers = new HashMap[Worker, Long]()
+    var workers = new HashMap[WorkerRef, Long]()
 
-    def workerReady(worker: Worker) = {
+    def workerReady(worker: WorkerRef) = {
       workerAlive(worker)
 
       sender ! Ready(worker)
     }
 
-    def workerAlive(worker: Worker) = {
+    def workerAlive(worker: WorkerRef) = {
       log.debug("%s still alive".format(worker))
       if (!workers.contains(worker))
         sender ! Joined(worker)
@@ -101,14 +100,14 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       }
     }
 
-    def submitTask(worker: Worker, task: TaskRef) {
+    def submitTask(worker: WorkerRef, task: TaskRef) {
       sendParts(worker.name, socket.getIdentity(), "", "SUBMIT", task.id)
     }
 
     while (true) {
       val events = poller.poll(500 * 1000)
       if (events > 0) {
-        val worker = Worker(getAddress())
+        val worker = WorkerRef(getAddress())
         val msg = recv()
 
         msg match {
@@ -141,18 +140,19 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     var ongoingTasks = Map[String, Task]()
     var queuedTasks = Queue[Task]()
     var readyWorkers = Queue[Worker]()
+    var workers = Map[String, Worker]()
 
     // statistical
     var completedTasks = 0
 
-    def taskCompleted(taskId: String, worker: Worker): Unit = {
+    def taskCompleted(taskId: String, worker: WorkerRef): Unit = {
       ongoingTasks.get(taskId) match {
         case Some(task) => taskCompleted(task, worker)
         case None => log.warning("task %s completed but I don't know anything about this task, ignoring".format(taskId))
       }
     }
 
-    def taskCompleted(task: Task, worker: Worker) = {
+    def taskCompleted(task: Task, worker: WorkerRef) = {
       log.info("completing task %s".format(task.id))
       ongoingTasks = ongoingTasks - task.id
       completedTasks += 1
@@ -183,12 +183,27 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       ongoingTasks += ((task.id, task))
       assert(worker.currentTask == None)
       worker.currentTask = Some(task)
+      log.debug("ASSIGNED TASK %s to worker %s".format(task, worker))
       sendToWorker(worker, task)
     }
 
     def sendToWorker(worker: Worker, task: Task): Unit = sendParts(socket, worker.name, "", "SUBMIT", task.id)
 
-    def acceptWorker(worker: Worker) = {
+    def acceptWorker(workerRef: WorkerRef): Unit = {
+      workers.get(workerRef.name) match {
+        case None =>
+          log.warning("accepting new worker")
+          val worker = Worker(workerRef.name)
+          workers += ((workerRef.name, worker))
+          acceptWorker(worker)
+        case Some(worker) => acceptWorker(worker)
+      }
+    }
+
+    def acceptWorker(worker: Worker): Unit = {
+      // we are here because the worker signaled that it's free accepting new tasks
+      worker.currentTask = None
+
       log.debug("Worker %s is now ready.Previous ready workers: %s (%s)".format(worker, readyWorkers, Thread.currentThread()))
       if (!(readyWorkers contains worker)) {
         readyWorkers = readyWorkers enqueue worker
@@ -197,15 +212,24 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       }
     }
 
-    def buryWorker(worker: Worker) = {
+    def buryWorker(workerRef: WorkerRef): Unit = {
+      workers.get(workerRef.name) match {
+        case None => log.warning("an unknown worker died: %s".format(workerRef))
+        case Some(worker) => buryWorker(worker)
+      }
+
+    }
+
+    def buryWorker(worker: Worker): Unit = {
       log.warning("worker '%s' is dead while running".format(worker))
       worker.currentTask match {
         case Some(task) =>
           log.warning("WWWWWWWWWWWWWWW worker %s died while running task %s, resubmitting".format(worker, task))
           submit(task)
-        case None => log.info("worker %s died but it wasn't running any task, goodbye".format(worker))
+        case None => log.info("XXXXXXXXXXXXX worker %s died but it wasn't running any task, goodbye".format(worker))
       }
       readyWorkers = readyWorkers.filterNot(el => el.name == worker.name)
+      workers -= worker.name
     }
 
     def summary() = {

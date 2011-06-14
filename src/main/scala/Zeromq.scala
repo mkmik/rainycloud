@@ -80,21 +80,22 @@ trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
     override def toString = id
   }
 
+  case class WorkerRef(val name: String)
   case class Worker(val name: String) {
     var currentTask: Option[Task] = None
-    override def toString = name
+    override def toString = "Worker(%s, %s)".format(name, currentTask)
   }
 
   /*# Command events */
   case class Submit(val task: Task)
   /*# Status feedback events */
   case class Completed(val task: Task)
-  case class Ready(val worker: Worker)
-  case class Success(val taskId: String, val worker: Worker)
+  case class Ready(val worker: WorkerRef)
+  case class Success(val taskId: String, val worker: WorkerRef)
   //  case class Rejected(val task: Task)
-  case class Died(val worker: Worker)
+  case class Died(val worker: WorkerRef)
   // a node joins when it sends active heartbeat
-  case class Joined(val worker: Worker)
+  case class Joined(val worker: WorkerRef)
   /*# Commands/actions */
   case class Kill(val worker: String)
 

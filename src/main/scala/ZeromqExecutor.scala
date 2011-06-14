@@ -16,7 +16,6 @@ import scala.collection.immutable.Queue
 
 import net.lag.logging.Logger
 
-
 class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobSubmitterExecutorCommon {
   import Zeromq._
 
@@ -111,7 +110,7 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
      * we can resend the "READY" message once in a while, just make sure we are not
      * executing something right now. */
     def perhapsRecover() = {
-      if(!taskRunning)
+      if (!taskRunning)
         send(socket, "READY")
     }
 

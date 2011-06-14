@@ -4,9 +4,8 @@ import it.cnr.aquamaps._
 
 import net.lag.logging.Logger
 
-class Submitter
 object Submitter extends App {
-  private val log = Logger(classOf[Submitter])
+  private val log = Logger(Submitter getClass)
 
   val pc = new ZeromqJobSubmitter()
 
@@ -19,13 +18,13 @@ object Submitter extends App {
     //    val pw2 = new PirateWorker("w2")
   }
 
-//  startWorkers()
+  //  startWorkers()
 
   Thread.sleep(4000)
   log.info("SENDING COMMAND storm")
 
   val job = pc.newJob()
-  for (i <- 1 to 20)
+  for (i <- 1 to 1000)
     job.addTask(pc.newTaskSpec("wow" + i))
   job.seal()
 
