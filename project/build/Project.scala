@@ -43,7 +43,11 @@ class RainyCloudProject(info: ProjectInfo) extends DefaultProject(info) with Ass
   val scalate = "org.scalatra" %% "scalatra-scalate" % scalatraVersion
   val servletApi = "org.mortbay.jetty" % "servlet-api" % "2.5-20081211" % "provided"
 //  val jettyEmbedded = "org.mortbay.jetty" % "jetty-embedded" % "6.1.25"
-  val jettyWebsocket = "org.eclipse.jetty" % "jetty-websocket" % "8.0.0.M3"
+  //val jettyWebsocket = "org.eclipse.jetty" % "jetty-websocket" % "8.0.0.M3"
+  val jettyGroupId = "org.eclipse.jetty"
+  val jettyVersion = "7.4.1.v20110513"
+  val jetty7 = jettyGroupId % "jetty-webapp" % jettyVersion % "test"
+  val jetty7websocket = jettyGroupId % "jetty-websocket" % jettyVersion % "compile"
 
    
   // avro

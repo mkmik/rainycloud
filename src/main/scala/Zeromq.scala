@@ -101,13 +101,14 @@ trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
   case class Died(val worker: WorkerRef)
   // a node joins when it sends active heartbeat
   case class Joined(val worker: WorkerRef)
+  case class Heartbeaten(val worker: WorkerRef)
   /*# Commands/actions */
   case class Kill(val worker: String)
 }
 
 object JobSubmitter {
   case class TaskSpec(val spec: String)
-  case class WorkerDescriptor(val completed: Int)
+  case class WorkerDescriptor(val completed: Int, val heartbeatAgo: Long, val uptime: Long)
 
   trait Job {
     def addTask(spec: TaskSpec)

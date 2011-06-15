@@ -87,7 +87,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       log.debug("%s still alive".format(worker))
       if (!workers.contains(worker))
         sender ! Joined(worker)
-
+      sender ! Heartbeaten(worker)
       workers += ((worker, System.currentTimeMillis()))
     }
 
@@ -161,6 +161,9 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     var queuedTasks = Queue[Task]()
     var readyWorkers = Queue[Worker]()
     var workers = Map[String, Worker]()
+    var workerHeartbeats = Map[String, Long]()
+    var workerUptime = Map[String, Long]()
+    var workerCompleted = Map[String, Int]().withDefaultValue(0)
 
     // statistical
     var completedTasks = 0
@@ -176,6 +179,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       log.info("completing task %s".format(task.id))
       ongoingTasks = ongoingTasks - task.id
       completedTasks += 1
+      workerCompleted += ((worker.name, 1 + workerCompleted.get(worker.name).getOrElse(0)))
       task.listener ! Completed(task)
     }
 
@@ -262,6 +266,9 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       }
       readyWorkers = readyWorkers.filterNot(el => el.name == worker.name)
       workers -= worker.name
+      workerHeartbeats -= worker.name
+      workerCompleted -= worker.name
+      workerUptime -= worker.name
     }
 
     def summary() = {
@@ -278,8 +285,19 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       case Kill(worker) => sendParts(socket, "dummy", "", "KILL", worker)
       case Submit(task) => submit(task)
       case ReceiveTimeout => summary()
+      case Heartbeaten(worker) => {
+        val now = System.currentTimeMillis()
+        //        log.info("heart beating %s at %s".format(worker.name, now))
+        if (workerUptime.get(worker.name) == None)
+          workerUptime += ((worker.name, now))
+        workerHeartbeats += ((worker.name, now))
+      }
       case GetQueueLength => self reply queuedTasks.length
-      case GetWorkers => self reply Map()
+      case GetWorkers => {
+        val now = System.currentTimeMillis()
+        log.info("getting worker info %s".format(now))
+        self reply (workers mapValues ((worker: Worker) => JobSubmitter.WorkerDescriptor(workerCompleted.get(worker.name).getOrElse(0), now - workerHeartbeats.get(worker.name).getOrElse(now - 100 * 1000), now - workerUptime.get(worker.name).getOrElse(now))))
+      }
       case msg => log.warning("got unhandled message '%s'", format(msg.toString))
     }
   }

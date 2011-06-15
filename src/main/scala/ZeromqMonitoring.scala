@@ -87,10 +87,14 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
                  <th>Id</th>
                  <th>Completed tasks</th>
                  <th>Last heartbeat</th>
+                 <th>Uptime</th>
                </tr>
                {
                  for ((id, worker) <- Submitter.workers) yield <tr>
                                                                  <td>{ id }</td>
+                                                                 <td>{ worker.completed }</td>
+                                                                 <td>{ worker.heartbeatAgo / 1000 } s ago</td>
+                                                                 <td>{ Utils.approximateTime(worker.uptime) }</td>
                                                                </tr>
                }
              </table>
