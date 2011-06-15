@@ -71,8 +71,11 @@ object Main {
 
     // factorize this via Guice etc
 
+    //  "/submitter/socket.io/*" -> new ZeromqMonitoringSocket()
     if (conf.getBool("web").getOrElse(false)) {
-      WebServer.run(Map("/submitter/*" -> new ZeromqMonitoring()))
+      //WebServer.run(Seq("/submitter/*" -> new ZeromqMonitoring(), "/socket.io/*" -> new ZeromqMonitoringSocket()))
+      WebServer.run(Seq("/submitter/*" -> new ZeromqMonitoring()))
+      WebServer.run(Seq("/socket.io/*" -> new ZeromqMonitoringSocket()), Some(8781))
     }
 
     if (conf.getBool("worker").getOrElse(false)) {

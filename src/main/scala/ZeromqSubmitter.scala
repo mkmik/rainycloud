@@ -67,7 +67,6 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   socket.bind("tcp://*:5566")
 
   val sender = actorOf(new SenderActor()).start
-  val ss = sender
 
   /*# This "actor" implements the communication between the submission client and the workers.
    It handles worker registration, heartbeating, task book keeping. Higher level task handling is
@@ -131,10 +130,17 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   object GetQueueLength
 
   def queueLength: Int = {
-    ss !! GetQueueLength match {
+    sender !! GetQueueLength match {
       case Some(res: Int) => res
       case _ => -1
     }
+  }
+
+  object GetWorkers
+
+  def workers = sender !! GetWorkers match {
+    case Some(res: Map[String, JobSubmitter.WorkerDescriptor]) => res
+    case _ => Map()
   }
 
   /*# This actor implements the API between the submission API users and the zmq subsystem.
@@ -273,6 +279,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       case Submit(task) => submit(task)
       case ReceiveTimeout => summary()
       case GetQueueLength => self reply queuedTasks.length
+      case GetWorkers => self reply Map()
       case msg => log.warning("got unhandled message '%s'", format(msg.toString))
     }
   }

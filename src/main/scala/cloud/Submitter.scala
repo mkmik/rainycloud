@@ -21,7 +21,7 @@ object Submitter extends App {
   }
 
   val jobs = Agent(Map[String, JobSubmitter.Job]())
-  val workers = Agent(Map[String, JobSubmitter.Worker]())
+  val workers = js.workers
 
   def queueLength = js.queueLength
   

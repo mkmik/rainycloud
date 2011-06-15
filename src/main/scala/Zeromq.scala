@@ -107,7 +107,7 @@ trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
 
 object JobSubmitter {
   case class TaskSpec(val spec: String)
-  case class Worker(val completed: Int)
+  case class WorkerDescriptor(val completed: Int)
 
   trait Job {
     def addTask(spec: TaskSpec)
@@ -127,6 +127,8 @@ trait JobSubmitter {
   def newJob(): Job
   def newTaskSpec(spec: String) = TaskSpec(spec)
 
+  // for monitoring
   def queueLength: Int
+  def workers: Map[String, JobSubmitter.WorkerDescriptor]
 }
 
