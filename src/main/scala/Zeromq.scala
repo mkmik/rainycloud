@@ -119,6 +119,8 @@ object JobSubmitter {
     def totalTasks: Int
     def completedTasks: Int
     def completed: Boolean
+
+    val id: String
   }
 }
 

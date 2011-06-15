@@ -6,7 +6,6 @@ import net.lag.logging.Logger
 import net.lag.configgy.{ Config, Configgy }
 
 import akka.agent.Agent
-import java.util.UUID
 
 object Submitter extends App {
   private val log = Logger(Submitter getClass)
@@ -26,9 +25,8 @@ object Submitter extends App {
   def queueLength = js.queueLength
   
   def registerJob(job: JobSubmitter.Job) = {
-    val uuid = UUID.randomUUID.toString
-    jobs send (_ + ((uuid, job)))
-    uuid
+    jobs send (_ + ((job.id, job)))
+    job.id
   }
 
   def deleteJob(id: String) = {
@@ -42,7 +40,7 @@ object Submitter extends App {
 
   def spawnTest() = {
     val job = js.newJob()
-    for (i <- 1 to 10)
+    for (i <- 1 to 100)
       job.addTask(js.newTaskSpec("wow" + i))
     job.seal()
     registerJob(job)

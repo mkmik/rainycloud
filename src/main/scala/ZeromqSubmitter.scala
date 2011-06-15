@@ -9,6 +9,7 @@ import akka.actor.ActorRef
 import akka.dispatch.Dispatchers
 import akka.util.duration._
 import akka.actor.ReceiveTimeout
+import java.util.UUID
 
 import scala.collection.immutable.HashMap
 import scala.collection.immutable.Queue
@@ -22,6 +23,8 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   private val log = Logger(classOf[ZeromqJobSubmitter])
 
   class ZeromqJob extends Job {
+    val id = UUID.randomUUID.toString
+
     class JobActor extends Actor {
       var tasks = List[TaskSpec]()
 
@@ -295,7 +298,6 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       case GetQueueLength => self reply queuedTasks.length
       case GetWorkers => {
         val now = System.currentTimeMillis()
-        log.info("getting worker info %s".format(now))
         self reply (workers mapValues ((worker: Worker) => JobSubmitter.WorkerDescriptor(workerCompleted.get(worker.name).getOrElse(0), now - workerHeartbeats.get(worker.name).getOrElse(now - 100 * 1000), now - workerUptime.get(worker.name).getOrElse(now))))
       }
       case msg => log.warning("got unhandled message '%s'", format(msg.toString))

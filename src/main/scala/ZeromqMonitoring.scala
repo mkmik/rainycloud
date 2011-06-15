@@ -1,6 +1,10 @@
 package it.cnr.aquamaps
 
 import it.cnr.aquamaps.cloud._
+import javax.servlet.Servlet
+import javax.servlet.http.HttpServletRequest
+import org.eclipse.jetty.websocket.WebSocket
+import org.eclipse.jetty.websocket.WebSocketServlet
 
 import org.scalatra._
 import org.scalatra.scalate._
@@ -14,6 +18,23 @@ import scala.xml.{ Text, Node }
 import net.lag.logging.Logger
 import net.lag.configgy.{ Config, Configgy }
 
+
+class ZeromqMonitoringTest extends WebSocketServlet with Servlet {
+  def doWebSocketConnect(request: HttpServletRequest,
+                               protocol: String) : WebSocket = new TestWebSocket()
+}
+
+class TestWebSocket extends WebSocket {
+  val log = Logger(classOf[TestWebSocket])
+
+ def onClose (code: Int, message: java.lang.String) {
+ }
+
+ def onOpen (connection: org.eclipse.jetty.websocket.WebSocket.Connection) {
+   log.info("WEB SOCKET CONNECTED")
+ }
+
+}
 
 class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSupport {
   val log = Logger(classOf[ZeromqMonitoring])
