@@ -76,7 +76,6 @@ trait JobSubmitterCommon {
 }
 
 trait ZeromqJobSubmitterExecutorCommon {
-  case class TaskRef(val id: String)
   case class Finish(val task: TaskRef)
 }
 

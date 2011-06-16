@@ -1,4 +1,5 @@
 package it.cnr.aquamaps
+import com.google.gson.Gson
 
 import org.zeromq.ZMQ
 
@@ -108,6 +109,8 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       sendParts(worker.name, socket.getIdentity(), "", "SUBMIT", task.id)
     }
 
+    val gson = new Gson
+
     while (true) {
       val events = poller.poll(500 * 1000)
       if (events > 0) {
@@ -120,6 +123,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
           case "KILL" => sendParts(recv(), socket.getIdentity(), "", "KILL")
           case "SUBMIT" => submitTask(worker, TaskRef(recv()))
           case "SUCCESS" => sender ! Success(recv(), worker)
+          case "PROGRESS" => log.info("GOT PROGRESS '%s' from %s".format(gson.fromJson(recv(), classOf[Progress]), worker))
           case _ => throw new IllegalArgumentException("unknown command '%s' coming from worker '%s' in thread %s".format(msg, worker, Thread.currentThread()))
         }
       }
@@ -300,7 +304,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
         val now = System.currentTimeMillis()
         self reply (workers mapValues ((worker: Worker) => JobSubmitter.WorkerDescriptor(workerCompleted.get(worker.name).getOrElse(0), now - workerHeartbeats.get(worker.name).getOrElse(now - 100 * 1000), now - workerUptime.get(worker.name).getOrElse(now))))
       }
-      case msg => log.warning("got unhandled message '%s'", format(msg.toString))
+      case msg => log.warning("got unhandled message '%s'".format(msg.toString))
     }
   }
   // }}}

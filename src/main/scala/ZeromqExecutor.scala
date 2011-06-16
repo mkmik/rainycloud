@@ -1,4 +1,5 @@
 package it.cnr.aquamaps
+import com.google.gson.Gson
 
 import org.zeromq.ZMQ
 import scala.actors.Futures._
@@ -77,7 +78,10 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
     spawn {
       log.debug("W %s is working for real (mumble mumble)".format(name))
       //        log.debug("W %s is working on step %s of task %s".format(name, i, task))
-      Thread.sleep(4000)
+      for(i <- 1 to 40) {
+        Thread.sleep(100)
+        worker ! Progress(task, 551, 100)
+      }
       //}
       log.info("W %s finished computing task %s".format(name, task))
       worker ! Finish(task)
@@ -115,8 +119,15 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
       send(innerSocket, "READY")
     }
 
+    val gson = new Gson
+
+    def trackProgress(progress: Progress) = {
+      send(innerSocket, "PROGRESS", gson.toJson(progress))
+    }
+
     def receive = {
       case Submit(task) => log.debug("submitting to execute %s".format(task)); executeTask(task)
+      case progress: Progress => trackProgress(progress) 
       case Finish(task) => log.debug("sending back ready"); finished(task);
       case ReceiveTimeout => log.debug("ww %s inner control timed out".format(name)); perhapsRecover()
     }
@@ -142,3 +153,5 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
 
 }
 
+case class TaskRef(val id: String)
+case class Progress(val task: TaskRef, amount: Long, delta: Long)
