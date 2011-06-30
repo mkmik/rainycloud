@@ -1,4 +1,6 @@
 package it.cnr.aquamaps
+import com.google.gson.Gson
+import net.lag.configgy.Configgy
 
 import org.zeromq.ZMQ
 import scala.actors.Futures._
@@ -16,7 +18,6 @@ import scala.collection.immutable.Queue
 
 import net.lag.logging.Logger
 
-
 class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobSubmitterExecutorCommon {
   import Zeromq._
 
@@ -24,13 +25,15 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
 
   case class Submit(val task: TaskRef)
 
-  val socket = context.socket(ZMQ.XREQ)
-
   val worker = actorOf(new WorkerActor()).start()
 
+  val socket = context.socket(ZMQ.XREQ)
+
   new Thread(() => {
+
     socket.setIdentity(name)
-    socket.connect("tcp://localhost:5566")
+    socket.bind("inproc://executor_%s".format(name))
+    socket.connect("tcp://%s:%s".format(Configgy.config.getString("queue-host").getOrElse("localhost"),Configgy.config.getInt("queue-port").getOrElse(5566)))
 
     log.info("registering %s".format(name))
     send("READY")
@@ -72,23 +75,18 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
   def executeTask(task: TaskRef): Unit = {
     taskRunning = true
 
-    log.info("W %s will spawn background task for (about 6 sec)".format(name))
+    log.info("W %s will spawn background task".format(name))
     spawn {
-      log.debug("W %s is working for real (about 6 sec)".format(name))
-      for (i <- 1 to 6) {
-        log.debug("W %s is working on step %s of task %s".format(name, i, task))
+      log.debug("W %s is working for real (mumble mumble)".format(name))
+      //        log.debug("W %s is working on step %s of task %s".format(name, i, task))
+      for(i <- 1 to 40) {
         Thread.sleep(100)
+        worker ! Progress(task, 551, 100)
       }
+      //}
       log.info("W %s finished computing task %s".format(name, task))
       worker ! Finish(task)
     }
-  }
-
-  def finished(task: TaskRef) = {
-    taskRunning = false
-
-    send(socket, "SUCCESS", task.id)
-    send(socket, "READY")
   }
 
   class WorkerActor extends Actor {
@@ -96,13 +94,13 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
 
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
 
-    val socket = context.socket(ZMQ.XREQ)
+    val innerSocket = context.socket(ZMQ.XREQ)
 
     override def preStart() = {
       log.debug("pre start WorkerActor %s".format(name))
 
-      socket.setIdentity(name + "_b")
-      socket.connect("tcp://localhost:5566")
+      innerSocket.setIdentity(name + "_b")
+      innerSocket.connect("tcp://localhost:5566")
 
       self.receiveTimeout = Some(2000L)
     }
@@ -111,12 +109,26 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
      * we can resend the "READY" message once in a while, just make sure we are not
      * executing something right now. */
     def perhapsRecover() = {
-      if(!taskRunning)
-        send(socket, "READY")
+      if (!taskRunning)
+        send(innerSocket, "READY")
+    }
+
+    def finished(task: TaskRef) = {
+      taskRunning = false
+
+      send(innerSocket, "SUCCESS", task.id)
+      send(innerSocket, "READY")
+    }
+
+    val gson = new Gson
+
+    def trackProgress(progress: Progress) = {
+      send(innerSocket, "PROGRESS", gson.toJson(progress))
     }
 
     def receive = {
       case Submit(task) => log.debug("submitting to execute %s".format(task)); executeTask(task)
+      case progress: Progress => trackProgress(progress) 
       case Finish(task) => log.debug("sending back ready"); finished(task);
       case ReceiveTimeout => log.debug("ww %s inner control timed out".format(name)); perhapsRecover()
     }
@@ -142,3 +154,5 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
 
 }
 
+case class TaskRef(val id: String)
+case class Progress(val task: TaskRef, amount: Long, delta: Long)

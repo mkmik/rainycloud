@@ -46,12 +46,14 @@ trait ZeromqHandler {
       }
       data = next
     }
-    throw new RuntimeException("shouldn't be here")
+    log.warning("didn't receive delimiter, something wrong in communication with worker")
+    return ""
   }
 
   def sendParts(parts: Array[Byte]*): Unit = sendParts(socket, parts: _*)
 
   def sendParts(socket: ZMQ.Socket, parts: Array[Byte]*) = {
+    log.debug("   debug: zmq send s(%s) t(%s) (%s) (data %s)".format(socket, Thread.currentThread().getId(), Thread.currentThread(), List(parts.map(x => new String(x)))))
     log.debug("  --------- Sending (thread %s):".format(Thread.currentThread()))
     for (i <- 0 until parts.length) {
       val more = if (i == parts.length - 1) 0 else ZMQ.SNDMORE
@@ -62,7 +64,10 @@ trait ZeromqHandler {
     log.debug("  ---------")
   }
 
-  def recv() = new String(socket.recv(0))
+  def recv() = {
+    log.debug("   debug: zmq recv s(%s) t(%s)".format(socket, Thread.currentThread().getId()))
+    new String(socket.recv(0))
+  }
 
 }
 
@@ -71,7 +76,6 @@ trait JobSubmitterCommon {
 }
 
 trait ZeromqJobSubmitterExecutorCommon {
-  case class TaskRef(val id: String)
   case class Finish(val task: TaskRef)
 }
 
@@ -80,29 +84,30 @@ trait ZeromqJobSubmitterCommon extends JobSubmitterCommon {
     override def toString = id
   }
 
+  case class WorkerRef(val name: String)
   case class Worker(val name: String) {
     var currentTask: Option[Task] = None
-    override def toString = name
+    override def toString = "Worker(%s, %s)".format(name, currentTask)
   }
 
   /*# Command events */
   case class Submit(val task: Task)
   /*# Status feedback events */
   case class Completed(val task: Task)
-  case class Ready(val worker: Worker)
-  case class Success(val taskId: String, val worker: Worker)
+  case class Ready(val worker: WorkerRef)
+  case class Success(val taskId: String, val worker: WorkerRef)
   //  case class Rejected(val task: Task)
-  case class Died(val worker: Worker)
+  case class Died(val worker: WorkerRef)
   // a node joins when it sends active heartbeat
-  case class Joined(val worker: Worker)
+  case class Joined(val worker: WorkerRef)
+  case class Heartbeaten(val worker: WorkerRef)
   /*# Commands/actions */
   case class Kill(val worker: String)
-
 }
 
-trait JobSubmitter {
-
+object JobSubmitter {
   case class TaskSpec(val spec: String)
+  case class WorkerDescriptor(val completed: Int, val heartbeatAgo: Long, val uptime: Long)
 
   trait Job {
     def addTask(spec: TaskSpec)
@@ -113,10 +118,19 @@ trait JobSubmitter {
     def totalTasks: Int
     def completedTasks: Int
     def completed: Boolean
+
+    val id: String
   }
+}
+
+trait JobSubmitter {
+  import JobSubmitter._
 
   def newJob(): Job
   def newTaskSpec(spec: String) = TaskSpec(spec)
 
+  // for monitoring
+  def queueLength: Int
+  def workers: Map[String, JobSubmitter.WorkerDescriptor]
 }
 
