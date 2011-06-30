@@ -15,6 +15,7 @@ import java.util.UUID
 import scala.collection.immutable.HashMap
 import scala.collection.immutable.Queue
 
+import net.lag.configgy.{ Config, Configgy }
 import net.lag.logging.Logger
 
 class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon with ZeromqJobSubmitterExecutorCommon {
@@ -68,7 +69,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
   val socket = context.socket(ZMQ.XREP)
   socket.bind("inproc://client")
-  socket.bind("tcp://*:5566")
+  socket.bind("tcp://*:%s".format(Configgy.config.getInt("queue-port").getOrElse(5566)))
 
   val sender = actorOf(new SenderActor()).start
 
@@ -123,7 +124,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
           case "KILL" => sendParts(recv(), socket.getIdentity(), "", "KILL")
           case "SUBMIT" => submitTask(worker, TaskRef(recv()))
           case "SUCCESS" => sender ! Success(recv(), worker)
-          case "PROGRESS" => log.info("GOT PROGRESS '%s' from %s".format(gson.fromJson(recv(), classOf[Progress]), worker))
+          case "PROGRESS" => sender ! WorkerProgress(worker, gson.fromJson(recv(), classOf[Progress]))
           case _ => throw new IllegalArgumentException("unknown command '%s' coming from worker '%s' in thread %s".format(msg, worker, Thread.currentThread()))
         }
       }
@@ -132,6 +133,8 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     }
   }).start()
 
+
+  case class WorkerProgress(worker: WorkerRef, progress: Progress)
   //
 
   object GetQueueLength
@@ -171,6 +174,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     var workerHeartbeats = Map[String, Long]()
     var workerUptime = Map[String, Long]()
     var workerCompleted = Map[String, Int]().withDefaultValue(0)
+    var workerThroughput = Map[String, Long]()
 
     // statistical
     var completedTasks = 0
@@ -278,6 +282,11 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       workerUptime -= worker.name
     }
 
+    def trackWorkerProgress(worker: WorkerRef, progress: Progress) = {
+      log.debug("tracking worker progress %s: %s".format(worker, progress))
+      workerThroughput += ((worker.name, progress.amount * 1000 /progress.delta))
+    }
+
     def summary() = {
       log.debug(" -------> Currently %s workers alive (%s), queue length: %s, completed tasks %d".format(readyWorkers.length, readyWorkers, queuedTasks.length, completedTasks))
     }
@@ -292,6 +301,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       case Kill(worker) => sendParts(socket, "dummy", "", "KILL", worker)
       case Submit(task) => submit(task)
       case ReceiveTimeout => summary()
+      case WorkerProgress(worker, progress) => trackWorkerProgress(worker, progress)
       case Heartbeaten(worker) => {
         val now = System.currentTimeMillis()
         //        log.info("heart beating %s at %s".format(worker.name, now))

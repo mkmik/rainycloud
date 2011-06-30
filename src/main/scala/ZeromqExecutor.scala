@@ -1,5 +1,6 @@
 package it.cnr.aquamaps
 import com.google.gson.Gson
+import net.lag.configgy.Configgy
 
 import org.zeromq.ZMQ
 import scala.actors.Futures._
@@ -32,7 +33,7 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
 
     socket.setIdentity(name)
     socket.bind("inproc://executor_%s".format(name))
-    socket.connect("tcp://localhost:5566")
+    socket.connect("tcp://%s:%s".format(Configgy.config.getString("queue-host").getOrElse("localhost"),Configgy.config.getInt("queue-port").getOrElse(5566)))
 
     log.info("registering %s".format(name))
     send("READY")

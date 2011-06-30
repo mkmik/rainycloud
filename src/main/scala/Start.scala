@@ -59,6 +59,8 @@ object Main {
     opt("submitter", "run a submitter", { Configgy.config.setBool("submitter", true) })
     opt("web", "run a web server for monitoring, submission interface etc", { Configgy.config.setBool("web", true) })
     intOpt("port", "port for the web server", { v: Int => Configgy.config.setInt("web-port", v) })
+    intOpt("queue-port", "port for the queue", { v: Int => Configgy.config.setInt("queue-port", v) })
+    opt("queue-host", "host for the queue (workers connects to this address)", { v: String => Configgy.config.setString("queue-host", v) })
   }
 
   def parseArgs(args: Array[String]) = parser.parse(args)
