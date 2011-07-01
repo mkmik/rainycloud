@@ -53,6 +53,7 @@ object COMPSsSpec extends Specification with Mockito {
 
     }
 
+    /*
     val injector = Guice createInjector TestModule()
 
     val compss = injector.instance[COMPSsGenerator]
@@ -65,6 +66,7 @@ object COMPSsSpec extends Specification with Mockito {
 
       there was one(backend).computeInPartition(partition)
     }
+    */
   }
 
   "static compss wrapper" should {
