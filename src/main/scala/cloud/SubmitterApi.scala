@@ -31,7 +31,7 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
   post("/submit") {
     log.info("posted")
 
-    val job = Submitter.spawnTest()
+    val job = SubmitterTester.spawnTest()
     val id = job.id
 
     """{"error": null,"id": "%s"}""".format(id)

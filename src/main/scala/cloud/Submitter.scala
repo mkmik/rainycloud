@@ -7,17 +7,11 @@ import net.lag.configgy.{ Config, Configgy }
 
 import akka.agent.Agent
 
-object Submitter extends App {
+object Submitter {
   private val log = Logger(Submitter getClass)
 
   val js = new ZeromqJobSubmitter()
 
-  if (!Configgy.config.getBool("web").getOrElse(false)) {
-    Thread.sleep(4000)
-    log.info("SENDING COMMAND storm")
-
-    runTest()
-  }
 
   val jobs = Agent(Map[String, JobSubmitter.Job]())
   def workers = js.workers
@@ -38,12 +32,30 @@ object Submitter extends App {
   }
 
 
+  def init = {
+    println("IIIIIIIIIIIIIIIIIINITIALIZZING %s".format(js))
+  }
+
+}
+
+object SubmitterTester extends App {
+  private val log = Logger(Submitter getClass)
+
+
+  if (!Configgy.config.getBool("web").getOrElse(false)) {
+    Thread.sleep(4000)
+    log.info("SENDING COMMAND storm")
+
+    runTest()
+  }
+
+
   def spawnTest() = {
-    val job = js.newJob()
+    val job = Submitter.js.newJob()
     for (i <- 1 to 100)
-      job.addTask(js.newTaskSpec("wow" + i))
+      job.addTask(Submitter.js.newTaskSpec("wow" + i))
     job.seal()
-    registerJob(job)
+    Submitter.registerJob(job)
     job
   }
 
@@ -62,3 +74,4 @@ object Submitter extends App {
   }
 
 }
+

@@ -87,7 +87,7 @@ object Main {
     }
 
     if (conf.getBool("submitter").getOrElse(false)) {
-      cloud.Submitter.main(args)
+      cloud.SubmitterTester.main(args)
       return
     }
 
