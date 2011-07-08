@@ -24,9 +24,13 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
     contentType = "application/json"
   }
 
-  override def contextPath = "/api"
+  override def contextPath = getServletConfig().getServletContext().getContextPath() + "/api"
 
   val style = """ """
+
+  get("/") {
+    redirect(getServletConfig().getServletContext().getContextPath() + "/submitter/")
+  }
 
   post("/submit") {
     log.info("posted")

@@ -84,6 +84,9 @@ mainClass in (Compile, packageBin) := Some("it.cnr.aquamaps.Main")
 // we can customize the run
 mainClass in (Compile, run) := Some("it.cnr.aquamaps.Main")
 
+// we can customize the run
+mainClass in (Compile, assembly) := Some("it.cnr.aquamaps.Main")
+
 
 
 libraryDependencies ++= Seq(
