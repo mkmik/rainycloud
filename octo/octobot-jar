@@ -1,0 +1,4 @@
+#!/bin/bash
+PROJECT=$(dirname $0)/..
+
+OCTOBOT_TASKS=$PROJECT/target/scala_2.8.1/rainycloud_2.8.1-1.0.jar ./octobot

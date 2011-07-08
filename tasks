@@ -1,0 +1,22 @@
+* technical meeting rome
+** reports etc
+*** fetch documentation
+**** architecture spec
+**** ignacio slides
+*** TODO develop our scenario slides
+    DEADLINE: <2011-06-06 Mon>
+**** graphical schema (same color keys and nomenclature)
+**** measure benefits (time, cpu, CO2, etc)
+**** graphs ofconsumtion from PM6, PM12
+***** local
+***** azure
+** code
+*** fix rainyclod azure (paths)
+*** implement azure java client
+*** integrate gianpaolo's code
+*** export current performance counters
+*** implement octobot/zeromq local cloud worker
+* azure doc
+** cannot replace existing jobs, new version have to be submitted
+** have to manually remove old version of jobs
+

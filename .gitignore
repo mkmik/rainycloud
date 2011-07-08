@@ -1,0 +1,17 @@
+*~
+lib_managed/
+project/boot/
+project/build/target/
+project/plugins/project/build.properties
+src_managed/
+target/
+*.eml
+*.iml
+*.ipr
+*.iws
+.*.sw?
+logs
+.sass-cache
+src/main/webapp/javascripts/cumino.js
+.emacs.desktop*
+doc

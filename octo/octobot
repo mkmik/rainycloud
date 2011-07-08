@@ -1,0 +1,34 @@
+#!/bin/bash
+PROJECT=$(dirname $0)/..
+# Specify the path to the jar or classes containing your tasks.
+MY_TASKS=${OCTOBOT_TASKS-$PROJECT/target/scala_2.8.1/classes}
+
+# Set any options you'd like to pass to the JVM here.
+options[0]="configFile=`pwd`/config.yml"
+options[1]="log4j.configuration=`pwd`/log4j.properties"
+
+# You shouldn't need to touch anything below
+# this line, but feel free to mess around.
+JVM_OPTS="-server"
+CLASSPATH="jar/octobot.jar:$PROJECT/project/boot/scala-2.8.1/lib/scala-library.jar:$PROJECT/lib/*:$PROJECT/lib_managed/scala_2.8.1/compile/*"
+EXECUTABLE="com.urbanairship.octobot.Octobot"
+
+for i in "${options[@]}"
+do
+  JVM_OPTS="$JVM_OPTS -D$i "
+done
+
+JREBEL=${JREBEL-"$HOME/bin/ZeroTurnaround/JRebel/jrebel.jar"}
+if [ -e "$JREBEL" ]; then
+  JREBEL_AGENT="-noverify -javaagent:$JREBEL"
+fi
+
+echo -e "Launching Octobot...\n"
+export JVM_OPTS="$JVM_OPTS $JREBEL_AGENT"
+exec java $JVM_OPTS -cp $MY_TASKS:$CLASSPATH $EXECUTABLE
+
+# can be run also with 'scala' but it requires scala to be installed. Don't remember the actual advantages
+# probably better integration with jrebel, anyway, useful only during development.
+
+#export JAVA_OPTS=$JVM_OPTS
+#exec scala -classpath $MY_TASKS:$CLASSPATH $EXECUTABLE
