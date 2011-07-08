@@ -1,0 +1,16 @@
+Changes by version:
+===================
+
+0.1.1
+=====
+
+Using fixed random seed for unit testing
+Avoid using babudb as it works only when the partitions are prefix coded. Overhead of reloading csv is low when the job takes 60 secs though.
+Added "huge-ranges.txt" file, with few big partitions, so that each job runs for about 1 minute.
+
+0.1.0
+=====
+
+using git flow
+implement object passing for COMPSs
+

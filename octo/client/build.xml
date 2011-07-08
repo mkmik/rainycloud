@@ -1,0 +1,27 @@
+<project name="demo">
+  <!--
+  <classpath id="deps">
+	<fileset dir="../jar">
+	  <include name="**/*.jar" />
+	</fileset>
+  </classpath>
+  -->
+
+
+  <target name="build">
+	<javac destdir="bin" srcdir="src">
+	  <classpath>
+		<fileset dir="../jar">
+		  <include name="**/*.jar" />
+		</fileset>
+	  </classpath>
+	</javac>
+  </target>
+
+  <target name="jar" depends="build">
+	<jar destfile="../tasks.jar">
+	  <fileset dir="bin" includes="**/*.*">
+	  </fileset>
+	</jar>
+  </target>
+</project>
