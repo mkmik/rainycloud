@@ -50,7 +50,7 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
         """{"error" : "unknown job"}"""
       case Some(job) =>
         val status = if (job.completed) "DONE" else "RUNNING"
-        val metrics = if (job.completed) """""""" else buildMetrics(job)
+        val metrics = if (job.completed) "{}" else buildMetrics(job)
         val completion = (job.completedTasks: Double) * 100.0 / job.totalTasks
 
         """{"id":"%s","status":"%s","completion":%s,"metrics":%s}""".format(id, status, completion, metrics)
@@ -58,7 +58,7 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
   }
 
   def buildMetrics(job: Job) = {
-    """ {"load":[{"resId":"W0","value":82.374146}],"throughput":[1308157425388,2722647]} """"
+    """ {"load":[{"resId":"W0","value":82.374146}],"throughput":[1308157425388,2722647]} """
   }
 
 }
