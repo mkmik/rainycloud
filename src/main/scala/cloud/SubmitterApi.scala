@@ -58,7 +58,7 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
   }
 
   def buildMetrics(job: Job) = {
-    """ {"load":[{"resId":"W0","value":82.374146}],"throughput":[1308157425388,2722647]} """"
+    """ {"load":[{"resId":"W0","value":82.374146}],"throughput":[1308157425388,2722647]} """
   }
 
 }
