@@ -16,10 +16,10 @@ Here is a quick guide to install the sbt launcher.
 
     $ cd ~/bin
     $ wget http://simple-build-tool.googlecode.com/files/sbt-launch-0.7.5.RC0.jar
-    $ echo 'java -Xmx512M -jar `dirname $0`/sbt-launch-0.7.5.RC0.jar "$@"' >sbt
+    $ wget http://typesafe.artifactoryonline.com/typesafe/ivy-releases/org.scala-tools.sbt/sbt-launch/0.10.0/sbt-launch.jar
+    $ echo 'java -Xmx512M -jar `dirname $0`/sbt-launch.jar "$@"' >sbt
     $ chmod u+x sbt
-    
-(I'm using 0.7.5.RC0, I don't know if it works with the sbt-launcher 0.7.4, probably it will)
+   
 
 Then in order to build it, simply run:
 
