@@ -45,7 +45,8 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
 
   val style = """ """
 
-  override def contextPath = "/submitter"
+  override def contextPath = getServletConfig().getServletContext().getContextPath() + "/submitter"
+
 
   def render(content: Seq[Node]) = {
     <html>
@@ -85,6 +86,8 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
     contentType = ct
     io.Source.fromInputStream(getClass().getResourceAsStream(name)).mkString
   }
+
+  Submitter.init
 
   get("/stylesheets/site.css") { renderFile("/stylesheets/site.css") }
   get("/javascripts/:name") { renderFile("/javascripts/"+params("name"), "text/javascript") }
@@ -150,7 +153,7 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
 
   get("/submit-test") {
     log.info("submitting test jobs")
-    Submitter.spawnTest()
+    SubmitterTester.spawnTest()
     redirect(url("/"))
   }
 
