@@ -42,6 +42,7 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
 
   }
 
+  /* return status for monitoring graph */
   get("/status/:id") {
     val id = params("id")
     val job = Submitter.jobs().get(id)
