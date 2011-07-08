@@ -18,14 +18,15 @@ object HSPECEmitterSpec extends Specification with Mockito {
           bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter("/tmp/hspec.csv.gz"))
           bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]]
           bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]]
+          bind[CSVSerializer].to[CompatCSVSerializer]
         }
       }
 
       val injector = Guice createInjector TestModule()
       val emitter = injector.instance[Emitter[HSPEC]]
                                       
-      emitter.emit(new HSPEC("t1", "c1"));
-      emitter.emit(new HSPEC("t2", "c2"));
+      emitter.emit(new HSPEC("t1", "c1", 0, false, false, 0, 0, 0));
+      emitter.emit(new HSPEC("t2", "c2", 0, false, false, 0, 0, 0));
       emitter.flush
     }
   }
