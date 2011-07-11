@@ -9,11 +9,17 @@ from thrift.transport import TTransport
 from thrift.protocol import TBinaryProtocol
 
 import pymongo, MySQLdb
+import psycopg2
 
 MYSQL_USER='aquamaps'
 MYSQL_PWD='aquamaps'
 MYSQL_DB='aquamaps'
 MYSQL_HOST='localhost'
+
+PSQL_USER='utente'
+PSQL_PWD='d4science'
+PSQL_DB='aquamapsorgupdated'
+PSQL_HOST='dbtest.research-infrastructures.eu'
 
 CASSANDRA_HOST='127.0.0.1'
 CASSANDRA_PORT='9160'
@@ -50,7 +56,9 @@ def iterate_input_fs(dirName):
 def iterate_mysql_hcaf():
     db = MySQLdb.connect(host=MYSQL_HOST, user=MYSQL_USER, db=MYSQL_DB, passwd=MYSQL_PWD)
     cursor = db.cursor()
-    cursor.execute("SELECT s.CsquareCode,s.OceanArea,s.CenterLat,s.CenterLong,FAOAreaM,DepthMin,DepthMax,SSTAnMean,SBTAnMean,SalinityMean, SalinityBMean,PrimProdMean,IceConAnn,LandDist,s.EEZFirst,s.LME,d.DepthMean FROM HCAF_S as s INNER JOIN HCAF_D as d ON s.CSquareCode=d.CSquareCode where oceanarea > 0")
+    #cursor.execute("SELECT s.CsquareCode,s.OceanArea,s.CenterLat,s.CenterLong,FAOAreaM,DepthMin,DepthMax,SSTAnMean,SBTAnMean,SalinityMean, SalinityBMean,PrimProdMean,IceConAnn,LandDist,s.EEZFirst,s.LME,d.DepthMean FROM HCAF_S as s INNER JOIN HCAF_D as d ON s.CSquareCode=d.CSquareCode where oceanarea > 0")
+    cursor.execute("SELECT s.CsquareCode,s.OceanArea,s.CenterLat,s.CenterLong,d.FAOAreaM,DepthMin,DepthMax,SSTAnMean,SBTAnMean,SalinityMean, SalinityBMean,PrimProdMean,IceConAnn,d.LandDist,s.EEZFirst,s.LME,d.DepthMean FROM HCAF_S as s INNER JOIN HCAF_D as d ON s.CSquareCode=d.CSquareCode where d.oceanarea > 0")
+
 
     return cursor.fetchall()
 
