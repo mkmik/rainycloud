@@ -19,7 +19,7 @@ class RandomHSpecAlgorithm extends HspecAlgorithm {
 
   override def compute(hcaf: Iterable[HCAF], hspen: HSPEN): Iterable[HSPEC] = {
     hcaf.flatMap { hcaf =>
-      if (random.nextInt(30) == 0)
+      if (random.nextInt(12) == 0)
         List(new HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = random.nextInt(10000),
           inBox = random.nextBoolean, inFao = random.nextBoolean,
           lme = random.nextInt(10), eez = random.nextInt(10)))
