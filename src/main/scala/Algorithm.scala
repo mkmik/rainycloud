@@ -86,32 +86,32 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
    the ones that defaults frequently first. */
   @inline
   final def computeProbability(hcaf: HCAF, hspen: HSPEN): Double = {
-    log.info("computing prob for %s and %s".format(hcaf.details, hspen.details));
+    // log.info("computing prob for %s and %s".format(hcaf.details, hspen.details));
 
     val landValue = 1.0
 
     val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
-    log.info("depth value %s".format(depthValue))
+    // log.info("depth value %s".format(depthValue))
     if (depthValue == 0)
       return 0
 
     val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
-    log.info("sst value %s".format(sstValue))
+    // log.info("sst value %s".format(sstValue))
     if (sstValue == 0)
       return 0
 
     val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
-    log.info("prim prod value %s".format(primaryProductsValue))
+    // log.info("prim prod value %s".format(primaryProductsValue))
     if (primaryProductsValue == 0)
       return 0
 
     val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
-    log.info("salinity value %s".format(salinityValue))
+    // log.info("salinity value %s".format(salinityValue))
     if (salinityValue == 0)
       return 0
 
     val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
-    log.info("sea ice concentration %s".format(seaIceConcentration))
+    // log.info("sea ice concentration %s".format(seaIceConcentration))
     if (seaIceConcentration == 0)
       return 0
 

@@ -117,7 +117,7 @@ case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int
   var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
   var meanDepth: Boolean) extends Keyed {
   override def toString() = "HSPEN(%s)".format(speciesId)
-  def details() = "HSPEN(%s,%s)".format(speciesId, layer)
+  def details() = "HSPEN(%s,%s,%s)".format(speciesId, layer, meanDepth)
 
   def key = speciesId
 }
