@@ -42,7 +42,8 @@ case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: 
   var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed {
 
   override def toString() = "HCAF(%s)".format(csquareCode)
-
+  def details() = "HSPEC(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(csquareCode, centerLat, centerLong, faoAreaM, depth.min, depth.max, depth.mean, sstAnMean, sbtAnMean, salinityMean, salinityBMean,
+                                                           primProdMean, iceConnAnn, landDist, eezFirst, lme)
   def key = csquareCode
 }
 
@@ -116,6 +117,7 @@ case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int
   var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
   var meanDepth: Boolean) extends Keyed {
   override def toString() = "HSPEN(%s)".format(speciesId)
+  def details() = "HSPEN(%s,%s)".format(speciesId, layer)
 
   def key = speciesId
 }

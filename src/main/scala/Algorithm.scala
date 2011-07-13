@@ -5,6 +5,8 @@ import org.geoscript.geometry._
 
 import scala.collection.mutable.ListBuffer
 
+import org.apache.log4j.Logger
+
 /*! The core computation of a `HSPEC` row from a pair of `HCAF` and `HSPEN` rows is defined in this trait. */
 trait HspecAlgorithm {
   def compute(hcaf: Iterable[HCAF], hspen: HSPEN): Iterable[HSPEC]
@@ -47,6 +49,8 @@ class AllHSpecAlgorithm extends HspecAlgorithm {
 
 /*! This is the current (real) algorithm as ported from the FAO PHP code. */
 class CompatHSpecAlgorithm extends HspecAlgorithm {
+  private val log = Logger.getLogger(this.getClass);
+
   val random: Random = new Random(123)
 
 
@@ -82,25 +86,32 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
    the ones that defaults frequently first. */
   @inline
   final def computeProbability(hcaf: HCAF, hspen: HSPEN): Double = {
+    log.info("computing prob for %s and %s".format(hcaf.details, hspen.details));
+
     val landValue = 1.0
 
     val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
+    log.info("depth value %s".format(depthValue))
     if (depthValue == 0)
       return 0
 
     val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
+    log.info("sst value %s".format(sstValue))
     if (sstValue == 0)
       return 0
 
     val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
+    log.info("prim prod value %s".format(primaryProductsValue))
     if (primaryProductsValue == 0)
       return 0
 
     val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
+    log.info("salinity value %s".format(salinityValue))
     if (salinityValue == 0)
       return 0
 
     val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
+    log.info("sea ice concentration %s".format(seaIceConcentration))
     if (seaIceConcentration == 0)
       return 0
 
@@ -123,7 +134,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       1.0
     else if (tempFld < temp.min)
       0.0
-    else if (tempFld >= temp.min && tempFld < temp.prefMin)
+    else if (tempFld >= temp.min && tempFld < temp.prefMin) 
       (tempFld - temp.min) / (temp.prefMin - temp.min)
     else if (tempFld >= temp.prefMin && tempFld <= temp.prefMax)
       1.0
