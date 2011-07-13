@@ -154,6 +154,8 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     else
       CellEnvelope(_hcafDepth.min, _hcafDepth.max, _hcafDepth.mean)
 
+//    log.info("hcafDepth: %s, pelagic: %s, hspenDepth: %s, hspenMeanDepth: %s".format(hcafDepth, pelagic, hspenDepth, hspenMeanDepth))
+
     // Check on hspenMeanDepth added from HSPEC version 2 (used from release 1.7)
     if (hspenDepth.min == -9999)
       1.0
@@ -163,7 +165,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       0.0
     else if ((hcafDepth.max < hspenDepth.prefMin) && (hcafDepth.max >= hspenDepth.min))
       (hcafDepth.max - hspenDepth.min) / (hspenDepth.prefMin - hspenDepth.min)
-    else if (pelagic)
+    else if (pelagic && !hspenMeanDepth)
       1.0
     else if (hspenDepth.prefMax != -9999) {
       if (hcafDepth.max >= hspenDepth.prefMin && hcafDepth.min <= hspenDepth.prefMax)
