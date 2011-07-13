@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="1.0">
+	<info organisation="xml-apis"
+		module="xml-apis-xerces"
+		revision="2.7.1"
+		status="release"
+		publication="20110201121208"
+		default="true"
+	/>
+	<configurations>
+		<conf name="default" visibility="public"/>
+	</configurations>
+	<publications>
+		<artifact name="xml-apis-xerces" type="jar" ext="jar" conf="default"/>
+	</publications>
+</ivy-module>
