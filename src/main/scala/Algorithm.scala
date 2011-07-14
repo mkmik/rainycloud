@@ -61,11 +61,12 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
 
     val res = new ListBuffer[HSPEC]()
     hcaf foreach { hcaf =>
-      val inFao = faoAreas contains hcaf.faoAreaM
+      //val inFao = faoAreas contains hcaf.faoAreaM
       //val inFao = random.nextInt(10) < 9
+      val inFao= true
       if (inFao) {
-        val inBox = boundary contains Point(hcaf.centerLat, hcaf.centerLong)
-        //val inBox = true
+        //val inBox = boundary contains Point(hcaf.centerLat, hcaf.centerLong)
+        val inBox = true
 
         val preparedSeaIce = -9999
 
@@ -74,7 +75,11 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
           if (probability != 0)
             res += HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = probability,
                          inBox = inBox, inFao = inFao, lme = hcaf.lme, eez = hcaf.eezFirst)
+        } else {
+          log.info("Ignored: not in box")
         }
+      } else {
+          log.info("Ignored: not in fao: hspec(%s) vs hcaf(%s)".format(faoAreas, hcaf.faoAreaM))
       }
 
     }
@@ -86,32 +91,32 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
    the ones that defaults frequently first. */
   @inline
   final def computeProbability(hcaf: HCAF, hspen: HSPEN): Double = {
-    // log.info("computing prob for %s and %s".format(hcaf.details, hspen.details));
+    //log.info("computing prob for %s and %s".format(hcaf.details, hspen.details));
 
     val landValue = 1.0
 
     val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
-    // log.info("depth value %s".format(depthValue))
+    //log.info("depth value %s".format(depthValue))
     if (depthValue == 0)
       return 0
 
     val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
-    // log.info("sst value %s".format(sstValue))
+    //log.info("sst value %s".format(sstValue))
     if (sstValue == 0)
       return 0
 
     val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
-    // log.info("prim prod value %s".format(primaryProductsValue))
+    //log.info("prim prod value %s".format(primaryProductsValue))
     if (primaryProductsValue == 0)
       return 0
 
     val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
-    // log.info("salinity value %s".format(salinityValue))
+    //log.info("salinity value %s".format(salinityValue))
     if (salinityValue == 0)
       return 0
 
-    val seaIceConcentration = 1.0 // TODO: requires data model change for avoiding join
-    // log.info("sea ice concentration %s".format(seaIceConcentration))
+    val seaIceConcentration = getIceConcentration(hcaf.iceConnAnn, hspen.iceConn)
+    //log.info("sea ice concentration %s".format(seaIceConcentration))
     if (seaIceConcentration == 0)
       return 0
 
@@ -223,6 +228,15 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       (hspenPrimProd.max - hcafPrimProdMean) / (hspenPrimProd.max - hspenPrimProd.prefMax)
     else
       0.0
+  }
+
+  @inline
+  final def getIceConcentration(iceConnAnn: Double, iceConn: Envelope) = {
+    if(iceConn.min == -9999)
+      1.0
+    else {
+      0.0
+    }
   }
 
   def rectangle(n: Double, s: Double, w: Double, e: Double) = Polygon(LineString(Point(n, w), Point(n, e), Point(s, e), Point(s, w), Point(n, w)), Nil)
