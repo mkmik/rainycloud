@@ -39,11 +39,11 @@ object CellEnvelope {
 case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: Int,
   var depth: CellEnvelope,
   var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var salinityBMean: Double,
-  var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed {
+  var primProdMean: Double, var iceConAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed {
 
   override def toString() = "HCAF(%s)".format(csquareCode)
   def details() = "HSPEC(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(csquareCode, centerLat, centerLong, faoAreaM, depth.min, depth.max, depth.mean, sstAnMean, sbtAnMean, salinityMean, salinityBMean,
-                                                           primProdMean, iceConnAnn, landDist, eezFirst, lme)
+                                                           primProdMean, iceConAnn, landDist, eezFirst, lme)
   def key = csquareCode
 }
 
@@ -92,7 +92,7 @@ object HCAF extends ParseHelper {
       get("SalinityMean"),
       get("SalinityBMean"),
       get("PrimProdMean"),
-      get("IceConnAnn"),
+      get("IceConAnn"),
       get("LandDist"),
       get("EEZFirst"),
       get("LME"))
@@ -115,7 +115,7 @@ object Envelope {
 case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int],
   var pelagic: Boolean, var nMostLat: Double, var sMostLat: Double, var wMostLong: Double, var eMostLong: Double,
   var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
-  var meanDepth: Boolean, var iceConn: Envelope) extends Keyed {
+  var meanDepth: Boolean, var iceCon: Envelope) extends Keyed {
   override def toString() = "HSPEN(%s)".format(speciesId)
   def details() = "HSPEN(%s,%s,%s)".format(speciesId, layer, meanDepth)
 

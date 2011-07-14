@@ -115,7 +115,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     if (salinityValue == 0)
       return 0
 
-    val seaIceConcentration = getIceConcentration(hcaf.iceConnAnn, hspen.iceConn)
+    val seaIceConcentration = getIceConcentration(hcaf.iceConAnn, hspen.iceCon)
     //log.info("sea ice concentration %s".format(seaIceConcentration))
     if (seaIceConcentration == 0)
       return 0
@@ -231,11 +231,28 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
   }
 
   @inline
-  final def getIceConcentration(iceConnAnn: Double, iceConn: Envelope) = {
-    if(iceConn.min == -9999)
+  final def getIceConcentration(iceConAnn: Double, iceCon: Envelope) = {
+//    log.info("iceConAnn: %s, iceCon: %s".format(iceConAnn, iceCon))
+
+    if (iceCon.min == -9999)
       1.0
     else {
-      0.0
+      if (iceConAnn == -9999) 
+        0.0
+      else {
+        if (iceConAnn < iceCon.min)
+          0
+        else if (iceConAnn >= iceCon.min && iceConAnn < iceCon.prefMin) // redundant 'and' lhs
+          (iceConAnn - iceCon.min) / (iceCon.prefMin - iceCon.min)
+        else if (iceConAnn >= iceCon.prefMin && iceConAnn <= iceCon.prefMax)
+          1.2
+        else if (iceConAnn > iceCon.prefMax && iceConAnn <= iceCon.max)
+          (iceCon.max - iceConAnn) / (iceCon.max - iceCon.prefMax)
+        else if (iceConAnn > iceCon.max) // redundant fall through
+          0
+        else 
+          0
+      }
     }
   }
 
