@@ -96,7 +96,9 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     val landValue = 1.0
 
     val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
-    //log.info("depth value %s".format(depthValue))
+    val newDepthValue = newGetDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
+    if(depthValue != newDepthValue)
+      log.info("depth value: old: %s new: %s".format(depthValue, newDepthValue))
     if (depthValue == 0)
       return 0
 
@@ -152,14 +154,74 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
   @inline
   final def xgetDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean) = 1.0
 
+  // this is obsolete, is here only to check if we have some deviations from the php algo
+  @inline
+  final def translatedGetDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean) = {
+
+    if(hspenDepth.min == -9999) {
+      1
+    } else {
+      val hcafDepth = if (hspenMeanDepth)
+                        CellEnvelope(_hcafDepth.mean, _hcafDepth.mean, _hcafDepth.mean)
+                      else
+                        CellEnvelope(_hcafDepth.min, _hcafDepth.max, _hcafDepth.mean)
+
+      if (hcafDepth.max == -9999)
+        1
+      else {
+        if (hcafDepth.max < hspenDepth.min)
+          0
+        else {
+          if (hcafDepth.max < hspenDepth.prefMin && hcafDepth.max >= hspenDepth.min) {
+            (hcafDepth.max - hspenDepth.min) / (hspenDepth.prefMin - hspenDepth.min)
+          }
+          else {
+            if (pelagic && !hspenMeanDepth)
+              1
+            else {
+              if (hcafDepth.max >= hspenDepth.prefMin && hcafDepth.min <= hspenDepth.prefMax)
+                1
+              else {
+                if (hspenDepth.prefMax != -9999) {
+                  if (hcafDepth.min >= hspenDepth.prefMax) {
+                    var resDepth = -1.0;
+
+                    //to correct div by zero
+                    if ((hspenDepth.max - hspenDepth.prefMax) != 0) {
+                      resDepth = (hspenDepth.max - hcafDepth.min) / (hspenDepth.max - hspenDepth.prefMax)
+                    } else 
+                      resDepth = 0
+                    
+                    // ATTENTION
+                    if ((hspenDepth.max - hspenDepth.prefMax) != 0)
+                      resDepth = (hspenDepth.max - hcafDepth.min) / (hspenDepth.max - hspenDepth.prefMax)
+                    else 
+                      resDepth = 0
+                    
+                    if(resDepth < 0)
+                      resDepth = 0
+                    
+                    resDepth
+                  } else {
+                    0
+                  }
+                } else {
+                  0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
   @inline
   final def getDepth(_hcafDepth: CellEnvelope, pelagic: Boolean, hspenDepth: Envelope, hspenMeanDepth: Boolean) = {
     val hcafDepth = if (hspenMeanDepth)
       CellEnvelope(_hcafDepth.mean, _hcafDepth.mean, _hcafDepth.mean)
     else
       CellEnvelope(_hcafDepth.min, _hcafDepth.max, _hcafDepth.mean)
-
-//    log.info("hcafDepth: %s, pelagic: %s, hspenDepth: %s, hspenMeanDepth: %s".format(hcafDepth, pelagic, hspenDepth, hspenMeanDepth))
 
     // Check on hspenMeanDepth added from HSPEC version 2 (used from release 1.7)
     if (hspenDepth.min == -9999)
