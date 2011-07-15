@@ -128,7 +128,11 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     if (seaIceConcentration == 0)
       return 0
 
-    return landValue * sstValue * depthValue * salinityValue * primaryProductsValue * landDistValue * seaIceConcentration
+    val prob = landValue * sstValue * depthValue * salinityValue * primaryProductsValue * landDistValue * seaIceConcentration
+    if(prob < 0.01)
+      0
+    else
+      prob
   }
 
   @inline
