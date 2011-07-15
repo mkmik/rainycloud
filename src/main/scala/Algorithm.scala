@@ -93,7 +93,8 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
   final def computeProbability(hcaf: HCAF, hspen: HSPEN): Double = {
     //log.info("computing prob for %s and %s".format(hcaf.details, hspen.details));
 
-    val landValue = 1.0
+    if(!checkHSpen(hspen))
+      return 0
 
     val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
     val newDepthValue = translatedGetDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
@@ -103,37 +104,53 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
       return 0
 
     val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
-    //log.info("sst value %s".format(sstValue))
+    // log.info("sst value %s".format(sstValue))
     if (sstValue == 0)
       return 0
 
     val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
-    //log.info("prim prod value %s".format(primaryProductsValue))
+    // log.info("prim prod value %s".format(primaryProductsValue))
     if (primaryProductsValue == 0)
       return 0
 
     val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
-    //log.info("salinity value %s".format(salinityValue))
+    // log.info("salinity value %s".format(salinityValue))
     if (salinityValue == 0)
       return 0
 
     val landDistValue = getLandDist(hcaf.landDist, hspen.landDist, hspen.landDistYN)
-    //log.info("salinity value %s".format(salinityValue))
+    // log.info("land dist value %s".format(landDistValue))
     if (landDistValue == 0)
       return 0
 
 
     val seaIceConcentration = getIceConcentration(hcaf.iceConAnn, hspen.iceCon)
-    //log.info("sea ice concentration %s".format(seaIceConcentration))
+    // log.info("sea ice concentration %s".format(seaIceConcentration))
     if (seaIceConcentration == 0)
       return 0
 
-    val prob = landValue * sstValue * depthValue * salinityValue * primaryProductsValue * landDistValue * seaIceConcentration
-    if(prob < 0.01)
+    val prob = sstValue * depthValue * salinityValue * primaryProductsValue * landDistValue * seaIceConcentration
+    //log.info("computed prob %s".format(prob))
+    if(prob < 0.01) {
+      //log.info("trimming prob %s".format(prob))
       0
-    else
+    } else {
+      //log.info(" -- outputed with prob %s (%s, %s)".format(prob, hcaf, hspen))
       prob
+    }
   }
+
+  @inline
+  final def checkHSpen(hspen: HSPEN) = {
+    //    log.info("checking hspen %s   -> landDist.max %s".format(hspen.details, hspen.landDist.max))
+    checkEnvelope(hspen.iceCon) // && checkEnvelope(hspen.landDist)
+  }
+
+  @inline
+  final def checkEnvelope(env: Envelope) = {
+    env.min != -9999 && env.max != -9999 && env.prefMin != -9999 && env.prefMax != -9999
+  }
+
 
   @inline
   final def xgetSST(sstAnMean: Double, sbtAnMean: Double, temp: Envelope, layer: String) = 1.0
@@ -342,7 +359,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
         else if (iceConAnn >= iceCon.min && iceConAnn < iceCon.prefMin) // redundant 'and' lhs
           (iceConAnn - iceCon.min) / (iceCon.prefMin - iceCon.min)
         else if (iceConAnn >= iceCon.prefMin && iceConAnn <= iceCon.prefMax)
-          1.2
+          1
         else if (iceConAnn > iceCon.prefMax && iceConAnn <= iceCon.max)
           (iceCon.max - iceConAnn) / (iceCon.max - iceCon.prefMax)
         else if (iceConAnn > iceCon.max) // redundant fall through

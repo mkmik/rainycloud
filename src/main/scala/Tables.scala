@@ -49,7 +49,7 @@ case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: 
 
 trait ParseHelper {
   def parse(value: Option[String]) = value match {
-    case Some("") => 0.0
+    case Some("") => -9999.0
     case Some(x) => x.toDouble
     case None => -9999.0
   }
