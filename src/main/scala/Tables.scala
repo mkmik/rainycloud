@@ -115,7 +115,7 @@ object Envelope {
 case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int],
   var pelagic: Boolean, var nMostLat: Double, var sMostLat: Double, var wMostLong: Double, var eMostLong: Double,
   var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
-  var meanDepth: Boolean, var iceCon: Envelope) extends Keyed {
+  var meanDepth: Boolean, var iceCon: Envelope, var landDistYN: Boolean) extends Keyed {
   override def toString() = "HSPEN(%s)".format(speciesId)
   def details() = "HSPEN(%s,%s,%s)".format(speciesId, layer, meanDepth)
 
@@ -125,9 +125,9 @@ case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int
 object HSPEN extends ParseHelper {
   private val log = Logger.getLogger(this.getClass);
 
-  implicit def makeHspen = HSPEN("", "", Set(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), false, Envelope())
+  implicit def makeHspen = HSPEN("", "", Set(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), false, Envelope(), false)
 
-  val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
+  val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax", "LandDistYN")
 
   def fromTableRow(row: Array[String]): HSPEN = build(Map(columns zip row: _*))
 
@@ -158,7 +158,8 @@ object HSPEN extends ParseHelper {
       getEnvelope("PrimProd"),
       getEnvelope("LandDist"),
       getBool("MeanDepth"),
-      getEnvelope("IceCon"))
+      getEnvelope("IceCon"),
+                    getBool("LandDistYN"))
   }
 
 }

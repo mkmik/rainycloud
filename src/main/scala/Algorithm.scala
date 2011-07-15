@@ -96,7 +96,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     val landValue = 1.0
 
     val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
-    val newDepthValue = newGetDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
+    val newDepthValue = translatedGetDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
     if(depthValue != newDepthValue)
       log.info("depth value: old: %s new: %s".format(depthValue, newDepthValue))
     if (depthValue == 0)
@@ -117,12 +117,18 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     if (salinityValue == 0)
       return 0
 
+    val landDistValue = getLandDist(hcaf.landDist, hspen.landDist, hspen.landDistYN)
+    //log.info("salinity value %s".format(salinityValue))
+    if (landDistValue == 0)
+      return 0
+
+
     val seaIceConcentration = getIceConcentration(hcaf.iceConAnn, hspen.iceCon)
     //log.info("sea ice concentration %s".format(seaIceConcentration))
     if (seaIceConcentration == 0)
       return 0
 
-    return landValue * sstValue * depthValue * salinityValue * primaryProductsValue * seaIceConcentration
+    return landValue * sstValue * depthValue * salinityValue * primaryProductsValue * landDistValue * seaIceConcentration
   }
 
   @inline
@@ -291,6 +297,31 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     else
       0.0
   }
+
+  @inline
+//  final def getLandDist(hspen: HSPEN, hcaf: HCAF) = {
+  final def getLandDist(hcafLandDist: Double, hspenLandDist: Envelope, landDistYN: Boolean) = {
+
+    if (!landDistYN)
+      1
+    else if (hcafLandDist == -9999) {
+      1
+    } else if (hcafLandDist < hspenLandDist.min) {
+      0
+    } else if (hcafLandDist >= hspenLandDist.min && hcafLandDist < hspenLandDist.prefMin) {
+      (hcafLandDist - hspenLandDist.min) / (hspenLandDist.prefMin - hspenLandDist.min)
+    } else if (hspenLandDist.prefMax > 1000) {
+      1
+    } else if (hcafLandDist >= hspenLandDist.prefMin && hcafLandDist < hspenLandDist.prefMax) {
+      1
+    } else if (hcafLandDist >= hspenLandDist.prefMax && hcafLandDist < hspenLandDist.max) {
+      (hspenLandDist.max - hcafLandDist) / (hspenLandDist.max - hspenLandDist.prefMax)
+    } else {
+      0
+    }
+
+  }
+
 
   @inline
   final def getIceConcentration(iceConAnn: Double, iceCon: Envelope) = {
