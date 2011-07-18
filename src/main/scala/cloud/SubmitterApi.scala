@@ -30,7 +30,7 @@ case class WebModule() extends AbstractModule with ScalaModule with RainyCloudMo
   }
 }
 
-class SubmitterApi @Inject() (val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport {
+class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport {
   import JobSubmitter.Job
 
   val log = Logger(classOf[SubmitterApi])
@@ -49,6 +49,8 @@ class SubmitterApi @Inject() (val submitter: Submitter) extends ScalatraServlet 
 
   post("/submit") {
     log.info("posted")
+
+    launcher.launch
 
     //val job = SubmitterTester.spawnTest()
     //val id = job.id
