@@ -71,12 +71,21 @@ object Main {
     if (!parser.parse(args))
       return
 
-    // factorize this via Guice etc
+
+    if (conf.getBool("web").getOrElse(false)) {
+      conf.setList("modules", "Web" :: conf.getList("modules").toList)
+    }
+
+    val injector = createInjector(conf)
 
     //  "/submitter/socket.io/*" -> new ZeromqMonitoringSocket()
     if (conf.getBool("web").getOrElse(false)) {
       //WebServer.run(Seq("/submitter/*" -> new ZeromqMonitoring(), "/socket.io/*" -> new ZeromqMonitoringSocket()))
-      WebServer.run(Seq("/submitter/*" -> new ZeromqMonitoring(), "/api/*" -> new cloud.SubmitterApi(), "/socket.io/*" -> new ZeromqMonitoringTest()))
+
+      val submitterApi = injector.instance[cloud.SubmitterApi]
+      val zeromqMonitoring = injector.instance[ZeromqMonitoring]
+
+      WebServer.run(Seq("/submitter/*" -> zeromqMonitoring, "/api/*" -> submitterApi))
 //      WebServer.run(Seq("/submitter/*" -> new ZeromqMonitoring()))
       // WebServer.run(Seq("/socket.io/*" -> new ZeromqMonitoringSocket()), Some(8781))
     }
@@ -86,17 +95,19 @@ object Main {
       return
     }
 
+/*
     if (conf.getBool("submitter").getOrElse(false)) {
       cloud.SubmitterTester.main(args)
       return
     }
+*/
 
-    val injector = createInjector(conf)
+    if (!conf.getBool("web").getOrElse(false)) {
+      val entryPoint = injector.instance[EntryPoint]
+      entryPoint.run
 
-    val entryPoint = injector.instance[EntryPoint]
-    entryPoint.run
-
-    cleanup(injector)
+      cleanup(injector)
+    }
   }
 
   def createInjector(conf: Config) = {
