@@ -24,7 +24,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
   private val log = Logger(classOf[ZeromqJobSubmitter])
 
-  class ZeromqJob extends Job {
+  class ZeromqJob extends JobSubmitter.Job {
     val id = UUID.randomUUID.toString
 
     class JobActor extends Actor {
