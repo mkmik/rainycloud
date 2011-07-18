@@ -15,7 +15,25 @@ import scala.xml.{ Text, Node }
 import net.lag.logging.Logger
 import net.lag.configgy.{ Config, Configgy }
 
-class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
+import com.google.inject._
+import uk.me.lings.scalaguice.InjectorExtensions._
+import com.google.inject.name._
+import uk.me.lings.scalaguice.ScalaModule
+
+case class WebModule() extends AbstractModule with ScalaModule with RainyCloudModule {
+  print("INSTANTIATING WEB MODULE %s".format(this))
+
+  def configure() {
+    print("running configure for WEBMODULE %s".format(this))
+
+    bind[Submitter].in[Singleton]
+    bind[SubmitterApi].in[Singleton]
+    bind[JobSubmitter].to[ZeromqJobSubmitter].in[Singleton]
+    bind[ZeromqMonitoring].in[Singleton]
+  }
+}
+
+class SubmitterApi @Inject() (val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport {
   import JobSubmitter.Job
 
   val log = Logger(classOf[SubmitterApi])
@@ -35,9 +53,9 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
   post("/submit") {
     log.info("posted")
 
-    val job = SubmitterTester.spawnTest()
-    val id = job.id
-
+    //val job = SubmitterTester.spawnTest()
+    //val id = job.id
+    val id = "123"
     """{"error": null,"id": "%s"}""".format(id)
 
   }
@@ -45,7 +63,7 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
   /* return status for monitoring graph */
   get("/status/:id") {
     val id = params("id")
-    val job = Submitter.jobs().get(id)
+    val job = submitter.jobs().get(id)
     job match {
       case None =>
         """{"error" : "unknown job"}"""

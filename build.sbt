@@ -20,6 +20,7 @@ seq(webSettings :_*)
 //  keepAllScala, keepMain("it.cnr.aquamaps.Main")
 //)
 
+scalacOptions += "-unchecked"
 
 // disable updating dynamic revisions (including -SNAPSHOT versions)
 offline := true
