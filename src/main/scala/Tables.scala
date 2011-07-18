@@ -39,16 +39,17 @@ object CellEnvelope {
 case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: Int,
   var depth: CellEnvelope,
   var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var salinityBMean: Double,
-  var primProdMean: Double, var iceConnAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed {
+  var primProdMean: Double, var iceConAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed {
 
   override def toString() = "HCAF(%s)".format(csquareCode)
-
+  def details() = "HSPEC(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(csquareCode, centerLat, centerLong, faoAreaM, depth.min, depth.max, depth.mean, sstAnMean, sbtAnMean, salinityMean, salinityBMean,
+                                                           primProdMean, iceConAnn, landDist, eezFirst, lme)
   def key = csquareCode
 }
 
 trait ParseHelper {
   def parse(value: Option[String]) = value match {
-    case Some("") => 0.0
+    case Some("") => -9999.0
     case Some(x) => x.toDouble
     case None => -9999.0
   }
@@ -91,7 +92,7 @@ object HCAF extends ParseHelper {
       get("SalinityMean"),
       get("SalinityBMean"),
       get("PrimProdMean"),
-      get("IceConnAnn"),
+      get("IceConAnn"),
       get("LandDist"),
       get("EEZFirst"),
       get("LME"))
@@ -114,8 +115,9 @@ object Envelope {
 case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int],
   var pelagic: Boolean, var nMostLat: Double, var sMostLat: Double, var wMostLong: Double, var eMostLong: Double,
   var depth: Envelope, var temp: Envelope, var salinity: Envelope, var primProd: Envelope, var landDist: Envelope,
-  var meanDepth: Boolean) extends Keyed {
+  var meanDepth: Boolean, var iceCon: Envelope, var landDistYN: Boolean) extends Keyed {
   override def toString() = "HSPEN(%s)".format(speciesId)
+  def details() = "HSPEN(%s,%s,%s)".format(speciesId, layer, meanDepth)
 
   def key = speciesId
 }
@@ -123,9 +125,9 @@ case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int
 object HSPEN extends ParseHelper {
   private val log = Logger.getLogger(this.getClass);
 
-  implicit def makeHspen = HSPEN("", "", Set(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), false)
+  implicit def makeHspen = HSPEN("", "", Set(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), false, Envelope(), false)
 
-  val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax")
+  val columns = List("key", "Layer", "SpeciesID", "FAOAreas", "Pelagic", "NMostLat", "SMostLat", "WMostLong", "EMostLong", "DepthMin", "DepthMax", "DepthPrefMin", "DepthPrefMax", "TempMin", "TempMax", "TempPrefMin", "TempPrefMax", "SalinityMin", "SalinityMax", "SalinityPrefMin", "SalinityPrefMax", "PrimProdMin", "PrimProdMax", "PrimProdPrefMin", "PrimProdPrefMax", "IceConMin", "IceConMax", "IceConPrefMin", "IceConPrefMax", "LandDistMin", "LandDistMax", "LandDistPrefMin", "MeanDepth", "LandDistPrefMax", "LandDistYN")
 
   def fromTableRow(row: Array[String]): HSPEN = build(Map(columns zip row: _*))
 
@@ -155,7 +157,9 @@ object HSPEN extends ParseHelper {
       getEnvelope("Salinity"),
       getEnvelope("PrimProd"),
       getEnvelope("LandDist"),
-      getBool("MeanDepth"))
+      getBool("MeanDepth"),
+      getEnvelope("IceCon"),
+                    getBool("LandDistYN"))
   }
 
 }
