@@ -1,4 +1,5 @@
 package it.cnr.aquamaps.cloud
+import akka.actor.ActorRef
 import com.google.gson.Gson
 import it.cnr.aquamaps._
 
@@ -68,6 +69,50 @@ class Launcher @Inject() (val jobSubmitter: JobSubmitter) {
     entryPoint.run
 
     cleanup(injector)
+  }
+
+  def cleanup(injector: Injector) {
+    /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
+    log.info("done")
+    injector.instance[Fetcher[HCAF]].shutdown
+    injector.instance[Loader[HSPEN]].shutdown
+  }
+
+}
+
+///
+
+
+case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModule with ScalaModule with RainyCloudModule {
+  def configure() {
+    // doesn't override
+    //    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz")))
+
+    /*        bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
+     bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]].in[Singleton]
+     */
+    
+    bind[Partitioner].toInstance(new StaticPartitioner(Seq("%s %s".format(taskRequest.partition.start, taskRequest.partition.size)).toIterator))
+  }
+}
+
+
+object TaskLauncher {
+  private val log = Logger(TaskLauncher getClass)
+
+  val gson = new Gson()
+
+  def launch(task: TaskRef, worker: ActorRef) = {
+    println("launching task %s".format(task.id))
+
+    val taskRequest = gson.fromJson(task.id, classOf[TaskRequest])
+
+    val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (TaskLauncherModule(taskRequest), HDFSModule()))
+    val entryPoint = injector.instance[EntryPoint]
+    entryPoint.run
+
+    cleanup(injector)
+    
   }
 
   def cleanup(injector: Injector) {

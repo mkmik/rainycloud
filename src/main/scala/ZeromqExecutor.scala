@@ -17,6 +17,7 @@ import scala.collection.immutable.HashMap
 import scala.collection.immutable.Queue
 
 import net.lag.logging.Logger
+import cloud.TaskLauncher
 
 class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobSubmitterExecutorCommon {
   import Zeromq._
@@ -79,10 +80,11 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
     spawn {
       log.debug("W %s is working for real (mumble mumble)".format(name))
       //        log.debug("W %s is working on step %s of task %s".format(name, i, task))
-      for(i <- 1 to 40) {
-        Thread.sleep(100)
-        worker ! Progress(task, 551, 100)
-      }
+      TaskLauncher.launch(task, worker)
+//      for(i <- 1 to 40) {
+//        Thread.sleep(100)
+//        worker ! Progress(task, 551, 100)
+//      }
       //}
       log.info("W %s finished computing task %s".format(name, task))
       worker ! Finish(task)
