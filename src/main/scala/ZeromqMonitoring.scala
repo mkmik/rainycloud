@@ -18,25 +18,26 @@ import scala.xml.{ Text, Node }
 import net.lag.logging.Logger
 import net.lag.configgy.{ Config, Configgy }
 
+import com.google.inject._
 
 class ZeromqMonitoringTest extends WebSocketServlet with Servlet {
   def doWebSocketConnect(request: HttpServletRequest,
-                               protocol: String) : WebSocket = new TestWebSocket()
+    protocol: String): WebSocket = new TestWebSocket()
 }
 
 class TestWebSocket extends WebSocket {
   val log = Logger(classOf[TestWebSocket])
 
- def onClose (code: Int, message: java.lang.String) {
- }
+  def onClose(code: Int, message: java.lang.String) {
+  }
 
- def onOpen (connection: org.eclipse.jetty.websocket.WebSocket.Connection) {
-   log.info("WEB SOCKET CONNECTED")
- }
+  def onOpen(connection: org.eclipse.jetty.websocket.WebSocket.Connection) {
+    log.info("WEB SOCKET CONNECTED")
+  }
 
 }
 
-class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSupport {
+class ZeromqMonitoring @Inject() (val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport {
   val log = Logger(classOf[ZeromqMonitoring])
 
   beforeAll {
@@ -46,7 +47,6 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
   val style = """ """
 
   override def contextPath = getServletConfig().getServletContext().getContextPath() + "/submitter"
-
 
   def render(content: Seq[Node]) = {
     <html>
@@ -87,10 +87,8 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
     io.Source.fromInputStream(getClass().getResourceAsStream(name)).mkString
   }
 
-  Submitter.init
-
   get("/stylesheets/site.css") { renderFile("/stylesheets/site.css") }
-  get("/javascripts/:name") { renderFile("/javascripts/"+params("name"), "text/javascript") }
+  get("/javascripts/:name") { renderFile("/javascripts/" + params("name"), "text/javascript") }
 
   get("/") {
     render(<div>
@@ -101,7 +99,7 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
                </tr>
                <tr>
                  <td>
-                   { Submitter.queueLength }
+                   { submitter.queueLength }
                  </td>
                </tr>
              </table>
@@ -114,10 +112,10 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
                  <th>Uptime</th>
                </tr>
                {
-                 for ((id, worker) <- Submitter.workers) yield <tr>
+                 for ((id, worker) <- submitter.workers) yield <tr>
                                                                  <td>{ id }</td>
                                                                  <td>{ worker.completed }</td>
-                                                                 <td>{ worker.heartbeatAgo / 1000 } s ago</td>
+                                                                 <td>{ worker.heartbeatAgo / 1000 }s ago</td>
                                                                  <td>{ Utils.approximateTime(worker.uptime) }</td>
                                                                </tr>
                }
@@ -132,7 +130,7 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
                  <th>Actions</th>
                </tr>
                {
-                 for ((id, job) <- Submitter.jobs()) yield <tr>
+                 for ((id, job) <- submitter.jobs()) yield <tr>
                                                              <td>{ id }</td>
                                                              <td>Unknown</td>
                                                              <td>{ job.completedTasks }/{ job.totalTasks }</td>
@@ -153,26 +151,26 @@ class ZeromqMonitoring extends ScalatraServlet with ScalateSupport with UrlSuppo
 
   get("/submit-test") {
     log.info("submitting test jobs")
-    SubmitterTester.spawnTest()
+    //submitterTester.spawnTest()
     redirect(url("/"))
   }
 
   get("/job/:job/delete") {
-    Submitter.deleteJob(params("job"))
+    submitter.deleteJob(params("job"))
     redirect(url("/"))
   }
 
   get("/job/:job/kill") {
-    Submitter.killJob(params("job"))
+    submitter.killJob(params("job"))
     redirect(url("/"))
   }
 
 }
 
-class ZeromqMonitoringSocket extends ScalatraServlet  with SocketIOSupport {
+class ZeromqMonitoringSocket extends ScalatraServlet with SocketIOSupport {
   // socket io
 
- socketio { socket =>
+  socketio { socket =>
     socket.onConnect { connection =>
       println("Connecting chat client [%s]" format connection.clientId)
       try {

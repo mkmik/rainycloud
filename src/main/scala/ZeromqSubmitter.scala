@@ -24,7 +24,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
   private val log = Logger(classOf[ZeromqJobSubmitter])
 
-  class ZeromqJob extends Job {
+  class ZeromqJob extends JobSubmitter.Job {
     val id = UUID.randomUUID.toString
 
     class JobActor extends Actor {
@@ -66,6 +66,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
   }
 
   def newJob() = new ZeromqJob()
+
 
   val socket = context.socket(ZMQ.XREP)
   socket.bind("inproc://client")

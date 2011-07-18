@@ -20,6 +20,7 @@ seq(webSettings :_*)
 //  keepAllScala, keepMain("it.cnr.aquamaps.Main")
 //)
 
+scalacOptions += "-unchecked"
 
 // disable updating dynamic revisions (including -SNAPSHOT versions)
 offline := true
@@ -46,6 +47,7 @@ resolvers += "OpenGeo" at "http://repo.opengeo.org/"
 
 libraryDependencies ++= Seq(
   "com.google.inject" % "guice" % "3.0-rc2",
+  "com.google.inject.extensions" % "guice-servlet" % "3.0-rc2",   
   "uk.me.lings" % "scala-guice_2.8.0" % "0.1",
   "net.lag" % "configgy" % "2.0.0" % "compile", //ApacheV2
   "com.github.scopt" %% "scopt" % "1.0.0-SNAPSHOT",

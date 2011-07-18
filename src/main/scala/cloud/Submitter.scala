@@ -7,11 +7,12 @@ import net.lag.configgy.{ Config, Configgy }
 
 import akka.agent.Agent
 
-object Submitter {
-  private val log = Logger(Submitter getClass)
+import com.google.inject._
+import com.google.inject.util.{ Modules => GuiceModules }
+import uk.me.lings.scalaguice.InjectorExtensions._
 
-  val js = new ZeromqJobSubmitter()
-
+class Submitter @Inject() (val js: JobSubmitter) {
+  private val log = Logger(getClass)
 
   val jobs = Agent(Map[String, JobSubmitter.Job]())
   def workers = js.workers
@@ -31,16 +32,14 @@ object Submitter {
 //    jobs send (_ - id)
   }
 
-
-  def init = {
-    println("IIIIIIIIIIIIIIIIIINITIALIZZING %s".format(js))
-  }
-
 }
 
+/*
 object SubmitterTester extends App {
-  private val log = Logger(Submitter getClass)
+  private val log = Logger(SubmitterTester getClass)
 
+  val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` WebModule())
+  val submitter = injector.instance[Submitter]
 
   if (!Configgy.config.getBool("web").getOrElse(false)) {
     Thread.sleep(4000)
@@ -51,11 +50,11 @@ object SubmitterTester extends App {
 
 
   def spawnTest() = {
-    val job = Submitter.js.newJob()
+    val job = submitter.js.newJob()
     for (i <- 1 to 100)
-      job.addTask(Submitter.js.newTaskSpec("wow" + i))
+      job.addTask(submitter.js.newTaskSpec("wow" + i))
     job.seal()
-    Submitter.registerJob(job)
+    submitter.registerJob(job)
     job
   }
 
@@ -75,3 +74,4 @@ object SubmitterTester extends App {
 
 }
 
+*/

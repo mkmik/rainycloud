@@ -1,4 +1,5 @@
 package it.cnr.aquamaps.cloud
+import com.google.gson.Gson
 import it.cnr.aquamaps._
 
 import javax.servlet.Servlet
@@ -15,7 +16,37 @@ import scala.xml.{ Text, Node }
 import net.lag.logging.Logger
 import net.lag.configgy.{ Config, Configgy }
 
-class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
+import com.google.inject._
+import uk.me.lings.scalaguice.InjectorExtensions._
+import com.google.inject.name._
+import uk.me.lings.scalaguice.ScalaModule
+
+case class WebModule() extends AbstractModule with ScalaModule with RainyCloudModule {
+  def configure() {
+
+    bind[Submitter].in[Singleton]
+    bind[SubmitterApi].in[Singleton]
+    bind[JobSubmitter].to[ZeromqJobSubmitter].in[Singleton]
+    bind[ZeromqMonitoring].in[Singleton]
+  }
+}
+
+case class Table(val jdbcUrl: String, var tableName: String)
+
+case class JobRequest(
+  val environment: String,
+  val generativeModel: String,
+  val hcafTableName: Table,
+  val hspenTableName: Table,
+  val hspecDestinationTableName: Table,
+  val is2050: Boolean,
+  val isNativeGeneration: Boolean,
+  val nWorkers: Integer,
+  val occurrenceCellsTable: Table,
+  val userName: String,
+  val configuration: java.util.Map[String, String])
+
+class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport {
   import JobSubmitter.Job
 
   val log = Logger(classOf[SubmitterApi])
@@ -32,12 +63,19 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
     redirect(getServletConfig().getServletContext().getContextPath() + "/submitter/")
   }
 
+  val gson = new Gson()
+
   post("/submit") {
-    log.info("posted")
+    //    log.info("posted %s".format(request.body))
 
-    val job = SubmitterTester.spawnTest()
-    val id = job.id
+    val req = gson.fromJson(request.body, classOf[JobRequest])
+    log.info("parsed json %s".format(req))
 
+    launcher.launch(req)
+
+    //val job = SubmitterTester.spawnTest()
+    //val id = job.id
+    val id = "123"
     """{"error": null,"id": "%s"}""".format(id)
 
   }
@@ -45,7 +83,7 @@ class SubmitterApi extends ScalatraServlet with ScalateSupport with UrlSupport {
   /* return status for monitoring graph */
   get("/status/:id") {
     val id = params("id")
-    val job = Submitter.jobs().get(id)
+    val job = submitter.jobs().get(id)
     job match {
       case None =>
         """{"error" : "unknown job"}"""
