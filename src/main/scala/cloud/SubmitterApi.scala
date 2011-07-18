@@ -21,10 +21,7 @@ import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
 
 case class WebModule() extends AbstractModule with ScalaModule with RainyCloudModule {
-  print("INSTANTIATING WEB MODULE %s".format(this))
-
   def configure() {
-    print("running configure for WEBMODULE %s".format(this))
 
     bind[Submitter].in[Singleton]
     bind[SubmitterApi].in[Singleton]

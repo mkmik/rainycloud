@@ -67,12 +67,9 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
   def newJob() = new ZeromqJob()
 
-  println("ZeromqJobSumitter %s".format(this))
 
   val socket = context.socket(ZMQ.XREP)
-  println("BINDING INPROC")
   socket.bind("inproc://client")
-  println("BINDING TCP")
   socket.bind("tcp://*:%s".format(Configgy.config.getInt("queue-port").getOrElse(5566)))
 
   val sender = actorOf(new SenderActor()).start

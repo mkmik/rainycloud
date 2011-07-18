@@ -87,8 +87,6 @@ class ZeromqMonitoring @Inject() (val submitter: Submitter) extends ScalatraServ
     io.Source.fromInputStream(getClass().getResourceAsStream(name)).mkString
   }
 
-  submitter.init
-
   get("/stylesheets/site.css") { renderFile("/stylesheets/site.css") }
   get("/javascripts/:name") { renderFile("/javascripts/" + params("name"), "text/javascript") }
 

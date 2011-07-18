@@ -32,13 +32,6 @@ class Submitter @Inject() (val js: JobSubmitter) {
 //    jobs send (_ - id)
   }
 
-  println("Instantiating submitter %s".format(js))
-
-
-  def init = {
-    println("IIIIIIIIIIIIIIIIIINITIALIZZING %s".format(js))
-  }
-
 }
 
 /*
