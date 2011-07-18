@@ -1,4 +1,5 @@
 package it.cnr.aquamaps.cloud
+import com.google.gson.Gson
 import it.cnr.aquamaps._
 
 import com.google.inject._
@@ -9,7 +10,7 @@ import com.google.inject.util.{ Modules => GuiceModules }
 
 import net.lag.logging.Logger
 
-case class LauncherModule(val jobSubmitter: JobSubmitter) extends AbstractModule with ScalaModule with RainyCloudModule {
+case class LauncherModule(val jobRequest: JobRequest, val jobSubmitter: JobSubmitter) extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
     /*! This overrides the default `Generator` to use a specific wrapper for remote submission. The `CloudGenerator` converts the parameters into serializable params
      * and spawns task using a Submitter */
@@ -18,10 +19,10 @@ case class LauncherModule(val jobSubmitter: JobSubmitter) extends AbstractModule
     bind[Emitter[HSPEC]].to[CloudHSPECEmitter]
 
     bind[JobSubmitter].toInstance(jobSubmitter)
+    bind[JobRequest].toInstance(jobRequest)
 
     bind[Loader[HSPEN]].to[DummyLoader[HSPEN]]
     bind[Loader[HCAF]].to[DummyLoader[HCAF]]
-
 
     @Provides
     @Singleton
@@ -33,13 +34,17 @@ class DummyLoader[A] extends Loader[A] {
   def load: Iterable[A] = List()
 }
 
-class CloudGenerator @Inject() (val job: JobSubmitter.Job, val submitter: Submitter) extends Generator {
+case class TaskRequest(val partition: Partition, val job: JobRequest)
+
+class CloudGenerator @Inject() (val jobRequest: JobRequest, val job: JobSubmitter.Job, val submitter: Submitter) extends Generator {
   private val log = Logger(classOf[CloudGenerator])
+
+  val gson = new Gson()
 
   def computeInPartition(p: Partition) = {
     log.info("Cloud generator computing in partition %s".format(p))
 
-    job.addTask(submitter.js.newTaskSpec("%s".format(p)))
+    job.addTask(submitter.js.newTaskSpec(gson.toJson(TaskRequest(p, jobRequest))))
   }
 }
 
@@ -56,9 +61,8 @@ class CloudHSPECEmitter @Inject() (val job: JobSubmitter.Job, val submitter: Sub
 class Launcher @Inject() (val jobSubmitter: JobSubmitter) {
   private val log = Logger(classOf[Launcher])
 
-
-  def launch = {
-    val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (LauncherModule(jobSubmitter), HDFSModule()))
+  def launch(jobRequest: JobRequest) = {
+    val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (LauncherModule(jobRequest, jobSubmitter), HDFSModule()))
 
     val entryPoint = injector.instance[EntryPoint]
     entryPoint.run

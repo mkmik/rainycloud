@@ -1,4 +1,5 @@
 package it.cnr.aquamaps.cloud
+import com.google.gson.Gson
 import it.cnr.aquamaps._
 
 import javax.servlet.Servlet
@@ -30,6 +31,21 @@ case class WebModule() extends AbstractModule with ScalaModule with RainyCloudMo
   }
 }
 
+case class Table(val jdbcUrl: String, var tableName: String)
+
+case class JobRequest(
+  val environment: String,
+  val generativeModel: String,
+  val hcafTableName: Table,
+  val hspenTableName: Table,
+  val hspecDestinationTableName: Table,
+  val is2050: Boolean,
+  val isNativeGeneration: Boolean,
+  val nWorkers: Integer,
+  val occurrenceCellsTable: Table,
+  val userName: String,
+  val configuration: java.util.Map[String, String])
+
 class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport {
   import JobSubmitter.Job
 
@@ -47,10 +63,15 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
     redirect(getServletConfig().getServletContext().getContextPath() + "/submitter/")
   }
 
-  post("/submit") {
-    log.info("posted")
+  val gson = new Gson()
 
-    launcher.launch
+  post("/submit") {
+    //    log.info("posted %s".format(request.body))
+
+    val req = gson.fromJson(request.body, classOf[JobRequest])
+    log.info("parsed json %s".format(req))
+
+    launcher.launch(req)
 
     //val job = SubmitterTester.spawnTest()
     //val id = job.id
