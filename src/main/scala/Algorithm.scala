@@ -132,7 +132,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     val prob = sstValue * depthValue * salinityValue * primaryProductsValue * landDistValue * seaIceConcentration
     //log.info("computed prob %s".format(prob))
     if(prob < 0.01) {
-      log.info("trimming prob %s".format(prob))
+      //log.info("trimming prob %s".format(prob))
       0
     } else {
       //log.info(" -- outputed with prob %s (%s, %s)".format(prob, hcaf, hspen))
