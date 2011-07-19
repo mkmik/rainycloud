@@ -87,13 +87,17 @@ case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModu
   def configure() {
     // doesn't override
     //    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz")))
+    //        bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
 
-    /*        bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
-     bind[Emitter[HSPEC]].to[CSVEmitter[HSPEC]].in[Singleton]
-     */
-    
+
+    bind[Emitter[HSPEC]].to[DatabaseHSPECEmitter]
     bind[Partitioner].toInstance(new StaticPartitioner(Seq("%s %s".format(taskRequest.partition.start, taskRequest.partition.size)).toIterator))
   }
+}
+
+class DatabaseHSPECEmitter extends Emitter[HSPEC] {
+  def emit(record: HSPEC) = {}
+  def flush = {}
 }
 
 

@@ -41,7 +41,7 @@ case class JobRequest(
   val hspecDestinationTableName: Table,
   val is2050: Boolean,
   val isNativeGeneration: Boolean,
-  val nWorkers: Integer,
+  val nWorkers: Int,
   val occurrenceCellsTable: Table,
   val userName: String,
   val configuration: java.util.Map[String, String])
