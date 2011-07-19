@@ -12,7 +12,12 @@ import com.google.inject.util.{ Modules => GuiceModules }
 import net.lag.logging.Logger
 
 case class LauncherModule(val jobRequest: JobRequest, val jobSubmitter: JobSubmitter) extends AbstractModule with ScalaModule with RainyCloudModule {
+
+  private val log = Logger(classOf[LauncherModule])
+
   def configure() {
+    log.info("CONF: %s".format(conf.getString("hcafFile")))
+
     /*! This overrides the default `Generator` to use a specific wrapper for remote submission. The `CloudGenerator` converts the parameters into serializable params
      * and spawns task using a Submitter */
     bind[Generator].to[CloudGenerator]
@@ -82,24 +87,33 @@ class Launcher @Inject() (val jobSubmitter: JobSubmitter) {
 
 ///
 
-
 case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
     // doesn't override
     //    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz")))
     //        bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
 
+    bind[Emitter[HSPEC]].to[DatabaseHSPECEmitter].in[Singleton]
+    bind[Partitioner].toInstance(new StaticPartitioner(Seq("%s %s".format(taskRequest.partition.size, taskRequest.partition.start)).toIterator))
 
-    bind[Emitter[HSPEC]].to[DatabaseHSPECEmitter]
-    bind[Partitioner].toInstance(new StaticPartitioner(Seq("%s %s".format(taskRequest.partition.start, taskRequest.partition.size)).toIterator))
+    bind[TaskRequest].toInstance(taskRequest)
   }
 }
 
-class DatabaseHSPECEmitter extends Emitter[HSPEC] {
-  def emit(record: HSPEC) = {}
-  def flush = {}
-}
+class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emitter[HSPEC] {
+  private val log = Logger(classOf[CloudHSPECEmitter])
 
+  val table = taskRequest.job.hspecDestinationTableName
+  log.info("YYYYYYYYYYYYY preparing write in db %s %s".format(table.jdbcUrl, table.tableName))
+
+  def emit(record: HSPEC) = {
+
+  }
+
+  def flush = {
+    log.info("XXXXXXXXXXXXXXXX flushing hcaf")
+  }
+}
 
 object TaskLauncher {
   private val log = Logger(TaskLauncher getClass)
@@ -107,7 +121,7 @@ object TaskLauncher {
   val gson = new Gson()
 
   def launch(task: TaskRef, worker: ActorRef) = {
-    println("launching task %s".format(task.id))
+    println("---- launching task %s".format(task.id))
 
     val taskRequest = gson.fromJson(task.id, classOf[TaskRequest])
 
@@ -116,12 +130,12 @@ object TaskLauncher {
     entryPoint.run
 
     cleanup(injector)
-    
+
   }
 
   def cleanup(injector: Injector) {
     /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
-    log.info("done")
+    log.info("---- task done")
     injector.instance[Fetcher[HCAF]].shutdown
     injector.instance[Loader[HSPEN]].shutdown
   }
