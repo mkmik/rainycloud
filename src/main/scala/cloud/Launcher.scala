@@ -1,17 +1,22 @@
 package it.cnr.aquamaps.cloud
+import akka.actor.ActorRef
 import com.google.gson.Gson
+import com.twitter.querulous.evaluator.QueryEvaluator
 import it.cnr.aquamaps._
 
 import com.google.inject._
+import it.cnr.aquamaps.jdbc.LiteDataSource
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
 import com.google.inject.util.{ Modules => GuiceModules }
 
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 
-case class LauncherModule(val jobRequest: JobRequest, val jobSubmitter: JobSubmitter) extends AbstractModule with ScalaModule with RainyCloudModule {
+case class LauncherModule(val jobRequest: JobRequest, val jobSubmitter: JobSubmitter) extends AbstractModule with ScalaModule with RainyCloudModule with Logging {
   def configure() {
+    logger.info("CONF: %s".format(conf.getString("hcafFile")))
+
     /*! This overrides the default `Generator` to use a specific wrapper for remote submission. The `CloudGenerator` converts the parameters into serializable params
      * and spawns task using a Submitter */
     bind[Generator].to[CloudGenerator]
@@ -36,13 +41,11 @@ class DummyLoader[A] extends Loader[A] {
 
 case class TaskRequest(val partition: Partition, val job: JobRequest)
 
-class CloudGenerator @Inject() (val jobRequest: JobRequest, val job: JobSubmitter.Job, val submitter: Submitter) extends Generator {
-  private val log = Logger(classOf[CloudGenerator])
-
+class CloudGenerator @Inject() (val jobRequest: JobRequest, val job: JobSubmitter.Job, val submitter: Submitter) extends Generator with Logging {
   val gson = new Gson()
 
   def computeInPartition(p: Partition) = {
-    log.info("Cloud generator computing in partition %s".format(p))
+    logger.info("Cloud generator computing in partition %s".format(p))
 
     job.addTask(submitter.js.newTaskSpec(gson.toJson(TaskRequest(p, jobRequest))))
   }
@@ -58,9 +61,7 @@ class CloudHSPECEmitter @Inject() (val job: JobSubmitter.Job, val submitter: Sub
 }
 
 /** a Launcher prepares the environment for the entry point so that it can use Submitter */
-class Launcher @Inject() (val jobSubmitter: JobSubmitter) {
-  private val log = Logger(classOf[Launcher])
-
+class Launcher @Inject() (val jobSubmitter: JobSubmitter) extends Logging {
   def launch(jobRequest: JobRequest) = {
     val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (LauncherModule(jobRequest, jobSubmitter), HDFSModule()))
 
@@ -72,7 +73,70 @@ class Launcher @Inject() (val jobSubmitter: JobSubmitter) {
 
   def cleanup(injector: Injector) {
     /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
-    log.info("done")
+    logger.info("done")
+    injector.instance[Fetcher[HCAF]].shutdown
+    injector.instance[Loader[HSPEN]].shutdown
+  }
+}
+
+///
+
+case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModule with ScalaModule with RainyCloudModule {
+  def configure() {
+    // doesn't override
+    //    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz")))
+    //        bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
+
+    bind[Emitter[HSPEC]].to[DatabaseHSPECEmitter].in[Singleton]
+    bind[Partitioner].toInstance(new StaticPartitioner(Seq("%s %s".format(taskRequest.partition.size, taskRequest.partition.start)).toIterator))
+
+    bind[TaskRequest].toInstance(taskRequest)
+  }
+}
+
+class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emitter[HSPEC] with Logging {
+
+  val table = taskRequest.job.hspecDestinationTableName
+  logger.info("YYYYYYYYYYYYY preparing write in db %s %s".format(table.jdbcUrl, table.tableName))
+
+  val urlComps = table.jdbcUrl.split(";")
+  val cleanUrl = urlComps(0)
+  val user = urlComps(1).split("=")(1)
+  val password = urlComps(2).split("=")(1)
+
+  val queryEvaluator = QueryEvaluator("java.lang.String", cleanUrl, user, password)
+  val res = queryEvaluator.select("SELECT count(*) FROM %s".format(table.tableName)) { row =>
+    println("got row %s".format(row.getInt(1)))
+  }
+
+  def emit(record: HSPEC) = {
+
+  }
+
+  def flush = {
+    logger.info("XXXXXXXXXXXXXXXX flushing hcaf")
+  }
+}
+
+object TaskLauncher extends Logging {
+  val gson = new Gson()
+
+  def launch(task: TaskRef, worker: ActorRef) = {
+    println("---- launching task %s".format(task.id))
+
+    val taskRequest = gson.fromJson(task.id, classOf[TaskRequest])
+
+    val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (TaskLauncherModule(taskRequest), HDFSModule()))
+    val entryPoint = injector.instance[EntryPoint]
+    entryPoint.run
+
+    cleanup(injector)
+
+  }
+
+  def cleanup(injector: Injector) {
+    /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
+    logger.info("---- task done")
     injector.instance[Fetcher[HCAF]].shutdown
     injector.instance[Loader[HSPEN]].shutdown
   }

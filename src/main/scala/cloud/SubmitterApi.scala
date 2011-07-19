@@ -13,7 +13,7 @@ import org.mortbay.jetty.Server
 import org.mortbay.jetty.servlet.{ Context, ServletHolder }
 import scala.xml.{ Text, Node }
 
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 import net.lag.configgy.{ Config, Configgy }
 
 import com.google.inject._
@@ -41,15 +41,13 @@ case class JobRequest(
   val hspecDestinationTableName: Table,
   val is2050: Boolean,
   val isNativeGeneration: Boolean,
-  val nWorkers: Integer,
+  val nWorkers: Int,
   val occurrenceCellsTable: Table,
   val userName: String,
   val configuration: java.util.Map[String, String])
 
-class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport {
+class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport with Logging {
   import JobSubmitter.Job
-
-  val log = Logger(classOf[SubmitterApi])
 
   beforeAll {
     contentType = "application/json"
@@ -66,10 +64,10 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
   val gson = new Gson()
 
   post("/submit") {
-    //    log.info("posted %s".format(request.body))
+    //    logger.info("posted %s".format(request.body))
 
     val req = gson.fromJson(request.body, classOf[JobRequest])
-    log.info("parsed json %s".format(req))
+    logger.info("parsed json %s".format(req))
 
     launcher.launch(req)
 

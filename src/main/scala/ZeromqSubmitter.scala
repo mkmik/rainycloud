@@ -16,21 +16,17 @@ import scala.collection.immutable.HashMap
 import scala.collection.immutable.Queue
 
 import net.lag.configgy.{ Config, Configgy }
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 
-class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon with ZeromqJobSubmitterExecutorCommon {
+class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobSubmitterCommon with ZeromqJobSubmitterExecutorCommon with Logging {
   import Zeromq._
   import JobSubmitter._
-
-  private val log = Logger(classOf[ZeromqJobSubmitter])
 
   class ZeromqJob extends JobSubmitter.Job {
     val id = UUID.randomUUID.toString
 
-    class JobActor extends Actor {
+    class JobActor extends Actor with Logging {
       var tasks = List[TaskSpec]()
-
-      private val log = Logger(classOf[JobActor])
 
       def receive = {
         case spec: TaskSpec =>
@@ -90,7 +86,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     }
 
     def workerAlive(worker: WorkerRef) = {
-      log.debug("%s still alive".format(worker))
+      logger.debug("%s still alive".format(worker))
       if (!workers.contains(worker))
         sender ! Joined(worker)
       sender ! Heartbeaten(worker)
@@ -149,17 +145,15 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
   object GetWorkers
 
-  def workers = sender !! GetWorkers match {
-    case Some(res: Map[String, JobSubmitter.WorkerDescriptor]) => res
+  def workers = sender !! GetWorkers  match {
+    case Some(res) => res.asInstanceOf[Map[String, JobSubmitter.WorkerDescriptor]]
     case _ => Map()
   }
 
   /*# This actor implements the API between the submission API users and the zmq subsystem.
    Furthermore it handles the task rejection and retries. */
   // {{{
-  class SenderActor extends Actor {
-
-    private val log = Logger(classOf[SenderActor])
+  class SenderActor extends Actor with Logging {
 
     //    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 15, 100.milliseconds)
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, 1500, 4000.milliseconds)
@@ -183,12 +177,12 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     def taskCompleted(taskId: String, worker: WorkerRef): Unit = {
       ongoingTasks.get(taskId) match {
         case Some(task) => taskCompleted(task, worker)
-        case None => log.warning("task %s completed but I don't know anything about this task, ignoring".format(taskId))
+        case None => logger.warn("task %s completed but I don't know anything about this task, ignoring".format(taskId))
       }
     }
 
     def taskCompleted(task: Task, worker: WorkerRef) = {
-      log.info("completing task %s".format(task.id))
+      logger.info("completing task %s".format(task.id))
       ongoingTasks = ongoingTasks - task.id
       completedTasks += 1
       workerCompleted += ((worker.name, 1 + workerCompleted.get(worker.name).getOrElse(0)))
@@ -203,25 +197,25 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
     def flushQueue() = {
       val slots = readyWorkers zip queuedTasks
-      log.debug("FLUSHING QUEUE ready workers: %s, queuedTasks: %s, matched slot size: %s".format(readyWorkers.size, queuedTasks.size, slots.size))
+      logger.debug("FLUSHING QUEUE ready workers: %s, queuedTasks: %s, matched slot size: %s".format(readyWorkers.size, queuedTasks.size, slots.size))
       for ((worker, task) <- slots) {
-        log.debug("can run %s on %s".format(task, worker))
+        logger.debug("can run %s on %s".format(task, worker))
         assignTask(task, worker)
       }
 
       queuedTasks = queuedTasks drop (slots.size)
       //queuedTasks drop (slots.size)
 
-      log.debug("ready workers was: %s".format(readyWorkers))
+      logger.debug("ready workers was: %s".format(readyWorkers))
       readyWorkers = readyWorkers drop (slots.size)
-      log.debug("ready workers is:  %s".format(readyWorkers))
+      logger.debug("ready workers is:  %s".format(readyWorkers))
     }
 
     def assignTask(task: Task, worker: Worker): Unit = {
       ongoingTasks += ((task.id, task))
       assert(worker.currentTask == None)
       worker.currentTask = Some(task)
-      log.debug("ASSIGNED TASK %s to worker %s".format(task, worker))
+      logger.debug("ASSIGNED TASK %s to worker %s".format(task, worker))
       sendToWorker(worker, task)
     }
 
@@ -230,7 +224,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     def workerJoined(workerRef: WorkerRef) {
       workers.get(workerRef.name) match {
         case None =>
-          log.info("Worker %s has joined".format(workerRef))
+          logger.info("Worker %s has joined".format(workerRef))
           val worker = Worker(workerRef.name)
           workers += ((workerRef.name, worker))
         case _ =>
@@ -240,7 +234,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     def acceptWorker(workerRef: WorkerRef): Unit = {
       workers.get(workerRef.name) match {
         case None =>
-          log.warning("accepting new worker which hasn't joined yet, strange, anyway, joining it")
+          logger.warn("accepting new worker which hasn't joined yet, strange, anyway, joining it")
           val worker = Worker(workerRef.name)
           workers += ((workerRef.name, worker))
           acceptWorker(worker)
@@ -252,29 +246,29 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       // we are here because the worker signaled that it's free accepting new tasks
       worker.currentTask = None
 
-      log.debug("Worker %s is now ready.Previous ready workers: %s (%s)".format(worker, readyWorkers, Thread.currentThread()))
+      logger.debug("Worker %s is now ready.Previous ready workers: %s (%s)".format(worker, readyWorkers, Thread.currentThread()))
       if (!(readyWorkers contains worker)) {
         readyWorkers = readyWorkers enqueue worker
-        log.debug("                        Current ready workers: %s".format(readyWorkers))
+        logger.debug("                        Current ready workers: %s".format(readyWorkers))
         flushQueue()
       }
     }
 
     def buryWorker(workerRef: WorkerRef): Unit = {
       workers.get(workerRef.name) match {
-        case None => log.warning("an unknown worker died ?!?! %s".format(workerRef))
+        case None => logger.warn("an unknown worker died ?!?! %s".format(workerRef))
         case Some(worker) => buryWorker(worker)
       }
 
     }
 
     def buryWorker(worker: Worker): Unit = {
-      log.warning("worker '%s' is dead while running".format(worker))
+      logger.warn("worker '%s' is dead while running".format(worker))
       worker.currentTask match {
         case Some(task) =>
-          log.warning("WWWWWWWWWWWWWWW worker %s died while running task %s, resubmitting".format(worker, task))
+          logger.warn("WWWWWWWWWWWWWWW worker %s died while running task %s, resubmitting".format(worker, task))
           submit(task)
-        case None => log.info("XXXXXXXXXXXXX worker %s died but it wasn't running any task, goodbye".format(worker))
+        case None => logger.info("XXXXXXXXXXXXX worker %s died but it wasn't running any task, goodbye".format(worker))
       }
       readyWorkers = readyWorkers.filterNot(el => el.name == worker.name)
       workers -= worker.name
@@ -284,12 +278,12 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     }
 
     def trackWorkerProgress(worker: WorkerRef, progress: Progress) = {
-      log.debug("tracking worker progress %s: %s".format(worker, progress))
+      logger.debug("tracking worker progress %s: %s".format(worker, progress))
       workerThroughput += ((worker.name, progress.amount * 1000 /progress.delta))
     }
 
     def summary() = {
-      log.debug(" -------> Currently %s workers alive (%s), queue length: %s, completed tasks %d".format(readyWorkers.length, readyWorkers, queuedTasks.length, completedTasks))
+      logger.debug(" -------> Currently %s workers alive (%s), queue length: %s, completed tasks %d".format(readyWorkers.length, readyWorkers, queuedTasks.length, completedTasks))
     }
 
     self.receiveTimeout = Some(4000L)
@@ -305,7 +299,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       case WorkerProgress(worker, progress) => trackWorkerProgress(worker, progress)
       case Heartbeaten(worker) => {
         val now = System.currentTimeMillis()
-        //        log.info("heart beating %s at %s".format(worker.name, now))
+        //        logger.info("heart beating %s at %s".format(worker.name, now))
         if (workerUptime.get(worker.name) == None)
           workerUptime += ((worker.name, now))
         workerHeartbeats += ((worker.name, now))
@@ -315,7 +309,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
         val now = System.currentTimeMillis()
         self reply (workers mapValues ((worker: Worker) => JobSubmitter.WorkerDescriptor(workerCompleted.get(worker.name).getOrElse(0), now - workerHeartbeats.get(worker.name).getOrElse(now - 100 * 1000), now - workerUptime.get(worker.name).getOrElse(now))))
       }
-      case msg => log.warning("got unhandled message '%s'".format(msg.toString))
+      case msg => logger.warn("got unhandled message '%s'".format(msg.toString))
     }
   }
   // }}}

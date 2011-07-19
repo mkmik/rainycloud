@@ -17,7 +17,9 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import com.google.inject.name.Names.named
 import uk.me.lings.scalaguice.ScalaModule
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
+
+import com.weiglewilczek.slf4s.Logging
 
 import HCAF._
 import HSPEN._
@@ -44,8 +46,7 @@ case class BabuDBModule() extends AbstractModule with ScalaModule {
 }
 
 
-trait BabuDB[A <: Keyed] {
-  private val log = Logger(classOf[BabuDB[A]])
+trait BabuDB[A <: Keyed] extends Logging {
 
   val loader: Loader[A]
   val dbName: String
@@ -76,10 +77,10 @@ trait BabuDB[A <: Keyed] {
   }
 
   def reload(db: Database) = {
-    log.info("caching %s ...".format(loader))
+    logger.info("caching %s ...".format(loader))
     for (record <- loader.load)
       db.singleInsert(0, record.key.getBytes, serializer.serialize(record), null)
-    log.info("done")
+    logger.info("done")
   }
 }
 
