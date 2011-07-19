@@ -1,9 +1,11 @@
 package it.cnr.aquamaps.cloud
 import akka.actor.ActorRef
 import com.google.gson.Gson
+import com.twitter.querulous.evaluator.QueryEvaluator
 import it.cnr.aquamaps._
 
 import com.google.inject._
+import it.cnr.aquamaps.jdbc.LiteDataSource
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
@@ -105,6 +107,16 @@ class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emit
 
   val table = taskRequest.job.hspecDestinationTableName
   log.info("YYYYYYYYYYYYY preparing write in db %s %s".format(table.jdbcUrl, table.tableName))
+
+  val urlComps = table.jdbcUrl.split(";")
+  val cleanUrl = urlComps(0)
+  val user = urlComps(1).split("=")(1)
+  val password = urlComps(2).split("=")(1)
+
+  val queryEvaluator = QueryEvaluator("java.lang.String", cleanUrl, user, password)
+  val res = queryEvaluator.select("SELECT count(*) FROM %s".format(table.tableName)) { row =>
+    println("got row %s".format(row.getInt(1)))
+  }
 
   def emit(record: HSPEC) = {
 

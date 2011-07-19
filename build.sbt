@@ -46,12 +46,15 @@ resolvers += "OSGeo" at "http://download.osgeo.org/webdav/geotools/"
 
 resolvers += "OpenGeo" at "http://repo.opengeo.org/"
 
+resolvers += "Twitter" at "http://maven.twttr.com/"
+
+resolvers += "Akka" at "http://akka.io/repository/"
 
 libraryDependencies ++= Seq(
   "com.google.inject" % "guice" % "3.0",
   "com.google.inject.extensions" % "guice-servlet" % "3.0",
   "uk.me.lings" % "scala-guice_2.8.0" % "0.1",
-  "net.lag" % "configgy" % "2.0.0" % "compile", //ApacheV2
+  "net.lag" % "configgy" % "2.0.2-nologgy" % "compile", //ApacheV2
   "com.github.scopt" %% "scopt" % "1.0.0-SNAPSHOT",
   "com.github.jsuereth.scala-arm" %% "scala-arm" % "0.2",
   "net.sf.opencsv" % "opencsv" % "2.1",
@@ -59,6 +62,7 @@ libraryDependencies ++= Seq(
   "org.apache.hadoop" % "hadoop-core" % "0.20.2",
   "org.geoscript" % "library_2.8.0" % "0.6.1"
 )
+
 
 {
   val scalatraVersion = "2.0.0-SNAPSHOT"
@@ -96,5 +100,8 @@ mainClass in (Compile, assembly) := Some("it.cnr.aquamaps.Main")
 libraryDependencies ++= Seq(
 //  "net.liftweb" %% "lift-webkit" % "2.3" % "compile",
   "org.mortbay.jetty" % "jetty" % "6.1.22" % "jetty",
-  "ch.qos.logback" % "logback-classic" % "0.9.26"
+  "ch.qos.logback" % "logback-classic" % "0.9.26",
+  "joda-time" % "joda-time" % "1.6.2",
+  "postgresql" % "postgresql" % "8.4-701.jdbc3",
+  "com.traveas" %% "querulous-light" % "0.0.6"
 )
