@@ -5,7 +5,8 @@ import org.geoscript.geometry._
 
 import scala.collection.mutable.ListBuffer
 
-import org.apache.log4j.Logger
+import com.weiglewilczek.slf4s.Logging
+
 
 /*! The core computation of a `HSPEC` row from a pair of `HCAF` and `HSPEN` rows is defined in this trait. */
 trait HspecAlgorithm {
@@ -48,8 +49,7 @@ class AllHSpecAlgorithm extends HspecAlgorithm {
 }
 
 /*! This is the current (real) algorithm as ported from the FAO PHP code. */
-class CompatHSpecAlgorithm extends HspecAlgorithm {
-  private val log = Logger.getLogger(this.getClass);
+class CompatHSpecAlgorithm extends HspecAlgorithm with Logging {
 
   val random: Random = new Random(123)
 
@@ -76,10 +76,10 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
             res += HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = probability,
                          inBox = inBox, inFao = inFao, lme = hcaf.lme, eez = hcaf.eezFirst)
         } else {
-          log.info("Ignored: not in box")
+          logger.info("Ignored: not in box")
         }
       } else {
-          log.info("Ignored: not in fao: hspec(%s) vs hcaf(%s)".format(faoAreas, hcaf.faoAreaM))
+          logger.info("Ignored: not in fao: hspec(%s) vs hcaf(%s)".format(faoAreas, hcaf.faoAreaM))
       }
 
     }
@@ -91,7 +91,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
    the ones that defaults frequently first. */
   @inline
   final def computeProbability(hcaf: HCAF, hspen: HSPEN): Double = {
-    //log.info("computing prob for %s and %s".format(hcaf.details, hspen.details));
+    //logger.info("computing prob for %s and %s".format(hcaf.details, hspen.details));
 
 //    if(!checkHSpen(hspen))
 //      return 0
@@ -99,50 +99,50 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
     val depthValue = getDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
     val newDepthValue = translatedGetDepth(hcaf.depth, hspen.pelagic, hspen.depth, hspen.meanDepth)
     if(depthValue != newDepthValue)
-      log.info("depth value: old: %s new: %s".format(depthValue, newDepthValue))
+      logger.info("depth value: old: %s new: %s".format(depthValue, newDepthValue))
     if (depthValue == 0)
       return 0
 
     val sstValue = getSST(hcaf.sstAnMean, hcaf.sbtAnMean, hspen.temp, hspen.layer)
-    //log.info("sst value %s".format(sstValue))
+    //logger.info("sst value %s".format(sstValue))
     if (sstValue == 0)
       return 0
 
     val primaryProductsValue = getPrimaryProduction(hcaf.primProdMean, hspen.primProd)
-    //log.info("prim prod value %s".format(primaryProductsValue))
+    //logger.info("prim prod value %s".format(primaryProductsValue))
     if (primaryProductsValue == 0)
       return 0
 
     val salinityValue = getSalinity(hcaf.salinityMean, hcaf.salinityBMean, hspen.layer, hspen.salinity)
-    //log.info("salinity value %s".format(salinityValue))
+    //logger.info("salinity value %s".format(salinityValue))
     if (salinityValue == 0)
       return 0
 
     val landDistValue = getLandDist(hcaf.landDist, hspen.landDist, hspen.landDistYN)
-    //log.info("land dist value %s".format(landDistValue))
+    //logger.info("land dist value %s".format(landDistValue))
     if (landDistValue == 0)
       return 0
 
 
     val seaIceConcentration = getIceConcentration(hcaf.iceConAnn, hspen.iceCon)
-    //log.info("sea ice concentration %s".format(seaIceConcentration))
+    //logger.info("sea ice concentration %s".format(seaIceConcentration))
     if (seaIceConcentration == 0)
       return 0
 
     val prob = sstValue * depthValue * salinityValue * primaryProductsValue * landDistValue * seaIceConcentration
-    //log.info("computed prob %s".format(prob))
+    //logger.info("computed prob %s".format(prob))
     if(prob < 0.01) {
-      //log.info("trimming prob %s".format(prob))
+      //logger.info("trimming prob %s".format(prob))
       0
     } else {
-      //log.info(" -- outputed with prob %s (%s, %s)".format(prob, hcaf, hspen))
+      //logger.info(" -- outputed with prob %s (%s, %s)".format(prob, hcaf, hspen))
       prob
     }
   }
 
   @inline
   final def checkHSpen(hspen: HSPEN) = {
-    //    log.info("checking hspen %s   -> landDist.max %s".format(hspen.details, hspen.landDist.max))
+    //    logger.info("checking hspen %s   -> landDist.max %s".format(hspen.details, hspen.landDist.max))
     checkEnvelope(hspen.iceCon) // && checkEnvelope(hspen.landDist)
   }
 
@@ -347,7 +347,7 @@ class CompatHSpecAlgorithm extends HspecAlgorithm {
 
   @inline
   final def getIceConcentration(iceConAnn: Double, iceCon: Envelope) = {
-//    log.info("iceConAnn: %s, iceCon: %s".format(iceConAnn, iceCon))
+//    logger.info("iceConAnn: %s, iceCon: %s".format(iceConAnn, iceCon))
 
     if (iceCon.min == -9999)
       1.0

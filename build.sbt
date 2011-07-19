@@ -40,6 +40,8 @@ resolvers += JavaNet1Repository
 
 resolvers += "RI Releases" at "http://maven.research-infrastructures.eu/nexus/content/repositories/releases"
 
+resolvers += "RI Snapshots" at "http://maven.research-infrastructures.eu/nexus/content/repositories/snapshots"
+
 resolvers += "Sonatype Nexus Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
 
 resolvers += "OSGeo" at "http://download.osgeo.org/webdav/geotools/"
@@ -55,7 +57,7 @@ libraryDependencies ++= Seq(
   "com.google.inject.extensions" % "guice-servlet" % "3.0",
   "uk.me.lings" % "scala-guice_2.8.0" % "0.1",
   "net.lag" % "configgy" % "2.0.2-nologgy" % "compile", //ApacheV2
-  "net.lag" % "configgy" % "2.0.0" % "compile", //ApacheV2
+  "com.weiglewilczek.slf4s" %% "slf4s" % "1.0.7-SNAPSHOT",
   "com.github.scopt" %% "scopt" % "1.0.0-SNAPSHOT",
   "com.github.jsuereth.scala-arm" %% "scala-arm" % "0.2",
   "net.sf.opencsv" % "opencsv" % "2.1",

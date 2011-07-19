@@ -11,14 +11,11 @@ import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
 import com.google.inject.util.{ Modules => GuiceModules }
 
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 
-case class LauncherModule(val jobRequest: JobRequest, val jobSubmitter: JobSubmitter) extends AbstractModule with ScalaModule with RainyCloudModule {
-
-  private val log = Logger(classOf[LauncherModule])
-
+case class LauncherModule(val jobRequest: JobRequest, val jobSubmitter: JobSubmitter) extends AbstractModule with ScalaModule with RainyCloudModule with Logging {
   def configure() {
-    log.info("CONF: %s".format(conf.getString("hcafFile")))
+    logger.info("CONF: %s".format(conf.getString("hcafFile")))
 
     /*! This overrides the default `Generator` to use a specific wrapper for remote submission. The `CloudGenerator` converts the parameters into serializable params
      * and spawns task using a Submitter */
@@ -44,13 +41,11 @@ class DummyLoader[A] extends Loader[A] {
 
 case class TaskRequest(val partition: Partition, val job: JobRequest)
 
-class CloudGenerator @Inject() (val jobRequest: JobRequest, val job: JobSubmitter.Job, val submitter: Submitter) extends Generator {
-  private val log = Logger(classOf[CloudGenerator])
-
+class CloudGenerator @Inject() (val jobRequest: JobRequest, val job: JobSubmitter.Job, val submitter: Submitter) extends Generator with Logging {
   val gson = new Gson()
 
   def computeInPartition(p: Partition) = {
-    log.info("Cloud generator computing in partition %s".format(p))
+    logger.info("Cloud generator computing in partition %s".format(p))
 
     job.addTask(submitter.js.newTaskSpec(gson.toJson(TaskRequest(p, jobRequest))))
   }
@@ -66,9 +61,7 @@ class CloudHSPECEmitter @Inject() (val job: JobSubmitter.Job, val submitter: Sub
 }
 
 /** a Launcher prepares the environment for the entry point so that it can use Submitter */
-class Launcher @Inject() (val jobSubmitter: JobSubmitter) {
-  private val log = Logger(classOf[Launcher])
-
+class Launcher @Inject() (val jobSubmitter: JobSubmitter) extends Logging {
   def launch(jobRequest: JobRequest) = {
     val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (LauncherModule(jobRequest, jobSubmitter), HDFSModule()))
 
@@ -80,11 +73,10 @@ class Launcher @Inject() (val jobSubmitter: JobSubmitter) {
 
   def cleanup(injector: Injector) {
     /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
-    log.info("done")
+    logger.info("done")
     injector.instance[Fetcher[HCAF]].shutdown
     injector.instance[Loader[HSPEN]].shutdown
   }
-
 }
 
 ///
@@ -102,11 +94,10 @@ case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModu
   }
 }
 
-class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emitter[HSPEC] {
-  private val log = Logger(classOf[CloudHSPECEmitter])
+class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emitter[HSPEC] with Logging {
 
   val table = taskRequest.job.hspecDestinationTableName
-  log.info("YYYYYYYYYYYYY preparing write in db %s %s".format(table.jdbcUrl, table.tableName))
+  logger.info("YYYYYYYYYYYYY preparing write in db %s %s".format(table.jdbcUrl, table.tableName))
 
   val urlComps = table.jdbcUrl.split(";")
   val cleanUrl = urlComps(0)
@@ -123,13 +114,11 @@ class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emit
   }
 
   def flush = {
-    log.info("XXXXXXXXXXXXXXXX flushing hcaf")
+    logger.info("XXXXXXXXXXXXXXXX flushing hcaf")
   }
 }
 
-object TaskLauncher {
-  private val log = Logger(TaskLauncher getClass)
-
+object TaskLauncher extends Logging {
   val gson = new Gson()
 
   def launch(task: TaskRef, worker: ActorRef) = {
@@ -147,7 +136,7 @@ object TaskLauncher {
 
   def cleanup(injector: Injector) {
     /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
-    log.info("---- task done")
+    logger.info("---- task done")
     injector.instance[Fetcher[HCAF]].shutdown
     injector.instance[Loader[HSPEN]].shutdown
   }

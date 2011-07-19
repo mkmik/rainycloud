@@ -8,7 +8,7 @@ import scala.collection.mutable.ArrayBuffer
 import org.joda.time._
 
 //import logging._
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 
 trait JdbcImplicits {
   implicit def jdbcTemplate(ds: LiteDataSource) = new JdbcTemplate(ds)
@@ -113,8 +113,7 @@ class CacheConnectionLiteDataSource(ds: LiteDataSource) extends LiteDataSource {
 }
 
 /** JdbcTemplate implementation */
-trait JdbcOperations {
-  private val log = Logger(classOf[JdbcOperations])
+trait JdbcOperations extends Logging {
 
   val ds: LiteDataSource
   import ds._
@@ -191,7 +190,7 @@ trait JdbcOperations {
       try {
         o.close()
       } catch {
-        case e => log.warning("failed to close something: " + e, e)
+        case e => logger.warn("failed to close something: " + e, e)
       }
   }
 
@@ -199,7 +198,7 @@ trait JdbcOperations {
     try {
       closeConnection(c)
     } catch {
-      case e => log.warning("failed to close connection: " + e, e)
+      case e => logger.warn("failed to close connection: " + e, e)
     }
 
   def execute[T](ccb: Connection => T): T = {

@@ -14,7 +14,7 @@ import akka.actor.ReceiveTimeout
 import scala.collection.immutable.HashMap
 import scala.collection.immutable.Queue
 
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 
 object Zeromq {
   println("initializing zeromq")
@@ -30,10 +30,8 @@ object Zeromq {
 
 }
 
-trait ZeromqHandler {
+trait ZeromqHandler extends Logging {
   import Zeromq._
-
-  private val log = Logger(classOf[ZeromqHandler])
 
   val socket: ZMQ.Socket
 
@@ -46,26 +44,26 @@ trait ZeromqHandler {
       }
       data = next
     }
-    log.warning("didn't receive delimiter, something wrong in communication with worker")
+    logger.warn("didn't receive delimiter, something wrong in communication with worker")
     return ""
   }
 
   def sendParts(parts: Array[Byte]*): Unit = sendParts(socket, parts: _*)
 
   def sendParts(socket: ZMQ.Socket, parts: Array[Byte]*) = {
-    log.debug("   debug: zmq send s(%s) t(%s) (%s) (data %s)".format(socket, Thread.currentThread().getId(), Thread.currentThread(), List(parts.map(x => new String(x)))))
-    log.debug("  --------- Sending (thread %s):".format(Thread.currentThread()))
+    logger.debug("   debug: zmq send s(%s) t(%s) (%s) (data %s)".format(socket, Thread.currentThread().getId(), Thread.currentThread(), List(parts.map(x => new String(x)))))
+    logger.debug("  --------- Sending (thread %s):".format(Thread.currentThread()))
     for (i <- 0 until parts.length) {
       val more = if (i == parts.length - 1) 0 else ZMQ.SNDMORE
-      log.debug("  '%s' (%s bytes) (%s)".format(new String(parts(i)), parts(i).length, more))
+      logger.debug("  '%s' (%s bytes) (%s)".format(new String(parts(i)), parts(i).length, more))
 
       socket.send(parts(i), more)
     }
-    log.debug("  ---------")
+    logger.debug("  ---------")
   }
 
   def recv() = {
-    log.debug("   debug: zmq recv s(%s) t(%s)".format(socket, Thread.currentThread().getId()))
+    logger.debug("   debug: zmq recv s(%s) t(%s)".format(socket, Thread.currentThread().getId()))
     new String(socket.recv(0))
   }
 
