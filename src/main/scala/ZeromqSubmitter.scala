@@ -149,8 +149,8 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
 
   object GetWorkers
 
-  def workers = sender !! GetWorkers match {
-    case Some(res: Map[String, JobSubmitter.WorkerDescriptor]) => res
+  def workers = sender !! GetWorkers  match {
+    case Some(res) => res.asInstanceOf[Map[String, JobSubmitter.WorkerDescriptor]]
     case _ => Map()
   }
 

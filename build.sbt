@@ -22,6 +22,8 @@ seq(webSettings :_*)
 
 scalacOptions += "-unchecked"
 
+scalacOptions += "-deprecation"
+
 // disable updating dynamic revisions (including -SNAPSHOT versions)
 offline := true
 
