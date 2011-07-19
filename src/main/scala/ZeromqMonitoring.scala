@@ -15,7 +15,7 @@ import org.mortbay.jetty.Server
 import org.mortbay.jetty.servlet.{ Context, ServletHolder }
 import scala.xml.{ Text, Node }
 
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 import net.lag.configgy.{ Config, Configgy }
 
 import com.google.inject._
@@ -25,20 +25,18 @@ class ZeromqMonitoringTest extends WebSocketServlet with Servlet {
     protocol: String): WebSocket = new TestWebSocket()
 }
 
-class TestWebSocket extends WebSocket {
-  val log = Logger(classOf[TestWebSocket])
+class TestWebSocket extends WebSocket with Logging {
 
   def onClose(code: Int, message: java.lang.String) {
   }
 
   def onOpen(connection: org.eclipse.jetty.websocket.WebSocket.Connection) {
-    log.info("WEB SOCKET CONNECTED")
+    logger.info("WEB SOCKET CONNECTED")
   }
 
 }
 
-class ZeromqMonitoring @Inject() (val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport {
-  val log = Logger(classOf[ZeromqMonitoring])
+class ZeromqMonitoring @Inject() (val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport with Logging {
 
   beforeAll {
     contentType = "text/html"
@@ -150,7 +148,7 @@ class ZeromqMonitoring @Inject() (val submitter: Submitter) extends ScalatraServ
   }
 
   get("/submit-test") {
-    log.info("submitting test jobs")
+    logger.info("submitting test jobs")
     //submitterTester.spawnTest()
     redirect(url("/"))
   }

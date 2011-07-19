@@ -20,7 +20,7 @@ import com.google.inject._
 import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.util.{ Modules => GuiceModules }
 import net.lag.configgy.{ Config, Configgy }
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 import scopt.OptionParser
 import scopt.OptionParser._
 
@@ -43,8 +43,7 @@ class EntryPoint @Inject() (
  
   This is the java `main` method. It instantiated a fully configured entrypoint with Guice, and runs it. */
 class Main
-object Main {
-  private val log = Logger(classOf[Main])
+object Main extends Logging {
 
   val parser = new OptionParser("scopt") {
     opt("s", "storage", "storage type (local, hdfs)", { v: String => Configgy.config.setString("storage", v) })
@@ -124,13 +123,13 @@ object Main {
   }
 
   def printSomeFeedback(mods: Seq[Module], conf: Config) {
-    log.info("Available modules: %s".format(Modules.modules.values.mkString(", ")))
-    log.info("Enabled modules: %s".format(mods.mkString(", ")))
+    logger.info("Available modules: %s".format(Modules.modules.values.mkString(", ")))
+    logger.info("Enabled modules: %s".format(mods.mkString(", ")))
   }
 
   def cleanup(injector: Injector) {
     /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
-    log.info("done")
+    logger.info("done")
     injector.instance[Fetcher[HCAF]].shutdown
     injector.instance[Loader[HSPEN]].shutdown
   }

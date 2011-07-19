@@ -12,6 +12,8 @@ import org.apache.cassandra.thrift.{ Column, ColumnPath }
 import org.apache.log4j.Logger
 
 import stopwatch.Stopwatch
+import com.weiglewilczek.slf4s.Logging
+
 //import com.googlecode.avro.marker._
 
 /*!
@@ -122,8 +124,7 @@ case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int
   def key = speciesId
 }
 
-object HSPEN extends ParseHelper {
-  private val log = Logger.getLogger(this.getClass);
+object HSPEN extends ParseHelper with Logging {
 
   implicit def makeHspen = HSPEN("", "", Set(), false, 0, 0, 0, 0, Envelope(), Envelope(), Envelope(), Envelope(), Envelope(), false, Envelope(), false)
 

@@ -2,7 +2,7 @@ package it.cnr.aquamaps.cloud
 
 import it.cnr.aquamaps._
 
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 import net.lag.configgy.{ Config, Configgy }
 
 import akka.agent.Agent
@@ -11,8 +11,7 @@ import com.google.inject._
 import com.google.inject.util.{ Modules => GuiceModules }
 import uk.me.lings.scalaguice.InjectorExtensions._
 
-class Submitter @Inject() (val js: JobSubmitter) {
-  private val log = Logger(getClass)
+class Submitter @Inject() (val js: JobSubmitter) extends Logging {
 
   val jobs = Agent(Map[String, JobSubmitter.Job]())
   def workers = js.workers
@@ -35,15 +34,14 @@ class Submitter @Inject() (val js: JobSubmitter) {
 }
 
 /*
-object SubmitterTester extends App {
-  private val log = Logger(SubmitterTester getClass)
+object SubmitterTester extends App with Logging{
 
   val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` WebModule())
   val submitter = injector.instance[Submitter]
 
   if (!Configgy.config.getBool("web").getOrElse(false)) {
     Thread.sleep(4000)
-    log.info("SENDING COMMAND storm")
+    logger.info("SENDING COMMAND storm")
 
     runTest()
   }
@@ -62,13 +60,13 @@ object SubmitterTester extends App {
     val job = spawnTest()
       
     Thread.sleep(1000)
-    log.info(">>>>>>>>>>>>>>>>>>>> Polling for status Checking total tasks")
-    log.info(">>>>>>>>>>>>>>>>>>>> Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
+    logger.info(">>>>>>>>>>>>>>>>>>>> Polling for status Checking total tasks")
+    logger.info(">>>>>>>>>>>>>>>>>>>> Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
     while (!job.completed) {
       Thread.sleep(1000)
-      log.info("Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
+      logger.info("Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
     }
-    log.info(">>>>>>>>>>>>>>>>>>>> Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
+    logger.info(">>>>>>>>>>>>>>>>>>>> Total job tasks %s, completed tasks %s. Completed ? %s".format(job.totalTasks, job.completedTasks, job.completed))
         
   }
 

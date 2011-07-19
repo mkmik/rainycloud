@@ -11,7 +11,7 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
 import Watch.timed
 import net.lag.configgy.Configgy
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 import java.io._
 import org.apache.commons.io.IOUtils
 import resource._
@@ -48,8 +48,7 @@ class COMPSsGenerator @Inject() (val delegate: FileParamsGenerator, val emitter:
 }
 
 /*! We would like to defer the merging of the results until we spawned all the tasks */
-class COMPSsCollectorEmitter[A] @Inject() (val tableWriter: TableWriter[A]) extends Emitter[A] {
-  private val log = Logger(classOf[COMPSsCollectorEmitter[A]])
+class COMPSsCollectorEmitter[A] @Inject() (val tableWriter: TableWriter[A]) extends Emitter[A] with Logging {
 
   var list: List[String] = List()
 
@@ -59,7 +58,7 @@ class COMPSsCollectorEmitter[A] @Inject() (val tableWriter: TableWriter[A]) exte
 
   /*! The actual merging is invoked upon emitter flush, which is called at the end of the job. */
   def flush {
-    log.info("merging results into %s".format(tableWriter))
+    logger.info("merging results into %s".format(tableWriter))
     timed("merging") {
       for {
         fw <- managed(tableWriter.writer)

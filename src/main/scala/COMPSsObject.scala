@@ -10,7 +10,7 @@ import com.google.inject.util.{ Modules => GuiceModules }
 import uk.me.lings.scalaguice.InjectorExtensions._
 import uk.me.lings.scalaguice.ScalaModule
 import Watch.timed
-import net.lag.logging.Logger
+import com.weiglewilczek.slf4s.Logging
 import java.io._
 import org.apache.commons.io.IOUtils
 import resource._

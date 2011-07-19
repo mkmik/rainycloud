@@ -11,6 +11,7 @@ import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 
 import stopwatch.Stopwatch
+import com.weiglewilczek.slf4s.Logging
 
 /*!## Parked
 
@@ -29,8 +30,7 @@ trait CassandraConnectionConfig extends CassandraConfig {
   def cassandraPort: Int
 }
 
-trait Cassandra extends CassandraConnectionConfig {
-  private val log = Logger.getLogger(this.getClass);
+trait Cassandra extends CassandraConnectionConfig with Logging {
 
   import CassandraConversions._
 
@@ -40,7 +40,7 @@ trait Cassandra extends CassandraConnectionConfig {
   lazy val keyspace = HFactory.createKeyspace(keyspaceName, cluster)
 
   def rangeSlice(from: String, to: String, size: Long, columns: List[String]) = {
-    log.info("getting slice %s %s %s  on  %s %s".format(from, to, size, keyspaceName, columnFamily))
+    logger.info("getting slice %s %s %s  on  %s %s".format(from, to, size, keyspaceName, columnFamily))
 
     val serializer = StringSerializer.get
     val rangeSlicesQuery = HFactory.createRangeSlicesQuery(keyspace, serializer, serializer, serializer)
@@ -54,7 +54,7 @@ trait Cassandra extends CassandraConnectionConfig {
 
   def batchMutate(mutas: java.util.Map[String, MutationList]) = {
     val serializer = StringSerializer.get
-    log.info("upserting %s rows".format(mutas.size))
+    logger.info("upserting %s rows".format(mutas.size))
 
     Stopwatch("upsert") {
       val mutator = HFactory.createMutator(keyspace, serializer)
@@ -90,15 +90,14 @@ trait CassandraFetcher extends Cassandra {
   }
 }
 
-trait CassandraSink extends Cassandra {
-  private val log = Logger.getLogger(this.getClass);
+trait CassandraSink extends Cassandra with Logging {
 
   def outputColumnFamily: String
   def batchSize = 10000
 
   def store(hugeRows: Iterable[Row]) = {
     Stopwatch("store") {
-      log.info("storing %s hspec rows".format(hugeRows.size))
+      logger.info("storing %s hspec rows".format(hugeRows.size))
       for (rows <- hugeRows.toStream.grouped(batchSize)) {
         def makeRow(row: Row) = row match { case (key, cols) => (key -> makeColumns(cols)) }
         def makeMutations(cols: Iterable[Column]) = cols.map { col => mutation(col) }
