@@ -1,6 +1,6 @@
 name := "rainycloud"
 
-version := "1.2"
+version := "1.2.2"
 
 organization := "it.cnr"
 
