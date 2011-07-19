@@ -1,1 +1,28 @@
-{"userName":"gianpaolo.coro","nWorkers":100,"generativeModel":"AQUAMAPS","environment":"windows azure","hspenTableName":{"jdbcUrl":"jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username\u003dutente;password\u003dd4science","tableName":"hspen"},"hcafTableName":{"jdbcUrl":"jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username\u003dutente;password\u003dd4science","tableName":"hcaf_d"},"hspecDestinationTableName":{"jdbcUrl":"jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username\u003dutente;password\u003dd4science","tableName":"hspec_suitable_automatic_2"},"occurrenceCellsTable":{"jdbcUrl":"jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username\u003dutente;password\u003dd4science","tableName":"maxminlat_hspen"},"is2050":false,"isNativeGeneration":false,"configuration":{"property2":"value2","property1":"value1"}}
+{
+  "configuration": {
+    "property1": "value1", 
+    "property2": "value2"
+  }, 
+  "environment": "windows azure", 
+  "generativeModel": "AQUAMAPS", 
+  "hcafTableName": {
+    "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username=utente;password=d4science", 
+    "tableName": "hcaf_d"
+  }, 
+  "hspecDestinationTableName": {
+    "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username=utente;password=d4science", 
+    "tableName": "hspec2011_07_19_16_47_47_005"
+  }, 
+  "hspenTableName": {
+    "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username=utente;password=d4science", 
+    "tableName": "hspen"
+  }, 
+  "is2050": false, 
+  "isNativeGeneration": true, 
+  "nWorkers": 100, 
+  "occurrenceCellsTable": {
+    "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username=utente;password=d4science", 
+    "tableName": "maxminlat_hspen"
+  }, 
+  "userName": "gianpaolo.coro"
+}
