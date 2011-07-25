@@ -3,13 +3,9 @@ package it.cnr.aquamaps
 import it.cnr.aquamaps.cloud._
 import javax.servlet.Servlet
 import javax.servlet.http.HttpServletRequest
-import org.eclipse.jetty.websocket.WebSocket
-import org.eclipse.jetty.websocket.WebSocketServlet
 
 import org.scalatra._
 import org.scalatra.scalate._
-import org.scalatra.socketio.SocketIOSupport
-import com.glines.socketio.server.SocketIOFrame
 
 import org.mortbay.jetty.Server
 import org.mortbay.jetty.servlet.{ Context, ServletHolder }
@@ -19,22 +15,6 @@ import com.weiglewilczek.slf4s.Logging
 import net.lag.configgy.{ Config, Configgy }
 
 import com.google.inject._
-
-class ZeromqMonitoringTest extends WebSocketServlet with Servlet {
-  def doWebSocketConnect(request: HttpServletRequest,
-    protocol: String): WebSocket = new TestWebSocket()
-}
-
-class TestWebSocket extends WebSocket with Logging {
-
-  def onClose(code: Int, message: java.lang.String) {
-  }
-
-  def onOpen(connection: org.eclipse.jetty.websocket.WebSocket.Connection) {
-    logger.info("WEB SOCKET CONNECTED")
-  }
-
-}
 
 class ZeromqMonitoring @Inject() (val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport with Logging {
 
@@ -51,7 +31,6 @@ class ZeromqMonitoring @Inject() (val submitter: Submitter) extends ScalatraServ
       <head>
         <link href={ url("/stylesheets/site.css") } rel="stylesheet" type="text/css"/>
         <script src={ url("/javascripts/jquery-1.6.1.min.js") } type="text/javascript"></script>
-        <script src={ url("/javascripts/socket.io.js") } type="text/javascript"></script>
         <script src={ url("/javascripts/app.js") } type="text/javascript"></script>
         <title>Rainy cloud</title>
         <style>{ style }</style>
@@ -165,41 +144,3 @@ class ZeromqMonitoring @Inject() (val submitter: Submitter) extends ScalatraServ
 
 }
 
-class ZeromqMonitoringSocket extends ScalatraServlet with SocketIOSupport {
-  // socket io
-
-  socketio { socket =>
-    socket.onConnect { connection =>
-      println("Connecting chat client [%s]" format connection.clientId)
-      try {
-        connection.send(SocketIOFrame.JSON_MESSAGE_TYPE, """{ "welcome": "Welcome to Socket IO chat" }""")
-      } catch {
-        case _ => connection.disconnect
-      }
-      connection.broadcast(SocketIOFrame.JSON_MESSAGE_TYPE,
-        """{ "announcement": "New participant [%s]" }""".format(connection.clientId))
-    }
-
-    socket.onDisconnect { (connection, reason, _) =>
-      println("Disconnecting chat client [%s] (%s)".format(connection.clientId, reason))
-      connection.broadcast(SocketIOFrame.JSON_MESSAGE_TYPE,
-        """{ "announcement": "Participant [%s] left" }""".format(connection.clientId))
-    }
-
-    socket.onMessage { (connection, _, message) =>
-      println("RECV: [%s]" format message)
-      message match {
-        case "/rclose" => {
-          connection.close
-        }
-        case "/rdisconnect" => {
-          connection.disconnect
-        }
-        case _ => {
-          connection.broadcast(SocketIOFrame.JSON_MESSAGE_TYPE,
-            """{ "message": ["%s", "%s"] }""".format(connection.clientId, message))
-        }
-      }
-    }
-  }
-}

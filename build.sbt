@@ -71,7 +71,6 @@ libraryDependencies ++= Seq(
   val scalatraVersion = "2.0.0-SNAPSHOT"
   libraryDependencies ++= Seq(
     "org.scalatra" %% "scalatra" % scalatraVersion,
-    "org.scalatra" %% "scalatra-socketio" % scalatraVersion,
     "org.scalatra" %% "scalatra-scalate" % scalatraVersion,
     "org.mortbay.jetty" % "servlet-api" % "2.5-20081211" % "provided"
   )
