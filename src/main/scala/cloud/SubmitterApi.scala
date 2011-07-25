@@ -6,8 +6,6 @@ import javax.servlet.Servlet
 
 import org.scalatra._
 import org.scalatra.scalate._
-import org.scalatra.socketio.SocketIOSupport
-import com.glines.socketio.server.SocketIOFrame
 
 import org.mortbay.jetty.Server
 import org.mortbay.jetty.servlet.{ Context, ServletHolder }
