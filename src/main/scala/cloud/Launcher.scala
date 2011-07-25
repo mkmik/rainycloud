@@ -2,6 +2,7 @@ package it.cnr.aquamaps.cloud
 import akka.actor.ActorRef
 import com.google.gson.Gson
 import com.twitter.querulous.evaluator.QueryEvaluator
+import com.twitter.querulous.query.NullValues
 import it.cnr.aquamaps._
 
 import com.google.inject._
@@ -104,13 +105,24 @@ class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emit
   val user = urlComps(1).split("=")(1)
   val password = urlComps(2).split("=")(1)
 
+  val insertStatement = "INSERT INTO %s VALUES (?, ?, ?, ?, ?, ?, ?, ?)".format(table.tableName)
+
   val queryEvaluator = QueryEvaluator("java.lang.String", cleanUrl, user, password)
   val res = queryEvaluator.select("SELECT count(*) FROM %s".format(table.tableName)) { row =>
     println("got row %s".format(row.getInt(1)))
   }
 
-  def emit(record: HSPEC) = {
+  @inline
+  def boolint(v: Boolean) = v match { 
+    case true => 1
+    case false => 0
+  }
 
+  def emit(r: HSPEC) = {
+    queryEvaluator.transaction { transaction =>
+      //transaction.execute(insertStatement, r.speciesId, r.csquareCode, r.probability, boolint(r.inBox), boolint(r.inFao), r.faoAreaM.toInt, null, r.lme.toInt)
+      transaction.execute(insertStatement, r.speciesId, r.csquareCode, r.probability, boolint(r.inBox), boolint(r.inFao), r.faoAreaM.toInt, NullValues.NullString, r.lme.toInt)
+    }
   }
 
   def flush = {

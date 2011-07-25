@@ -18,7 +18,7 @@ object DatabaseHSPECEmitterSpec extends Specification with Mockito {
     "emit into db" in {
       case class TestModule() extends AbstractModule with ScalaModule {
         def configure() {
-          val hspecTable = Table("jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username=utente;password=d4science","hspec2011_07_19_16_47_47_005")
+          val hspecTable = Table("jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username=utente;password=d4science","hspec_test_loading")
           val jobRequest = JobRequest("windows azure", "AQUAPS", null, null, hspecTable, false, true, 1, null, "test", Map[String, String]())
           val taskRequest = TaskRequest(Partition("1000", 21172), jobRequest)
 
@@ -30,8 +30,8 @@ object DatabaseHSPECEmitterSpec extends Specification with Mockito {
       val injector = Guice createInjector TestModule()
       val emitter = injector.instance[Emitter[HSPEC]]
                                       
-      emitter.emit(new HSPEC("t1", "c1", 0, false, false, 0, 0, 0));
-      emitter.emit(new HSPEC("t2", "c2", 0, false, false, 0, 0, 0));
+      emitter.emit(new HSPEC("t1", "c1", 0, false, false, 2, 0, 0));
+      emitter.emit(new HSPEC("t2", "c2", 0, false, true, 0, 0, 3));
       emitter.flush
     }
   }
