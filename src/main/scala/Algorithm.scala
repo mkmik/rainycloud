@@ -25,7 +25,7 @@ class RandomHSpecAlgorithm extends HspecAlgorithm {
       if (random.nextInt(12) == 0)
         List(new HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = random.nextInt(10000),
           inBox = random.nextBoolean, inFao = random.nextBoolean,
-          lme = random.nextInt(10), eez = random.nextInt(10)))
+          lme = random.nextInt(10), eez = null))
       else
         Nil
     }
@@ -42,7 +42,7 @@ class AllHSpecAlgorithm extends HspecAlgorithm {
     hcaf.map { hcaf =>
       new HSPEC(csquareCode = hcaf.csquareCode, faoAreaM = hcaf.faoAreaM, speciesId = hspen.speciesId, probability = random.nextInt(10000),
         inBox = random.nextBoolean, inFao = random.nextBoolean,
-        lme = random.nextInt(10), eez = random.nextInt(10))
+        lme = random.nextInt(10), eez = null)
     }
   }
 

@@ -118,10 +118,16 @@ class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emit
     case false => 0
   }
 
+  @inline
+  def nullable(v: String) = v match {
+    case null => NullValues.NullString
+    case s => s
+  }
+
   def emit(r: HSPEC) = {
     queryEvaluator.transaction { transaction =>
       //transaction.execute(insertStatement, r.speciesId, r.csquareCode, r.probability, boolint(r.inBox), boolint(r.inFao), r.faoAreaM.toInt, null, r.lme.toInt)
-      transaction.execute(insertStatement, r.speciesId, r.csquareCode, r.probability, boolint(r.inBox), boolint(r.inFao), r.faoAreaM.toInt, NullValues.NullString, r.lme.toInt)
+      transaction.execute(insertStatement, r.speciesId, r.csquareCode, r.probability, boolint(r.inBox), boolint(r.inFao), r.faoAreaM.toInt, nullable(r.eez), r.lme.toInt)
     }
   }
 

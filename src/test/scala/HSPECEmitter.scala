@@ -25,8 +25,8 @@ object HSPECEmitterSpec extends Specification with Mockito {
       val injector = Guice createInjector TestModule()
       val emitter = injector.instance[Emitter[HSPEC]]
                                       
-      emitter.emit(new HSPEC("t1", "c1", 0, false, false, 0, 0, 0));
-      emitter.emit(new HSPEC("t2", "c2", 0, false, false, 0, 0, 0));
+      emitter.emit(new HSPEC("t1", "c1", 0, false, false, 0, 0, ""));
+      emitter.emit(new HSPEC("t2", "c2", 0, false, false, 0, 0, "3"));
       emitter.flush
     }
   }
