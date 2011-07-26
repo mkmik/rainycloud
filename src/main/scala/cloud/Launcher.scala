@@ -1,7 +1,13 @@
 package it.cnr.aquamaps.cloud
+import akka.actor.Actor
+import akka.actor.Actor._
 import akka.actor.ActorRef
+import akka.actor.Channel
+import akka.actor.PoisonPill
+import akka.dispatch.Dispatchers
 import com.google.gson.Gson
 import com.twitter.querulous.evaluator.QueryEvaluator
+import com.twitter.querulous.evaluator.Transaction
 import com.twitter.querulous.query.NullValues
 import it.cnr.aquamaps._
 
@@ -98,40 +104,83 @@ case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModu
 class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emitter[HSPEC] with Logging {
 
   val table = taskRequest.job.hspecDestinationTableName
-  logger.info("YYYYYYYYYYYYY preparing write in db %s %s".format(table.jdbcUrl, table.tableName))
+  val insertStatement = "INSERT INTO %s VALUES (?, ?, ?, ?, ?, ?, ?, ?);".format(table.tableName)
 
+  class DatabaseWriter(val transaction: Transaction) extends Actor {
+    logger.info("YYYYYYYYYYYYY preparing write in db %s %s".format(table.jdbcUrl, table.tableName))
+
+    import akka.util.duration._
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 100)
+
+    var transactionCloser : Option[Channel[Any]] = None
+
+    def receive = {
+      case r : HSPEC =>
+        transaction.execute(insertStatement, r.speciesId, r.csquareCode, r.probability, boolint(r.inBox), boolint(r.inFao), r.faoAreaM.toInt, nullable(r.eez), r.lme.toInt)
+        // self.reply("ok")
+      case "Block" => transactionCloser = Some(self.channel)
+      case "Wait" => self.reply("ok")
+      case _ => // ignore
+    }
+
+    override def postStop = {
+      transactionCloser match {
+        case None => 
+        case Some(channel) => channel ! "ok"
+      }
+    }
+
+    @inline
+    def boolint(v: Boolean) = v match { 
+      case true => 1
+      case false => 0
+    }
+
+    @inline
+    def nullable(v: String) = v match {
+      case null => NullValues.NullString
+      case s => s
+    }
+  }
+
+  
   val urlComps = table.jdbcUrl.split(";")
   val cleanUrl = urlComps(0)
   val user = urlComps(1).split("=")(1)
   val password = urlComps(2).split("=")(1)
-
-  val insertStatement = "INSERT INTO %s VALUES (?, ?, ?, ?, ?, ?, ?, ?)".format(table.tableName)
-
+  
   val queryEvaluator = QueryEvaluator("java.lang.String", cleanUrl, user, password)
-  val res = queryEvaluator.select("SELECT count(*) FROM %s".format(table.tableName)) { row =>
-    println("got row %s".format(row.getInt(1)))
-  }
 
-  @inline
-  def boolint(v: Boolean) = v match { 
-    case true => 1
-    case false => 0
-  }
-
-  @inline
-  def nullable(v: String) = v match {
-    case null => NullValues.NullString
-    case s => s
-  }
-
-  def emit(r: HSPEC) = {
-    queryEvaluator.transaction { transaction =>
-      //transaction.execute(insertStatement, r.speciesId, r.csquareCode, r.probability, boolint(r.inBox), boolint(r.inFao), r.faoAreaM.toInt, null, r.lme.toInt)
-      transaction.execute(insertStatement, r.speciesId, r.csquareCode, r.probability, boolint(r.inBox), boolint(r.inFao), r.faoAreaM.toInt, nullable(r.eez), r.lme.toInt)
+  class TransactionHolder extends Actor {
+    
+    def receive = {
+      case "init" =>
+        queryEvaluator.transaction { transaction =>
+          val writer = actorOf(new DatabaseWriter(transaction)).start
+          self.reply(writer)
+          writer !! ("Block", 100000000)
+        }
     }
+  }
+  val holder = actorOf(new TransactionHolder()).start
+
+  val writer = (holder !! "init") match {
+    case Some(actor: ActorRef) => actor
+    case _ => throw new Exception("cannot get transaction")
+  }
+
+  var emitted = 0
+  def emit(r: HSPEC) = {
+    writer ! r
+    emitted += 1
+    if(emitted % 1000 == 0)
+      logger.info("emitted %d".format(emitted))
   }
 
   def flush = {
+    val f = writer !! ("Wait", 100000000)
+
+    writer ! PoisonPill
     logger.info("XXXXXXXXXXXXXXXX flushing hcaf")
   }
 }

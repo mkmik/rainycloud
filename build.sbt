@@ -105,6 +105,6 @@ libraryDependencies ++= Seq(
   "org.mortbay.jetty" % "jetty" % "6.1.22" % "jetty",
   "ch.qos.logback" % "logback-classic" % "0.9.26",
   "joda-time" % "joda-time" % "1.6.2",
-  "postgresql" % "postgresql" % "8.4-701.jdbc3",
+  "postgresql" % "postgresql" % "8.4-701.jdbc4",
   "com.traveas" %% "querulous-light" % "0.0.6"
 )
