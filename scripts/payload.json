@@ -11,7 +11,7 @@
   }, 
   "hspecDestinationTableName": {
     "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username=utente;password=d4science", 
-    "tableName": "hspec2011_07_19_16_47_47_005"
+    "tableName": "hspec_test_loading"
   }, 
   "hspenTableName": {
     "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username=utente;password=d4science", 
