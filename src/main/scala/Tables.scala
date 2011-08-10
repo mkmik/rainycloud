@@ -41,7 +41,7 @@ object CellEnvelope {
 case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: Double, var faoAreaM: Int,
   var depth: CellEnvelope,
   var sstAnMean: Double, var sbtAnMean: Double, var salinityMean: Double, var salinityBMean: Double,
-  var primProdMean: Double, var iceConAnn: Double, var landDist: Double, var eezFirst: Double, var lme: Double) extends Keyed {
+  var primProdMean: Double, var iceConAnn: Double, var landDist: Double, var eezFirst: String, var lme: Int) extends Keyed {
 
   override def toString() = "HCAF(%s)".format(csquareCode)
   def details() = "HSPEC(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(csquareCode, centerLat, centerLong, faoAreaM, depth.min, depth.max, depth.mean, sstAnMean, sbtAnMean, salinityMean, salinityBMean,
@@ -56,6 +56,12 @@ trait ParseHelper {
     case None => -9999.0
   }
 
+  def parseInt(value: Option[String]) = value match {
+    case Some("") => 0
+    case Some(x) => x.toInt
+    case None => 0
+  }
+
   def parseBool(value: Option[String]) = value match {
     case Some("1") => true
     case Some("0") => false
@@ -67,7 +73,7 @@ trait ParseHelper {
 }
 
 object HCAF extends ParseHelper {
-  implicit def makeHcaf = HCAF("", 0, 0, 0, CellEnvelope(), 0, 0, 0, 0, 0, 0, 0, 0, 0)
+  implicit def makeHcaf = HCAF("", 0, 0, 0, CellEnvelope(), 0, 0, 0, 0, 0, 0, 0, "", 0)
 
   val columns = List("CsquareCode", "OceanArea", "CenterLat", "CenterLong", "FAOAreaM", "DepthMin", "DepthMax", "SSTAnMean", "SBTAnMean", "SalinityMean", "SalinityBMean", "PrimProdMean", "IceConAnn", "LandDist", "EEZFirst", "LME", "DepthMean")
 
@@ -81,6 +87,7 @@ object HCAF extends ParseHelper {
 
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
+    def getInt(value: String) = parseInt(x.get(value))
     def getEnvelope(name: String) = CellEnvelope(get(name + "Min"), get(name + "Max"), get(name + "Mean"))
     def faoArea(area: String) = if(area.isEmpty()) -1 else area.toInt
 
@@ -96,8 +103,8 @@ object HCAF extends ParseHelper {
       get("PrimProdMean"),
       get("IceConAnn"),
       get("LandDist"),
-      get("EEZFirst"),
-      get("LME"))
+      x.get("EEZFirst").getOrElse(""),
+      getInt("LME"))
   }
 }
 
@@ -138,6 +145,7 @@ object HSPEN extends ParseHelper with Logging {
 
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
+    def getInt(value: String) = parseInt(x.get(value))
     def getBool(name: String) = parseBool(x.get(name))
 
     def getEnvelope(name: String) = Envelope(get(name + "Min"), get(name + "Max"), get(name + "PrefMin"), get(name + "PrefMax"))
@@ -182,7 +190,7 @@ object HSPEN extends ParseHelper with Logging {
  */
 
 case class HSPEC(var speciesId: String, var csquareCode: String, var probability: Double, var inBox: Boolean, var inFao: Boolean,
-  var faoAreaM: Int, var lme: Double, var eez: Double) extends CassandraConfig with CassandraCreator {
+  var faoAreaM: Int, var lme: Int, var eez: String) extends CassandraConfig with CassandraCreator {
   override def keyspaceName = "Aquamaps"
   override def columnFamily = "hspec"
 
@@ -204,6 +212,7 @@ object HSPEC extends ParseHelper {
 
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
+    def getInt(value: String) = parseInt(x.get(value))
     def getBool(name: String) = parseBool(x.get(name))
     def faoArea(area: String) = if(area.isEmpty()) -1 else area.toInt
 
@@ -213,8 +222,8 @@ object HSPEC extends ParseHelper {
       getBool("boundingboxYN"),
       getBool("faoareaYN"),
       faoArea(x.get("FAOAreaM").getOrElse("")),
-      get("LME"),
-      get("EEZAll"))
+      getInt("LME"),
+      x.get("EEZAll").getOrElse(""))
   }
 
 }
