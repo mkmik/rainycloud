@@ -102,6 +102,7 @@ case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModu
 }
 
 class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvSerializer: CSVSerializer) extends Emitter[HSPEC] with Logging {
+  println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> COPYING partition %s".format(taskRequest.partition))
   val table = taskRequest.job.hspecDestinationTableName
   val copyStatement = "COPY %s FROM STDIN WITH CSV".format(table.tableName)
 

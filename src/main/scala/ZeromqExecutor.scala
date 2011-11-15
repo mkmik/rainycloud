@@ -129,7 +129,7 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
       case Submit(task) => logger.debug("submitting to execute %s".format(task)); executeTask(task)
       case progress: Progress => trackProgress(progress) 
       case Finish(task) => logger.debug("sending back ready"); finished(task);
-      case ReceiveTimeout => logger.debug("ww %s inner control timed out".format(name)); perhapsRecover()
+      case ReceiveTimeout => /* logger.debug("ww %s inner control timed out".format(name)); */ perhapsRecover()
     }
 
     override def postStop() = {
@@ -141,13 +141,13 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
   def send(msg: String): Unit = send(socket, msg)
 
   def send(socket: ZMQ.Socket, msg: String) = {
-    logger.debug("SENDING %s from %s".format(msg, name));
+    //logger.debug("SENDING %s from %s".format(msg, name));
     sendParts(socket, name, "", msg)
   }
 
   // TODO: cleanup
   def send(socket: ZMQ.Socket, msg: String, arg: String) = {
-    logger.debug("SENDING %s from %s".format(msg, name));
+    //logger.debug("SENDING %s from %s".format(msg, name));
     sendParts(socket, name, "", msg, arg)
   }
 

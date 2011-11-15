@@ -51,19 +51,19 @@ trait ZeromqHandler extends Logging {
   def sendParts(parts: Array[Byte]*): Unit = sendParts(socket, parts: _*)
 
   def sendParts(socket: ZMQ.Socket, parts: Array[Byte]*) = {
-    logger.debug("   debug: zmq send s(%s) t(%s) (%s) (data %s)".format(socket, Thread.currentThread().getId(), Thread.currentThread(), List(parts.map(x => new String(x)))))
-    logger.debug("  --------- Sending (thread %s):".format(Thread.currentThread()))
+    //logger.debug("   debug: zmq send s(%s) t(%s) (%s) (data %s)".format(socket, Thread.currentThread().getId(), Thread.currentThread(), List(parts.map(x => new String(x)))))
+    //logger.debug("  --------- Sending (thread %s):".format(Thread.currentThread()))
     for (i <- 0 until parts.length) {
       val more = if (i == parts.length - 1) 0 else ZMQ.SNDMORE
-      logger.debug("  '%s' (%s bytes) (%s)".format(new String(parts(i)), parts(i).length, more))
+      //logger.debug("  '%s' (%s bytes) (%s)".format(new String(parts(i)), parts(i).length, more))
 
       socket.send(parts(i), more)
     }
-    logger.debug("  ---------")
+    //logger.debug("  ---------")
   }
 
   def recv() = {
-    logger.debug("   debug: zmq recv s(%s) t(%s)".format(socket, Thread.currentThread().getId()))
+    //logger.debug("   debug: zmq recv s(%s) t(%s)".format(socket, Thread.currentThread().getId()))
     new String(socket.recv(0))
   }
 
