@@ -86,7 +86,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
     }
 
     def workerAlive(worker: WorkerRef) = {
-      logger.debug("%s still alive".format(worker))
+      //logger.debug("%s still alive".format(worker))
       if (!workers.contains(worker))
         sender ! Joined(worker)
       sender ! Heartbeaten(worker)
@@ -246,7 +246,7 @@ class ZeromqJobSubmitter extends ZeromqHandler with JobSubmitter with ZeromqJobS
       // we are here because the worker signaled that it's free accepting new tasks
       worker.currentTask = None
 
-      logger.debug("Worker %s is now ready.Previous ready workers: %s (%s)".format(worker, readyWorkers, Thread.currentThread()))
+      //logger.debug("Worker %s is now ready.Previous ready workers: %s (%s)".format(worker, readyWorkers, Thread.currentThread()))
       if (!(readyWorkers contains worker)) {
         readyWorkers = readyWorkers enqueue worker
         logger.debug("                        Current ready workers: %s".format(readyWorkers))
