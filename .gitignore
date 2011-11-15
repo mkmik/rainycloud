@@ -15,3 +15,4 @@ logs
 src/main/webapp/javascripts/cumino.js
 .emacs.desktop*
 doc
+.ivy2

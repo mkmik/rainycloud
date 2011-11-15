@@ -1,3 +1,7 @@
+import AssemblyKeys._ // put this at the top of the file
+
+seq(assemblySettings: _*)
+
 name := "rainycloud"
 
 version := "1.2.2"
@@ -101,7 +105,7 @@ mainClass in (Compile, assembly) := Some("it.cnr.aquamaps.Main")
 
 libraryDependencies ++= Seq(
 //  "net.liftweb" %% "lift-webkit" % "2.3" % "compile",
-  "org.mortbay.jetty" % "jetty" % "6.1.22" % "jetty",
+  "org.mortbay.jetty" % "jetty" % "6.1.22" % "container",
   "ch.qos.logback" % "logback-classic" % "0.9.26",
   "joda-time" % "joda-time" % "1.6.2",
   "postgresql" % "postgresql" % "8.4-701.jdbc4",
