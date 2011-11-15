@@ -94,7 +94,7 @@ case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModu
     //    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz")))
     //        bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
 
-    bind[Emitter[HSPEC]].to[DatabaseHSPECEmitter].in[Singleton]
+    bind[Emitter[HSPEC]].to[CopyDatabaseHSPECEmitter].in[Singleton]
     bind[Partitioner].toInstance(new StaticPartitioner(Seq("%s %s".format(taskRequest.partition.size, taskRequest.partition.start)).toIterator))
 
     bind[TaskRequest].toInstance(taskRequest)
@@ -187,91 +187,6 @@ class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvS
     println("reader stopped")
 
     println("DONE")
-  }
-}
-
-
-class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emitter[HSPEC] with Logging {
-
-  val table = taskRequest.job.hspecDestinationTableName
-  val insertStatement = "INSERT INTO %s VALUES (?, ?, ?, ?, ?, ?, ?, ?);".format(table.tableName)
-
-  class DatabaseWriter(val transaction: Transaction) extends Actor {
-    logger.info("YYYYYYYYYYYYY preparing write in db %s %s".format(table.jdbcUrl, table.tableName))
-
-    import akka.util.duration._
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 100)
-
-    var transactionCloser : Option[Channel[Any]] = None
-
-    def receive = {
-      case r : HSPEC =>
-        transaction.execute(insertStatement, r.speciesId, r.csquareCode, r.probability, boolint(r.inBox), boolint(r.inFao), r.faoAreaM.toInt, nullable(r.eez), r.lme.toInt)
-        // self.reply("ok")
-      case "Block" => transactionCloser = Some(self.channel)
-      case "Wait" => self.reply("ok")
-      case _ => // ignore
-    }
-
-    override def postStop = {
-      transactionCloser match {
-        case None =>
-        case Some(channel) => channel ! "ok"
-      }
-    }
-
-    @inline
-    def boolint(v: Boolean) = v match {
-      case true => 1
-      case false => 0
-    }
-
-    @inline
-    def nullable(v: String) = v match {
-      case null => NullValues.NullString
-      case s => s
-    }
-  }
-
-
-  val urlComps = table.jdbcUrl.split(";")
-  val cleanUrl = urlComps(0)
-  val user = urlComps(1).split("=")(1)
-  val password = urlComps(2).split("=")(1)
-
-  val queryEvaluator = QueryEvaluator("java.lang.String", cleanUrl, user, password)
-
-  class TransactionHolder extends Actor {
-
-    def receive = {
-      case "init" =>
-        queryEvaluator.transaction { transaction =>
-          val writer = actorOf(new DatabaseWriter(transaction)).start
-          self.reply(writer)
-          writer !! ("Block", 100000000)
-        }
-    }
-  }
-  val holder = actorOf(new TransactionHolder()).start
-
-  val writer = (holder !! "init") match {
-    case Some(actor: ActorRef) => actor
-    case _ => throw new Exception("cannot get transaction")
-  }
-
-  var emitted = 0
-  def emit(r: HSPEC) = {
-    writer ! r
-    emitted += 1
-    if(emitted % 1000 == 0)
-      logger.info("emitted %d".format(emitted))
-  }
-
-  def flush = {
-    val f = writer !! ("Wait", 100000000)
-
-    writer ! PoisonPill
-    logger.info("XXXXXXXXXXXXXXXX flushing hcaf")
   }
 }
 

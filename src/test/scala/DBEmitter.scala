@@ -34,8 +34,8 @@ object DatabaseHSPECEmitterSpec extends Specification with Mockito {
       val injector = Guice createInjector TestModule()
       val emitter = injector.instance[Emitter[HSPEC]]
 
-      for(i <- 1 to 152647576) {
-      //for(i <- 1 to 100) {
+      //for(i <- 1 to 152647576) {
+      for(i <- 1 to 100) {
         emitter.emit(new HSPEC("t%s".format(i), "c%s".format(i), 0, false, false, 2, 0, ""));
       }
       emitter.flush
