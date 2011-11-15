@@ -123,19 +123,18 @@ class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends 
     import akka.util.duration._
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
 
-    val pipedWriter = new java.io.PipedWriter
+    val pipedOutputStream = new java.io.PipedOutputStream
 
     def receive = {
       case r : HSPEC =>
-        //pipedWriter.write("c\ta\t0\t0\t0\t0\t0\t0\n")
-        pipedWriter.write("Fis-26536,3204:457:3,1,1,1,51, 450,30")
+        pipedOutputStream.write("Fis-26536,3204:457:3,1,1,1,51, 450,30\n".getBytes())
         println("EMITTING to %s".format(java.lang.Thread.currentThread.getId))
-      case "Writer" => self.reply(pipedWriter)
+      case "Writer" => self.reply(pipedOutputStream)
       case "Wait" => self.reply("ok")
       case _ => // ignore
     }
 
-    override def postStop = {pipedWriter.close(); println("WRITER CLOSED")}
+    override def postStop = {pipedOutputStream.close(); println("WRITER CLOSED")}
   }
 
   val writer = actorOf(new DatabaseWriter).start
@@ -144,34 +143,23 @@ class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends 
     import akka.util.duration._
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
 
-    val pipedWriter : Option[java.io.PipedWriter] = (writer !! "Writer").asInstanceOf[Option[java.io.PipedWriter]]
-    val pipedReader : java.io.PipedReader = pipedWriter match {
-      case Some(writer) => new java.io.PipedReader(writer)
+    val pipedOutputStream : Option[java.io.PipedOutputStream] = (writer !! "Writer").asInstanceOf[Option[java.io.PipedOutputStream]]
+    val pipedInputStream : java.io.PipedInputStream = pipedOutputStream match {
+      case Some(writer) => new java.io.PipedInputStream(writer)
       case None => throw new Exception("cannot obtain piped writer")
     }
 
     def receive = {
       case "Start" => {
         println("STARTING DB COPY %s".format(java.lang.Thread.currentThread.getId))
-        copyApi.copyIn(copyStatement, pipedReader)
-/*
-        var numRead=0
-        val buf = new Array[Char](1024)
-
-        numRead=pipedReader.read(buf)
-        while(numRead != -1){
-          val readData = String.valueOf(buf, 0, numRead)
-          println(readData)
-          numRead=pipedReader.read(buf)
-        }
-        */
+        copyApi.copyIn(copyStatement, pipedInputStream)
         println("DB COPY FINISHED %s".format(java.lang.Thread.currentThread.getId))
       }
       case "Wait" => self.reply("ok")
       case _ => // ignore
     }
 
-    override def postStop = {pipedReader.close() ; println("READER CLOSED")}
+    override def postStop = {pipedInputStream.close() ; println("READER CLOSED")}
   }
 
   val reader = actorOf(new DatabaseReader).start
