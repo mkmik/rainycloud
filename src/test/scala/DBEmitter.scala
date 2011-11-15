@@ -20,7 +20,7 @@ object DatabaseHSPECEmitterSpec extends Specification with Mockito {
         def configure() {
           //val hspecTable = Table("jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdated;username=utente;password=d4science", "hspec_test_loading")
 
-          val hspecTable = Table("jdbc:postgresql://localhost/aquamapsorgupdated;username=utente;password=d4science", "hspec_test_loading")
+          val hspecTable = Table("jdbc:postgresql://localhost:5433/aquamapsorgupdated;username=utente;password=d4science", "hspec_test_loading")
           val jobRequest = JobRequest("windows azure", "AQUAMAPS", null, null, hspecTable, false, true, 1, null, "test", Map[String, String]())
           val taskRequest = TaskRequest(Partition("1000", 21172), jobRequest)
 
