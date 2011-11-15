@@ -25,14 +25,15 @@ object DatabaseHSPECEmitterSpec extends Specification with Mockito {
           val taskRequest = TaskRequest(Partition("1000", 21172), jobRequest)
 
           bind[TaskRequest].toInstance(taskRequest)
-          bind[Emitter[HSPEC]].to[DatabaseHSPECEmitter].in[Singleton]
+          bind[Emitter[HSPEC]].to[CopyDatabaseHSPECEmitter].in[Singleton]
         }
       }
 
       val injector = Guice createInjector TestModule()
       val emitter = injector.instance[Emitter[HSPEC]]
 
-      for(i <- 1 to 152647576) {
+      //for(i <- 1 to 152647576) {
+      for(i <- 1 to 100) {
         emitter.emit(new HSPEC("t%s".format(i), "c%s".format(i), 0, false, false, 2, 0, ""));
       }
       emitter.flush

@@ -101,6 +101,103 @@ case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModu
   }
 }
 
+class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emitter[HSPEC] with Logging {
+  val table = taskRequest.job.hspecDestinationTableName
+  val copyStatement = "COPY %s FROM STDIN WITH CSV".format(table.tableName)
+
+  import java.sql.DriverManager
+  import org.postgresql.PGConnection
+  Class.forName("org.postgresql.Driver")
+
+  val urlComps = table.jdbcUrl.split(";")
+  val cleanUrl = urlComps(0)
+  val user = urlComps(1).split("=")(1)
+  val password = urlComps(2).split("=")(1)
+
+  val con = DriverManager.getConnection(cleanUrl, user, password)
+  val pgcon = con.asInstanceOf[PGConnection]
+  val copyApi = pgcon.getCopyAPI()
+
+
+  class DatabaseWriter extends Actor {
+    import akka.util.duration._
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
+
+    val pipedWriter = new java.io.PipedWriter
+
+    def receive = {
+      case r : HSPEC =>
+        //pipedWriter.write("c\ta\t0\t0\t0\t0\t0\t0\n")
+        pipedWriter.write("Fis-26536,3204:457:3,1,1,1,51, 450,30")
+        println("EMITTING to %s".format(java.lang.Thread.currentThread.getId))
+      case "Writer" => self.reply(pipedWriter)
+      case "Wait" => self.reply("ok")
+      case _ => // ignore
+    }
+
+    override def postStop = {pipedWriter.close(); println("WRITER CLOSED")}
+  }
+
+  val writer = actorOf(new DatabaseWriter).start
+
+  class DatabaseReader extends Actor {
+    import akka.util.duration._
+    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
+
+    val pipedWriter : Option[java.io.PipedWriter] = (writer !! "Writer").asInstanceOf[Option[java.io.PipedWriter]]
+    val pipedReader : java.io.PipedReader = pipedWriter match {
+      case Some(writer) => new java.io.PipedReader(writer)
+      case None => throw new Exception("cannot obtain piped writer")
+    }
+
+    def receive = {
+      case "Start" => {
+        println("STARTING DB COPY %s".format(java.lang.Thread.currentThread.getId))
+        copyApi.copyIn(copyStatement, pipedReader)
+/*
+        var numRead=0
+        val buf = new Array[Char](1024)
+
+        numRead=pipedReader.read(buf)
+        while(numRead != -1){
+          val readData = String.valueOf(buf, 0, numRead)
+          println(readData)
+          numRead=pipedReader.read(buf)
+        }
+        */
+        println("DB COPY FINISHED %s".format(java.lang.Thread.currentThread.getId))
+      }
+      case "Wait" => self.reply("ok")
+      case _ => // ignore
+    }
+
+    override def postStop = {pipedReader.close() ; println("READER CLOSED")}
+  }
+
+  val reader = actorOf(new DatabaseReader).start
+  reader ! "Start"
+
+  def emit(r: HSPEC) = {
+    writer ! r
+  }
+
+  def flush = {
+    println("FLUSHING")
+    writer !! "Wait"
+    println("writer finished")
+    writer.stop()
+    println("writer, stopped")
+
+    reader !! "Wait"
+    println("reader finished")
+    reader.stop()
+    println("reader stopped")
+
+    println("DONE")
+  }
+}
+
+
 class DatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest) extends Emitter[HSPEC] with Logging {
 
   val table = taskRequest.job.hspecDestinationTableName
