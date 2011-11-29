@@ -99,7 +99,7 @@ class ZeromqTaskExecutor(val name: String) extends ZeromqHandler with ZeromqJobS
       logger.debug("pre start WorkerActor %s".format(name))
 
       innerSocket.setIdentity(name + "_b")
-      innerSocket.connect("tcp://localhost:5566")
+      innerSocket.connect("tcp://%s:%s".format(Configgy.config.getString("queue-host").getOrElse("localhost"),Configgy.config.getInt("queue-port").getOrElse(5566)))
 
       self.receiveTimeout = Some(2000L)
     }
