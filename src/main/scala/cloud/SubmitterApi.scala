@@ -67,11 +67,8 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
     val req = gson.fromJson(request.body, classOf[JobRequest])
     logger.info("parsed json %s".format(req))
 
-    launcher.launch(req)
+    val id = launcher.launch(req)
 
-    //val job = SubmitterTester.spawnTest()
-    //val id = job.id
-    val id = "123"
     """{"error": null,"id": "%s"}""".format(id)
 
   }

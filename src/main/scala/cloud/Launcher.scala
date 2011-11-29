@@ -64,6 +64,7 @@ class CloudHSPECEmitter @Inject() (val job: JobSubmitter.Job, val submitter: Sub
   def flush = {
     job.seal()
     submitter.registerJob(job)
+    println("<<<<<<<<<<<<<<<<<---------------------- JOB REGISTERED ? %s".format(job))
   }
 }
 
@@ -75,7 +76,12 @@ class Launcher @Inject() (val jobSubmitter: JobSubmitter) extends Logging {
     val entryPoint = injector.instance[EntryPoint]
     entryPoint.run
 
+    val job = injector.instance[JobSubmitter.Job]
+    println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< JOB SUBMITTER ? %s".format(jobSubmitter))
+
     cleanup(injector)
+
+    job.id
   }
 
   def cleanup(injector: Injector) {
