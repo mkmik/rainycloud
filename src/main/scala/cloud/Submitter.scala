@@ -13,7 +13,7 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 
 class Submitter @Inject() (val js: JobSubmitter) extends Logging {
 
-  val jobs = Agent(Map[String, JobSubmitter.Job]())
+  def jobs = Submitter.jobs
   def workers = js.workers
 
   def queueLength = js.queueLength
@@ -31,6 +31,11 @@ class Submitter @Inject() (val js: JobSubmitter) extends Logging {
 //    jobs send (_ - id)
   }
 
+
+}
+
+object Submitter {
+  val jobs = Agent(Map[String, JobSubmitter.Job]())
 }
 
 /*
