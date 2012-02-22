@@ -2,9 +2,11 @@ import AssemblyKeys._ // put this at the top of the file
 
 seq(assemblySettings: _*)
 
+seq(net.virtualvoid.sbt.graph.Plugin.graphSettings: _*)
+
 name := "rainycloud"
 
-version := "1.2.2"
+version := "1.2.3"
 
 organization := "it.cnr"
 
@@ -70,7 +72,6 @@ libraryDependencies ++= Seq(
   "org.geoscript" % "library_2.8.0" % "0.6.1"
 )
 
-
 {
   val scalatraVersion = "2.0.0-SNAPSHOT"
   libraryDependencies ++= Seq(
@@ -99,9 +100,9 @@ mainClass in (Compile, packageBin) := Some("it.cnr.aquamaps.Main")
 mainClass in (Compile, run) := Some("it.cnr.aquamaps.Main")
 
 // we can customize the run
-mainClass in (Compile, assembly) := Some("it.cnr.aquamaps.Main")
+//mainClass in (Compile, assembly) := Some("it.cnr.aquamaps.Main")
 
-test in assembly := {}
+//test in assembly := {}
 
 
 libraryDependencies ++= Seq(
