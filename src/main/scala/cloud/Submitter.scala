@@ -5,6 +5,7 @@ import it.cnr.aquamaps._
 import com.weiglewilczek.slf4s.Logging
 import net.lag.configgy.{ Config, Configgy }
 
+import akka.actor.ActorSystem
 import akka.agent.Agent
 
 import com.google.inject._
@@ -35,6 +36,7 @@ class Submitter @Inject() (val js: JobSubmitter) extends Logging {
 }
 
 object Submitter {
+  implicit val system = ActorSystem("app")
   val jobs = Agent(Map[String, JobSubmitter.Job]())
 }
 

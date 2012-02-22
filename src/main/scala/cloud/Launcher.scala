@@ -1,10 +1,15 @@
 package it.cnr.aquamaps.cloud
+
+import akka.actor.ActorSystem
 import akka.actor.Actor
+import akka.actor.Props
 import akka.actor.Actor._
 import akka.actor.ActorRef
-import akka.actor.Channel
-import akka.actor.PoisonPill
 import akka.dispatch.Dispatchers
+import akka.pattern.{ ask, pipe }
+import akka.util.Timeout
+import akka.util.duration._
+
 import com.google.gson.Gson
 import com.twitter.querulous.evaluator.QueryEvaluator
 import com.twitter.querulous.evaluator.Transaction
@@ -107,7 +112,15 @@ case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModu
   }
 }
 
+object CopyDatabaseHSPECEmitter {
+  val system = ActorSystem("DbSystem")
+}
+
 class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvSerializer: CSVSerializer) extends Emitter[HSPEC] with Logging {
+  import CopyDatabaseHSPECEmitter._
+
+  implicit val timeout: Timeout = Timeout(10 minutes) // needed for `?` below
+
   println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> COPYING partition %s".format(taskRequest.partition))
   val table = taskRequest.job.hspecDestinationTableName
   val copyStatement = "COPY %s FROM STDIN WITH CSV".format(table.tableName)
@@ -132,7 +145,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvS
   //con.execute("truncate hspec2011_11_29_10_18_22_135");
 
   class DatabaseWriter extends Actor {
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
+//    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
 
     val pipedWriter = new PipedOutputStream
 
@@ -143,18 +156,18 @@ class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvS
     def receive = {
       case r : HSPEC =>
         csvEmitter.emit(r)
-      case "Writer" => self.reply(pipedWriter)
-      case "Wait" => csvEmitter.flush; self.reply("ok")
+      case "Writer" => sender ! pipedWriter
+      case "Wait" => csvEmitter.flush; sender ! "ok"
       case _ => // ignore
     }
 
     override def postStop = {pipedWriter.close(); println("WRITER CLOSED")}
   }
 
-  val writer = actorOf(new DatabaseWriter).start
+  val writer = system.actorOf(Props[DatabaseWriter])
 
   class DatabaseReader(val pipedWriter: PipedOutputStream) extends Actor {
-    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
+//    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
 
     val pipedReader = new PipedInputStream(pipedWriter)
 
@@ -164,20 +177,17 @@ class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvS
         copyApi.copyIn(copyStatement, pipedReader)
         println("DB COPY FINISHED %s".format(java.lang.Thread.currentThread.getId))
       }
-      case "Wait" => self.reply("ok")
+      case "Wait" => sender ! "ok"
       case _ => // ignore
     }
 
     override def postStop = {pipedReader.close() ; println("READER CLOSED")}
   }
 
+  import akka.dispatch.Await
+  val pipedWriter = Await.result((writer ask "Writer").mapTo[PipedOutputStream], 10 seconds)
 
-  val pipedWriter = (writer !! "Writer") match {
-    case Some(writer: java.io.PipedOutputStream) => writer
-    case None => throw new Exception("cannot obtain piped writer")
-  }
-
-  val reader = actorOf(new DatabaseReader(pipedWriter)).start
+  val reader = system.actorOf(Props(new DatabaseReader(pipedWriter)))
   reader ! "Start"
 
   def emit(r: HSPEC) = {
@@ -186,14 +196,14 @@ class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvS
 
   def flush = {
     println("FLUSHING")
-    writer !! "Wait"
+    writer ask "Wait"
     println("writer finished")
-    writer.stop()
+    system.stop(writer)
     println("writer, stopped")
 
-    reader !! "Wait"
+    reader ask "Wait"
     println("reader finished")
-    reader.stop()
+    system.stop(reader)
     println("reader stopped")
 
     println("DONE")

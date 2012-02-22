@@ -56,7 +56,9 @@ resolvers += "OpenGeo" at "http://repo.opengeo.org/"
 
 resolvers += "Twitter" at "http://maven.twttr.com/"
 
-resolvers += "Akka" at "http://akka.io/repository/"
+resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
+
+//resolvers += "Akka" at "http://akka.io/repository/"
 
 libraryDependencies ++= Seq(
   "com.google.inject" % "guice" % "3.0",
@@ -69,8 +71,11 @@ libraryDependencies ++= Seq(
   "net.sf.opencsv" % "opencsv" % "2.1",
   "org.supercsv" % "supercsv" % "1.20",
   "org.apache.hadoop" % "hadoop-core" % "0.20.2",
-  "org.geoscript" % "library_2.8.0" % "0.6.1"
+  "org.geoscript" % "library_2.8.0" % "0.6.1",
+  "com.typesafe.akka" % "akka-actor" % "2.0-RC2",
+  "com.typesafe.akka" % "akka-agent" % "2.0-RC2"
 )
+
 
 {
   val scalatraVersion = "2.0.0-SNAPSHOT"
