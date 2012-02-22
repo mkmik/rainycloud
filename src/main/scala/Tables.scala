@@ -7,8 +7,6 @@ package it.cnr.aquamaps
  
 */
 
-import CassandraConversions._
-import org.apache.cassandra.thrift.{ Column, ColumnPath }
 import org.apache.log4j.Logger
 
 import stopwatch.Stopwatch
@@ -81,10 +79,6 @@ object HCAF extends ParseHelper {
 
   def fromTableRow(row: Array[String]): HCAF = build(Map(columns zip row: _*))
 
-  def fromCassandra(x: Iterable[Column]): HCAF = Stopwatch("deserialize") { fromCassandra(columnList2map(x)) }
-
-  def fromCassandra(x: Map[String, Column]): HCAF = build(x mapValues (x => byte2string(x.value.array)))
-
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
     def getInt(value: String) = parseInt(x.get(value))
@@ -139,10 +133,6 @@ object HSPEN extends ParseHelper with Logging {
 
   def fromTableRow(row: Array[String]): HSPEN = build(Map(columns zip row: _*))
 
-  def fromCassandra(x: Iterable[Column]): HSPEN = fromCassandra(columnList2map(x))
-
-  def fromCassandra(x: Map[String, Column]): HSPEN = build(x mapValues (x => bytebuffer2string(x.value)))
-
   def build(x: Map[String, String]) = {
     def get(name: String) = parse(x.get(name))
     def getInt(value: String) = parseInt(x.get(value))
@@ -190,16 +180,9 @@ object HSPEN extends ParseHelper with Logging {
  */
 
 case class HSPEC(var speciesId: String, var csquareCode: String, var probability: Double, var inBox: Boolean, var inFao: Boolean,
-  var faoAreaM: Int, var lme: Int, var eez: String) extends CassandraConfig with CassandraCreator {
-  override def keyspaceName = "Aquamaps"
-  override def columnFamily = "hspec"
+  var faoAreaM: Int, var lme: Int, var eez: String) {
 
   override def toString() = "HSPEC(%s)".format(key)
-
-  final def toCassandra: Row = Stopwatch("hspecSerialize") {
-    (key, List("SpeciesID" --> speciesId,
-      "CsquareCode" --> csquareCode))
-  }
 
   final def key = "%s:%s".format(speciesId, csquareCode)
 }
