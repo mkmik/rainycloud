@@ -14,8 +14,6 @@ object Worker extends App with Logging {
 
   val hostname = InetAddress.getLocalHost.getHostName
 
-  val worker = new ZeromqTaskExecutor("%s-%s".format(hostname, UUID.randomUUID.toString))
-
   logger.info("ok, worker started")
 
   Configgy.config.getInt("worker-agony") match {

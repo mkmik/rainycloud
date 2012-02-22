@@ -82,9 +82,10 @@ object Main extends Logging {
       //WebServer.run(Seq("/submitter/*" -> new ZeromqMonitoring(), "/socket.io/*" -> new ZeromqMonitoringSocket()))
 
       val submitterApi = injector.instance[cloud.SubmitterApi]
-      val zeromqMonitoring = injector.instance[ZeromqMonitoring]
+//      val zeromqMonitoring = injector.instance[ZeromqMonitoring]
 
-      WebServer.run(Seq("/submitter/*" -> zeromqMonitoring, "/api/*" -> submitterApi))
+      WebServer.run(Seq("/api/*" -> submitterApi))
+//      WebServer.run(Seq("/submitter/*" -> zeromqMonitoring, "/api/*" -> submitterApi))
 //      WebServer.run(Seq("/submitter/*" -> new ZeromqMonitoring()))
       // WebServer.run(Seq("/socket.io/*" -> new ZeromqMonitoringSocket()), Some(8781))
     }

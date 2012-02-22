@@ -10,7 +10,7 @@ import com.google.inject.util.{ Modules => GuiceModules }
 
 case class WebServletModule() extends ServletModule {
   override def configureServlets() = {
-    serve("/submitter/*").`with`(classOf[ZeromqMonitoring])
+//    serve("/submitter/*").`with`(classOf[ZeromqMonitoring])
     serve("/*").`with`(classOf[cloud.SubmitterApi])
 
   }
