@@ -128,6 +128,9 @@ class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvS
   val copyApi = pgcon.getCopyAPI()
 
 
+  //con.execute("drop index hspec2011_11_29_10_18_22_135_idx");
+  //con.execute("truncate hspec2011_11_29_10_18_22_135");
+
   class DatabaseWriter extends Actor {
     self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
 

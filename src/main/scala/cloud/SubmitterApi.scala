@@ -89,6 +89,13 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
     }
   }
 
+  get("/list") {
+    val jobs = submitter.jobs()
+    println("JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ %s %s".format(submitter, jobs))
+    """{}"""
+  }
+
+
   def buildMetrics(job: Job) = {
     """ {"load":[{"resId":"W0","value":82.374146}],"throughput":[1308157425388,2722647]} """
   }
