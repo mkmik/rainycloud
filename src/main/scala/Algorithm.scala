@@ -306,7 +306,9 @@ class CompatHSpecAlgorithm extends HspecAlgorithm with Logging {
 
   @inline
   final def getPrimaryProduction(hcafPrimProdMean: Double, hspenPrimProd: Envelope) = {
-    if (hcafPrimProdMean == 0)
+    if (hspenPrimProd.min == -9999.0)
+      1.0
+    else if (hcafPrimProdMean == 0)
       1.0
     else if (hcafPrimProdMean < hspenPrimProd.min)
       0.0
