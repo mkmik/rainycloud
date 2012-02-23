@@ -43,6 +43,12 @@ case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: 
 
   override def toString() = "HCAF(%s)".format(csquareCode)
   def details() = "HCAF(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(csquareCode, centerLat, centerLong, faoAreaM, depth.min, depth.max, depth.mean, sstAnMean, sbtAnMean, salinityMean, salinityBMean, primProdMean, iceConAnn, landDist, eezFirst, lme)
+
+  def expanded() = """
+  csquarecode = %s
+  primprodmean = %s
+  """.format(csquareCode, primProdMean)
+
   def key = csquareCode
 }
 
@@ -120,6 +126,15 @@ case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int
   var meanDepth: Boolean, var iceCon: Envelope, var landDistYN: Boolean) extends Keyed {
   override def toString() = "HSPEN(%s)".format(speciesId)
   def details() = "HSPEN(%s,%s,%s)".format(speciesId, layer, meanDepth)
+  def expanded() = """
+  speciesid = %s
+  primprodmin = %s
+  primprodmax = %s
+  primprodprefmin = %s
+  primprodprefmax = %s
+
+    select speciesid, primprodmin, primprodmax, primprodprefmin, primprodprefmax from hspen where speciesid = '%s'
+  """.format(speciesId, primProd.min, primProd.max, primProd.prefMin, primProd.prefMax, speciesId)
 
   def key = speciesId
 }
