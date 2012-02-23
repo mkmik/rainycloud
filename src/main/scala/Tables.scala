@@ -42,8 +42,7 @@ case class HCAF(var csquareCode: String, var centerLat: Double, var centerLong: 
   var primProdMean: Double, var iceConAnn: Double, var landDist: Double, var eezFirst: String, var lme: Int) extends Keyed {
 
   override def toString() = "HCAF(%s)".format(csquareCode)
-  def details() = "HCAF(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(csquareCode, centerLat, centerLong, faoAreaM, depth.min, depth.max, depth.mean, sstAnMean, sbtAnMean, salinityMean, salinityBMean,
-                                                           primProdMean, iceConAnn, landDist, eezFirst, lme)
+  def details() = "HCAF(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)".format(csquareCode, centerLat, centerLong, faoAreaM, depth.min, depth.max, depth.mean, sstAnMean, sbtAnMean, salinityMean, salinityBMean, primProdMean, iceConAnn, landDist, eezFirst, lme)
   def key = csquareCode
 }
 
