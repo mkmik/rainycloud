@@ -12,11 +12,12 @@
 
 
 char line[LINE_LENGTH];
+char num_buf[LINE_LENGTH];
 
 inline void truncate(char* l) {
   int commas = 0;
-  int skip = 5;
-   
+  int skip = 500;
+
   while(*l) {
     if(*l == ',')
       commas++;
@@ -24,16 +25,31 @@ inline void truncate(char* l) {
     if(commas == 2) {
       l++;
 
-      while(skip-- && *l != ',')
+      // skip precision numer
+      l--;
+      *l = 0;
+
+      char* precision_s = l+1;
+      while(*l != ',')
         l++;
       *l = 0;
-      l--;
-      while(*l == '0')
-        *l-- = 0;
-      if(*l == '.')
-        *l = 0;
+
+      double precision_d;
+      sscanf(precision_s, "%lf", &precision_d);
+      sprintf(num_buf,"%0.3g", precision_d);
+
+      if(num_buf[0] == '1' && num_buf[1] == 'e') {
+        num_buf[0] = '0';
+        num_buf[1] = 0;
+      }
+
+      strcpy(precision_s, num_buf);
+      *(precision_s-1) = ',';
+
+      break;
+
     }
-    
+
     l++;
   }
 }
