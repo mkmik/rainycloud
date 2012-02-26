@@ -22,32 +22,9 @@ inline void truncate(char* l) {
     if(*l == ',')
       commas++;
 
-    if(commas == 2) {
-      l++;
-
-      // skip precision numer
-      l--;
+    if(commas == 3) {
       *l = 0;
-
-      char* precision_s = l+1;
-      while(*l != ',')
-        l++;
-      *l = 0;
-
-      double precision_d;
-      sscanf(precision_s, "%lf", &precision_d);
-      sprintf(num_buf,"%0.3g", precision_d);
-
-      if(num_buf[0] == '1' && num_buf[1] == 'e') {
-        num_buf[0] = '0';
-        num_buf[1] = 0;
-      }
-
-      strcpy(precision_s, num_buf);
-      *(precision_s-1) = ',';
-
       break;
-
     }
 
     l++;
