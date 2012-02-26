@@ -88,9 +88,13 @@ trait CSVSerializer {
 
 /*!## But for now it's safe to use the same format as the existing application, true/false as 1/0 */
 class CompatCSVSerializer extends CSVSerializer {
+  val df = new java.text.DecimalFormat("#.######")
+  df.setRoundingMode(java.math.RoundingMode.HALF_EVEN)
+
   def toCsv(value: Any) = value match {
     case true => "1"
     case false => "0"
+    case x: Double => df.format(x)
     case x => x.toString
   }  
 }
