@@ -1,0 +1,28 @@
+{
+  "configuration": {
+    "property1": "value1", 
+    "property2": "value2"
+  }, 
+  "environment": "windows azure", 
+  "generativeModel": "AQUAMAPS", 
+  "hcafTableName": {
+    "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdatedOLD;username=utente;password=d4science", 
+    "tableName": "hcaf_d"
+  }, 
+  "hspecDestinationTableName": {
+    "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdatedOLD;username=utente;password=d4science", 
+    "tableName": "hspec_test_loading"
+  }, 
+  "hspenTableName": {
+    "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdatedOLD;username=utente;password=d4science", 
+    "tableName": "hspen"
+  }, 
+  "is2050": false, 
+  "isNativeGeneration": true, 
+  "nWorkers": 100, 
+  "occurrenceCellsTable": {
+    "jdbcUrl": "jdbc:postgresql://dbtest.research-infrastructures.eu/aquamapsorgupdatedOLD;username=utente;password=d4science", 
+    "tableName": "maxminlat_hspen"
+  }, 
+  "userName": "gianpaolo.coro"
+}

@@ -5,7 +5,10 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.actor.Actor._
 import akka.actor.ActorRef
+import akka.dispatch.ExecutionContext
+import akka.dispatch.Future
 import akka.dispatch.Dispatchers
+import java.util.concurrent._
 import akka.pattern.{ ask, pipe }
 import akka.util.Timeout
 import akka.util.duration._
@@ -25,6 +28,7 @@ import com.google.inject.util.{ Modules => GuiceModules }
 
 import com.weiglewilczek.slf4s.Logging
 import com.google.gson.Gson
+import java.util.UUID
 
 
 class EmbeddedJobSubmitter extends JobSubmitter with Logging {
@@ -35,8 +39,12 @@ class EmbeddedJobSubmitter extends JobSubmitter with Logging {
   }
 }
 
+object EmbeddedJob {
+  implicit val ec = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
+}
+
 class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Logging {
-  import java.util.UUID
+  import EmbeddedJob._
 
   val id = UUID.randomUUID.toString
 
@@ -46,22 +54,29 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
 
   def addTask(spec: JobSubmitter.TaskSpec) {}
 
-  def seal {
-    println("LAUNCHING JOB REQUEST %s".format(jobRequest))
+  var runningJob: Option[Future[Unit]] = None
 
-    val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (EmbeddedJobModule(jobRequest), HDFSModule()))
-    val entryPoint = injector.instance[EntryPoint]
-    entryPoint.run
-    
-    cleanup(injector)
-    
+  def seal {
+    runningJob = Some(Future {(new EmbeddedExecutor).run})
   }
-  
-  def cleanup(injector: Injector) {
-    /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
-    logger.info("---- job done")
-    injector.instance[Fetcher[HCAF]].shutdown
-    injector.instance[Loader[HSPEN]].shutdown
+
+  class EmbeddedExecutor {
+    def run {
+      println("LAUNCHING JOB REQUEST %s".format(jobRequest))
+
+      val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (EmbeddedJobModule(jobRequest), HDFSModule()))
+      val entryPoint = injector.instance[EntryPoint]
+      entryPoint.run
+
+      cleanup(injector)
+    }
+
+    def cleanup(injector: Injector) {
+      /*! currently Guice lifecycle support is lacking, so we have to perform some cleanup */
+      logger.info("---- job done")
+      injector.instance[Fetcher[HCAF]].shutdown
+      injector.instance[Loader[HSPEN]].shutdown
+    }
   }
 
 }
@@ -77,4 +92,3 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
 
   }
 }
-
