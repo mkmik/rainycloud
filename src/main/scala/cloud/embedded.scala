@@ -48,7 +48,11 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
 
   val id = UUID.randomUUID.toString
 
-  def completed = false
+  def completed = runningJob match {
+    case Some(f) => f.isCompleted
+    case None => false
+  }
+
   def totalTasks = 0
   def completedTasks = 0
 

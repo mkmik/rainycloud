@@ -19,6 +19,9 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 import com.google.inject.name._
 import uk.me.lings.scalaguice.ScalaModule
 
+import scala.collection.JavaConversions._
+
+
 case class WebModule() extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
 
@@ -94,8 +97,11 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
 
   get("/list") {
     val jobs = submitter.jobs()
-    println("JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ %s %s".format(submitter, jobs))
-    """{}"""
+    def jobDetail(j: Job): java.util.Map[_, _] = Map("completed" -> j.completed)
+    val map: java.util.Map[_, _] = jobs mapValues jobDetail
+    val json = gson.toJson(map)
+    println("JSON list: %s".format(json))
+    json
   }
 
 
