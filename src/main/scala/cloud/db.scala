@@ -5,10 +5,13 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.actor.Actor._
 import akka.actor.ActorRef
+import akka.dispatch.ExecutionContext
+import akka.dispatch.Future
 import akka.dispatch.Dispatchers
 import akka.pattern.{ ask, pipe }
 import akka.util.Timeout
 import akka.util.duration._
+import java.util.concurrent._
 import com.typesafe.config.ConfigFactory
 
 
@@ -48,23 +51,42 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   val user = urlComps(1).split("=")(1)
   val password = urlComps(2).split("=")(1)
 
-  val con = DriverManager.getConnection(cleanUrl, user, password)
+  implicit val con = DriverManager.getConnection(cleanUrl, user, password)
   con.setAutoCommit(false)
   val pgcon = con.asInstanceOf[PGConnection]
   val copyApi = pgcon.getCopyAPI()
 
 
-  //con.execute("drop index hspec2011_11_29_10_18_22_135_idx");
+  val meta = con.getMetaData()
+  val indexInformation = meta.getIndexInfo(con.getCatalog(), "public", table.tableName, false, true);
+  println("INDEX INFO %s".format(indexInformation))
+
+  while (indexInformation.next()) {
+    val dbIndexName = indexInformation.getString("index_name");
+    println("DROPPING INDEX %s".format(dbIndexName))
+    execute("drop index %s".format(dbIndexName))
+  }
+  indexInformation.close
+
+  val tableSpace = (query("select tablespace from pg_tables where tablename = 'hspec_suitable10'") {
+    rs =>
+      rs.next
+      rs.getString("tablespace")
+  }).get
+
   execute("truncate %s".format(table.tableName))
 
-  def execute(sql: String) {
+  def execute(sql: String)(implicit con: java.sql.Connection) {
     for(st <- managed(con.createStatement))
       st.execute(sql)
   }
 
-  class DatabaseWriter extends Actor {
-//    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
+  def query[A](sql: String)(body: java.sql.ResultSet => A): Option[A] = {
+    (for(st <- managed(con.createStatement))
+       yield body(st.executeQuery(sql))).opt
+  }
 
+  class DatabaseWriter extends Actor {
     val pipedWriter = new PipedOutputStream
 
     val tableWriter = new TableWriter[HSPEC] { def writer = new OutputStreamWriter(pipedWriter) }
@@ -128,6 +150,27 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     con.setAutoCommit(true)
     execute("vacuum %s".format(table.tableName))
 
+    println("recreating indices for %s".format(table.tableName))
+
+    implicit val ec = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
+    def createIndex(field: String) = Future {
+      implicit val con = DriverManager.getConnection(cleanUrl, user, password)
+
+      val ts = tableSpace match {
+        case "" => ""
+        case x => "TABLESPACE %s".format(x)
+      }
+      val sql = "CREATE INDEX %s_%s_idx ON %s USING btree (%s) %s;".format(table.tableName, field, table.tableName, field, ts)
+      println("CREATING INDEX: %s".format(sql))
+      execute(sql)
+      println("INDEX CREATED:  %s".format(sql))
+    }
+
+    val indices = List("csquarecode", "probability", "speciesid").map(createIndex)
+
+    Await.result(Future.sequence(indices), 10 hours)
+
     println("DONE")
+    con.close
   }
 }
