@@ -24,7 +24,11 @@ case class WebModule() extends AbstractModule with ScalaModule with RainyCloudMo
 
     bind[Submitter].in[Singleton]
     bind[SubmitterApi].in[Singleton]
-    bind[JobSubmitter].to[DummyJobSubmitter].in[Singleton]
+
+    // dummy
+    //bind[JobSubmitter].to[DummyJobSubmitter].in[Singleton]
+
+    bind[JobSubmitter].to[EmbeddedJobSubmitter].in[Singleton]    
   }
 }
 

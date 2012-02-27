@@ -1,5 +1,8 @@
 package it.cnr.aquamaps
 
+import it.cnr.aquamaps.cloud.JobRequest
+
+
 case class TaskRef(val id: String)
 case class Progress(val task: TaskRef, amount: Long, delta: Long)
 
@@ -7,7 +10,7 @@ case class Progress(val task: TaskRef, amount: Long, delta: Long)
 trait JobSubmitter {
   import JobSubmitter._
 
-  def newJob(): Job
+  def newJob(jobRequest: JobRequest): Job
   def newTaskSpec(spec: String) = TaskSpec(spec)
 
   // for monitoring

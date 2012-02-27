@@ -43,7 +43,7 @@ case class LauncherModule(val jobRequest: JobRequest, val jobSubmitter: JobSubmi
 
     @Provides
     @Singleton
-    def job(jobSubmitter: JobSubmitter) = jobSubmitter.newJob
+    def job(jobRequest: JobRequest, jobSubmitter: JobSubmitter) = jobSubmitter.newJob(jobRequest)
   }
 }
 
@@ -105,6 +105,7 @@ case class TaskLauncherModule(val taskRequest: TaskRequest) extends AbstractModu
     //    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz")))
     //        bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
 
+    bind[JobRequest].toInstance(taskRequest.job)
     bind[Emitter[HSPEC]].to[CopyDatabaseHSPECEmitter].in[Singleton]
     bind[Partitioner].toInstance(new StaticPartitioner(Seq("%s %s".format(taskRequest.partition.size, taskRequest.partition.start)).toIterator))
 
@@ -116,13 +117,13 @@ object CopyDatabaseHSPECEmitter {
   val system = ActorSystem("DbSystem")
 }
 
-class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvSerializer: CSVSerializer) extends Emitter[HSPEC] with Logging {
+class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSerializer: CSVSerializer) extends Emitter[HSPEC] with Logging {
   import CopyDatabaseHSPECEmitter._
 
   implicit val timeout: Timeout = Timeout(10 minutes) // needed for `?` below
 
-  println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> COPYING partition %s".format(taskRequest.partition))
-  val table = taskRequest.job.hspecDestinationTableName
+  println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> COPYING partition")
+  val table = jobRequest.hspecDestinationTableName
   val copyStatement = "COPY %s FROM STDIN WITH CSV".format(table.tableName)
 
   import akka.util.duration._
@@ -164,7 +165,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val taskRequest: TaskRequest, val csvS
     override def postStop = {pipedWriter.close(); println("WRITER CLOSED")}
   }
 
-  val writer = system.actorOf(Props[DatabaseWriter])
+  val writer = system.actorOf(Props(new DatabaseWriter))
 
   class DatabaseReader(val pipedWriter: PipedOutputStream) extends Actor {
 //    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
