@@ -118,6 +118,8 @@ object Envelope {
 
  * hspen:          9'263
 
+ copy (select speciesid||':'||lifestage, Layer, SpeciesID, FAOAreas, Pelagic, NMostLat, SMostLat, WMostLong, EMostLong, DepthMin, DepthMax, DepthPrefMin, DepthPrefMax, TempMin, TempMax, TempPrefMin, TempPrefMax, SalinityMin, SalinityMax, SalinityPrefMin, SalinityPrefMax, PrimProdMin, PrimProdMax, PrimProdPrefMin, PrimProdPrefMax, IceConMin, IceConMax, IceConPrefMin, IceConPrefMax, LandDistMin, LandDistMax, LandDistPrefMin, MeanDepth, LandDistPrefMax, LandDistYN from hspen) to '/tmp/hspen.csv' with csv;
+
  The HSPEN Table doesn't need a key. The companion object contains conversion methods
  */
 case class HSPEN(var speciesId: String, var layer: String, var faoAreas: Set[Int],
