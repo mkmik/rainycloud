@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee"
+	xmlns:web="http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"
+	version="2.4">
+
+  <listener>
+    <listener-class>it.cnr.aquamaps.GuiceServletConfig</listener-class>
+  </listener>
+
+  <filter>
+    <filter-name>guiceFilter</filter-name>
+    <filter-class>com.google.inject.servlet.GuiceFilter</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>guiceFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+	<listener>
+		<listener-class> it.cnr.aquamaps.InitializationListener
+		</listener-class>
+	</listener>
+
+<!--	
+
+	<servlet>
+		<servlet-name>submitter</servlet-name>
+		<servlet-class>
+			it.cnr.aquamaps.ZeromqMonitoring
+		</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>submitter</servlet-name>
+		<url-pattern>/submitter/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>api</servlet-name>
+		<servlet-class>
+			it.cnr.aquamaps.cloud.SubmitterApi
+		</servlet-class>
+	</servlet>
+	
+	<servlet-mapping>
+		<servlet-name>api</servlet-name>
+		<url-pattern>/*</url-pattern>
+	</servlet-mapping>
+-->
+
+</web-app>
