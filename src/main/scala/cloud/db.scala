@@ -19,6 +19,7 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 
 import com.weiglewilczek.slf4s.Logging
 import it.cnr.aquamaps.jdbc.LiteDataSource
+import resource._
 
 import it.cnr.aquamaps._
 
@@ -48,12 +49,18 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   val password = urlComps(2).split("=")(1)
 
   val con = DriverManager.getConnection(cleanUrl, user, password)
+  con.setAutoCommit(false)
   val pgcon = con.asInstanceOf[PGConnection]
   val copyApi = pgcon.getCopyAPI()
 
 
   //con.execute("drop index hspec2011_11_29_10_18_22_135_idx");
-  //con.execute("truncate hspec2011_11_29_10_18_22_135");
+  execute("truncate %s".format(table.tableName))
+
+  def execute(sql: String) {
+    for(st <- managed(con.createStatement))
+      st.execute(sql)
+  }
 
   class DatabaseWriter extends Actor {
 //    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
@@ -85,6 +92,8 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
         println("STARTING DB COPY %s".format(java.lang.Thread.currentThread.getId))
         copyApi.copyIn(copyStatement, pipedReader)
         println("DB COPY FINISHED %s".format(java.lang.Thread.currentThread.getId))
+        con.commit
+        println("COMMITED")
       }
       case "Wait" => sender ! "ok"
       case _ => // ignore
@@ -114,6 +123,10 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     println("reader finished")
     system.stop(reader)
     println("reader stopped")
+
+    println("VACUUM %s".format(table.tableName))
+    con.setAutoCommit(true)
+    execute("vacuum %s".format(table.tableName))
 
     println("DONE")
   }
