@@ -24,31 +24,4 @@
 		</listener-class>
 	</listener>
 
-<!--	
-
-	<servlet>
-		<servlet-name>submitter</servlet-name>
-		<servlet-class>
-			it.cnr.aquamaps.ZeromqMonitoring
-		</servlet-class>
-	</servlet>
-
-	<servlet-mapping>
-		<servlet-name>submitter</servlet-name>
-		<url-pattern>/submitter/*</url-pattern>
-	</servlet-mapping>
-
-	<servlet>
-		<servlet-name>api</servlet-name>
-		<servlet-class>
-			it.cnr.aquamaps.cloud.SubmitterApi
-		</servlet-class>
-	</servlet>
-	
-	<servlet-mapping>
-		<servlet-name>api</servlet-name>
-		<url-pattern>/*</url-pattern>
-	</servlet-mapping>
--->
-
 </web-app>
