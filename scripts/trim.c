@@ -6,7 +6,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <fenv.h>
+#include <math.h>
 
 #define LINE_LENGTH 1024
 
@@ -36,12 +37,19 @@ inline void truncate(char* l) {
 
       double precision_d;
       sscanf(precision_s, "%lf", &precision_d);
-      sprintf(num_buf,"%0.3g", precision_d);
+      //double r = nearbyint(precision_d*1000000) / 1000000.0;
+      double r = round(precision_d*1000000) / 1000000.0;
 
-      if(num_buf[0] == '1' && num_buf[1] == 'e') {
-        num_buf[0] = '0';
-        num_buf[1] = 0;
-      }
+      sprintf(num_buf,"%lf", r);
+      //sprintf(num_buf,"%0.6lf", precision_d);
+
+      char *num_buf_end = num_buf + strlen(num_buf) - 1;
+      while(*num_buf_end == '0')
+        *num_buf_end-- = 0;
+      if(*num_buf_end == '.')
+        *num_buf_end-- = 0;
+
+      //if(strlen(precision_s) != 8)
 
       strcpy(precision_s, num_buf);
       *(precision_s-1) = ',';
@@ -55,12 +63,18 @@ inline void truncate(char* l) {
 }
 
 void process_lines(char* file, size_t size) {
+  //fesetround (FE_TONEAREST);
+  fesetround (FE_UPWARD);
   while(1) {
     const char* begin = file;
 
     while(size-- && *file++)
       if(*file == '\n')
         break;
+
+    // last empty line
+    if(begin == file)
+      break;
 
     strncpy(line, begin, file-begin);
     line[file-begin-1] = 0;
