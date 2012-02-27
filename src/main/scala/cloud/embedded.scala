@@ -53,7 +53,7 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
     case None => false
   }
 
-  def totalTasks = 0
+  def totalTasks = 2
   def completedTasks = 0
 
   def addTask(spec: JobSubmitter.TaskSpec) {}
