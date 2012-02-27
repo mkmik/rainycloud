@@ -9,6 +9,8 @@ import akka.dispatch.Dispatchers
 import akka.pattern.{ ask, pipe }
 import akka.util.Timeout
 import akka.util.duration._
+import com.typesafe.config.ConfigFactory
+
 
 import com.google.inject._
 import uk.me.lings.scalaguice.ScalaModule
@@ -22,7 +24,7 @@ import it.cnr.aquamaps._
 
 
 object CopyDatabaseHSPECEmitter {
-  val system = ActorSystem("DbSystem")
+  val system = ActorSystem("DbSystem", ConfigFactory.load("akka.conf"))
 }
 
 class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSerializer: CSVSerializer) extends Emitter[HSPEC] with Logging {
@@ -73,11 +75,9 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     override def postStop = {pipedWriter.close(); println("WRITER CLOSED")}
   }
 
-  val writer = system.actorOf(Props(new DatabaseWriter))
+  val writer = system.actorOf(Props(new DatabaseWriter).withDispatcher("db-writer-dispatcher"))
 
   class DatabaseReader(val pipedWriter: PipedOutputStream) extends Actor {
-//    self.dispatcher = Dispatchers.newThreadBasedDispatcher(self, mailboxCapacity = 10)
-
     val pipedReader = new PipedInputStream(pipedWriter)
 
     def receive = {
@@ -96,7 +96,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   import akka.dispatch.Await
   val pipedWriter = Await.result((writer ask "Writer").mapTo[PipedOutputStream], 10 seconds)
 
-  val reader = system.actorOf(Props(new DatabaseReader(pipedWriter)))
+  val reader = system.actorOf(Props(new DatabaseReader(pipedWriter)).withDispatcher("db-writer-dispatcher"))
   reader ! "Start"
 
   def emit(r: HSPEC) = {
@@ -105,12 +105,12 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
 
   def flush = {
     println("FLUSHING")
-    writer ask "Wait"
+    Await.result(writer ask "Wait", 10 minutes)
     println("writer finished")
     system.stop(writer)
     println("writer, stopped")
 
-    reader ask "Wait"
+    Await.result(reader ask "Wait", 10 minutes)
     println("reader finished")
     system.stop(reader)
     println("reader stopped")
