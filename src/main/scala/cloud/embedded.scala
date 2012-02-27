@@ -68,7 +68,7 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
     def run {
       println("LAUNCHING JOB REQUEST %s".format(jobRequest))
 
-      val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (EmbeddedJobModule(jobRequest), HDFSModule()))
+      val injector = Guice createInjector (GuiceModules `override` (GuiceModules `override` new AquamapsModule() `with` HDFSModule()) `with` EmbeddedJobModule(jobRequest))
       val entryPoint = injector.instance[EntryPoint]
       entryPoint.run
 
@@ -85,14 +85,13 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
 
 }
 
+//case class EmbeddedJobModule(val jobRequest: JobRequest) extends AquamapsModule {
 case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
-    // doesn't override
-    //    bind[TableWriter[HSPEC]].toInstance(new FileSystemTableWriter(conf.getString("hspecFile").getOrElse("/tmp/hspec.csv.gz")))
-    //        bind[PositionalSink[HSPEC]].to[CSVPositionalSink[HSPEC]].in[Singleton]
-
     bind[JobRequest].toInstance(jobRequest)
     bind[Emitter[HSPEC]].to[CopyDatabaseHSPECEmitter].in[Singleton]
 
+     //     YES IT WILL WORK
+//    bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("/asdasd/data/hspenx.csv.gz"))
   }
 }
