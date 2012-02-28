@@ -91,7 +91,6 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
     bind[JobRequest].toInstance(jobRequest)
     bind[Emitter[HSPEC]].to[CopyDatabaseHSPECEmitter].in[Singleton]
 
-     //     YES IT WILL WORK
-//    bind[TableReader[HSPEN]].toInstance(new FileSystemTableReader("/asdasd/data/hspenx.csv.gz"))
+    bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some("select speciesid||':'||lifestage, Layer, SpeciesID, FAOAreas, Pelagic, NMostLat, SMostLat, WMostLong, EMostLong, DepthMin, DepthMax, DepthPrefMin, DepthPrefMax, TempMin, TempMax, TempPrefMin, TempPrefMax, SalinityMin, SalinityMax, SalinityPrefMin, SalinityPrefMax, PrimProdMin, PrimProdMax, PrimProdPrefMin, PrimProdPrefMax, IceConMin, IceConMax, IceConPrefMin, IceConPrefMax, LandDistMin, LandDistMax, LandDistPrefMin, MeanDepth, LandDistPrefMax, LandDistYN from %s".format(jobRequest.hspenTableName.tableName))))
   }
 }

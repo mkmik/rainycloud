@@ -23,13 +23,20 @@ import uk.me.lings.scalaguice.InjectorExtensions._
 import com.weiglewilczek.slf4s.Logging
 import it.cnr.aquamaps.jdbc.LiteDataSource
 import resource._
+import java.io._
 
 import it.cnr.aquamaps._
 
 import java.sql.{Connection, ResultSet}
 
 
+object DBAccessor {
+  implicit val ec = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
+}
+
 trait DBAccessor {
+  import DBAccessor._
+
   import java.sql.DriverManager
   import org.postgresql.PGConnection
   Class.forName("org.postgresql.Driver")
@@ -57,8 +64,29 @@ trait DBAccessor {
 
 }
 
-class DBTableReader[A](val tableName: String) extends TableReader[A] with DBAccessor {
-  def reader = null
+class DBTableReader[A](val table: Table, val query: Option[String] = None) extends TableReader[A] with DBAccessor {
+  import DBAccessor._
+
+  def reader = {
+    val copyStatement = query match {
+      case None => "COPY %s TO STDOUT WITH CSV".format(table.tableName)
+      case Some(q) => "COPY (%s) TO STDOUT WITH CSV".format(q)
+    }
+
+    println("READING FROM %s".format(copyStatement))
+
+    val pipedWriter = new PipedOutputStream
+    val pipedReader = new PipedInputStream(pipedWriter)
+
+    Future {
+      for(con <- managed(connection(table)))
+        getCopyApi(con).copyOut(copyStatement, new OutputStreamWriter(pipedWriter))
+
+      println("DONE READING FROM %s".format(copyStatement))
+    }
+
+    new InputStreamReader(pipedReader)
+  }
 }
 
 object CopyDatabaseHSPECEmitter {
@@ -73,8 +101,6 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> COPYING partition")
   val table = jobRequest.hspecDestinationTableName
   val copyStatement = "COPY %s FROM STDIN WITH CSV".format(table.tableName)
-
-  import java.io._
 
   implicit val con = connection(table)
   con.setAutoCommit(false)
