@@ -13,7 +13,7 @@ import akka.util.Timeout
 import akka.util.duration._
 import java.util.concurrent._
 import com.typesafe.config.ConfigFactory
-
+import it.cnr.aquamaps.Watch.timed
 
 import com.google.inject._
 import uk.me.lings.scalaguice.ScalaModule
@@ -73,19 +73,16 @@ class DBTableReader[A](val table: Table, val query: Option[String] = None) exten
       case Some(q) => "COPY (%s) TO STDOUT WITH CSV".format(q)
     }
 
+    val writer = new StringWriter
+
     println("READING FROM %s".format(copyStatement))
 
-    val pipedWriter = new PipedOutputStream
-    val pipedReader = new PipedInputStream(pipedWriter)
-
-    Future {
-      for(con <- managed(connection(table)))
-        getCopyApi(con).copyOut(copyStatement, new OutputStreamWriter(pipedWriter))
-
+    for(con <- managed(connection(table))) {
+      getCopyApi(con).copyOut(copyStatement, writer)
       println("DONE READING FROM %s".format(copyStatement))
     }
 
-    new InputStreamReader(pipedReader)
+    new StringReader(writer.toString)
   }
 }
 
@@ -111,12 +108,17 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   val indexInformation = meta.getIndexInfo(con.getCatalog(), "public", table.tableName, false, true);
   println("INDEX INFO %s".format(indexInformation))
 
+  var indicesToDrop = Set[String]()
+
   while (indexInformation.next()) {
-    val dbIndexName = indexInformation.getString("index_name");
-    println("DROPPING INDEX %s".format(dbIndexName))
-    execute("drop index %s".format(dbIndexName))
+    indicesToDrop += indexInformation.getString("index_name")
   }
   indexInformation.close
+
+  for(index <- indicesToDrop) {
+    println("DROPPING INDEX %s".format(index))
+    execute("drop index %s".format(index))
+  }
 
   val tableSpace = (query("select tablespace from pg_tables where tablename = 'hspec_suitable10'") {
     rs =>
@@ -201,14 +203,31 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
         case x => "TABLESPACE %s".format(x)
       }
       val sql = "CREATE INDEX %s_%s_idx ON %s USING btree (%s) %s;".format(table.tableName, field, table.tableName, field, ts)
-      println("CREATING INDEX: %s".format(sql))
-      execute(sql)
-      println("INDEX CREATED:  %s".format(sql))
+      timed("CREATING INDEX: %s".format(sql)) {
+        execute(sql)
+      }
     }
 
-    val indices = List("csquarecode", "probability", "speciesid").map(createIndex)
+    //val indices = List("csquarecode", "probability", "speciesid").map(createIndex)
+    //Await.result(Future.sequence(indices), 10 hours)
 
-    Await.result(Future.sequence(indices), 10 hours)
+    def createMultiIndex(fields: List[String]) = Future {
+      implicit val con = connection(table)
+
+      val ts = tableSpace match {
+        case "" => ""
+        case x => "TABLESPACE %s".format(x)
+      }
+      val sql = "CREATE INDEX %s_idx ON %s USING btree (%s) %s;".format(table.tableName, table.tableName, fields.mkString(","), ts)
+
+      timed("CREATING INDEX: %s".format(sql)) {
+        execute(sql)
+      }
+    }
+
+    val index = createMultiIndex(List("speciesid", "csquarecode", "faoaream", "eezall", "lme"))
+    Await.result(index, 10 hours)
+
 
     println("DONE")
     con.close
