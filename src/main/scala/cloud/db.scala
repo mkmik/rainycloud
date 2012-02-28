@@ -44,9 +44,20 @@ trait DBAccessor {
   }
 
   def getCopyApi(con: Connection) = con.asInstanceOf[PGConnection].getCopyAPI()
+
+  def execute(sql: String)(implicit con: Connection) {
+    for(st <- managed(con.createStatement))
+      st.execute(sql)
+  }
+
+  def query[A](sql: String)(body: ResultSet => A)(implicit con: Connection): Option[A] = {
+    (for(st <- managed(con.createStatement))
+       yield body(st.executeQuery(sql))).opt
+  }
+
 }
 
-class DBTableReader[A](val tableName: String) extends TableReader[A] {
+class DBTableReader[A](val tableName: String) extends TableReader[A] with DBAccessor {
   def reader = null
 }
 
@@ -88,16 +99,6 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   }).get
 
   execute("truncate %s".format(table.tableName))
-
-  def execute(sql: String)(implicit con: Connection) {
-    for(st <- managed(con.createStatement))
-      st.execute(sql)
-  }
-
-  def query[A](sql: String)(body: ResultSet => A): Option[A] = {
-    (for(st <- managed(con.createStatement))
-       yield body(st.executeQuery(sql))).opt
-  }
 
   class DatabaseWriter extends Actor {
     val pipedWriter = new PipedOutputStream
