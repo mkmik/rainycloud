@@ -26,12 +26,35 @@ import resource._
 
 import it.cnr.aquamaps._
 
+import java.sql.{Connection, ResultSet}
+
+
+trait DBAccessor {
+  import java.sql.DriverManager
+  import org.postgresql.PGConnection
+  Class.forName("org.postgresql.Driver")
+
+  def connection(table: Table) = {
+    val urlComps = table.jdbcUrl.split(";")
+    val cleanUrl = urlComps(0)
+    val user = urlComps(1).split("=")(1)
+    val password = urlComps(2).split("=")(1)
+
+    DriverManager.getConnection(cleanUrl, user, password)
+  }
+
+  def getCopyApi(con: Connection) = con.asInstanceOf[PGConnection].getCopyAPI()
+}
+
+class DBTableReader[A](val tableName: String) extends TableReader[A] {
+  def reader = null
+}
 
 object CopyDatabaseHSPECEmitter {
   val system = ActorSystem("DbSystem", ConfigFactory.load("akka.conf"))
 }
 
-class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSerializer: CSVSerializer) extends Emitter[HSPEC] with Logging {
+class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSerializer: CSVSerializer) extends Emitter[HSPEC] with Logging with DBAccessor {
   import CopyDatabaseHSPECEmitter._
 
   implicit val timeout: Timeout = Timeout(10 minutes) // needed for `?` below
@@ -40,21 +63,11 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   val table = jobRequest.hspecDestinationTableName
   val copyStatement = "COPY %s FROM STDIN WITH CSV".format(table.tableName)
 
-  import akka.util.duration._
   import java.io._
-  import java.sql.DriverManager
-  import org.postgresql.PGConnection
-  Class.forName("org.postgresql.Driver")
 
-  val urlComps = table.jdbcUrl.split(";")
-  val cleanUrl = urlComps(0)
-  val user = urlComps(1).split("=")(1)
-  val password = urlComps(2).split("=")(1)
-
-  implicit val con = DriverManager.getConnection(cleanUrl, user, password)
+  implicit val con = connection(table)
   con.setAutoCommit(false)
-  val pgcon = con.asInstanceOf[PGConnection]
-  val copyApi = pgcon.getCopyAPI()
+  val copyApi = getCopyApi(con)
 
 
   val meta = con.getMetaData()
@@ -76,12 +89,12 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
 
   execute("truncate %s".format(table.tableName))
 
-  def execute(sql: String)(implicit con: java.sql.Connection) {
+  def execute(sql: String)(implicit con: Connection) {
     for(st <- managed(con.createStatement))
       st.execute(sql)
   }
 
-  def query[A](sql: String)(body: java.sql.ResultSet => A): Option[A] = {
+  def query[A](sql: String)(body: ResultSet => A): Option[A] = {
     (for(st <- managed(con.createStatement))
        yield body(st.executeQuery(sql))).opt
   }
@@ -154,7 +167,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
 
     implicit val ec = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
     def createIndex(field: String) = Future {
-      implicit val con = DriverManager.getConnection(cleanUrl, user, password)
+      implicit val con = connection(table)
 
       val ts = tableSpace match {
         case "" => ""
