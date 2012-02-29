@@ -67,7 +67,7 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
     runningJob = Some(Future {(new EmbeddedExecutor).run})
   }
 
-  class EmbeddedExecutor {
+  class EmbeddedExecutor extends Logging {
     def run {
       println("LAUNCHING JOB REQUEST %s".format(jobRequest))
 
@@ -80,7 +80,9 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
           cleanup(injector)
         }
       } catch {
-        case e: Throwable => errorString = Some(e.getMessage)
+        case e: Throwable =>
+          logger.error("Got exceptions while running", e)
+          errorString = Some(e.getMessage)
       }
     }
 

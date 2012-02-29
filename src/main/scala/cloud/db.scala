@@ -120,11 +120,14 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     execute("drop index %s".format(index))
   }
 
-  val tableSpace = (query("select tablespace from pg_tables where tablename = 'hspec_suitable10'") {
+  val tableSpace = (query("select tablespace from pg_tables where tablename = '%s'".format(table.tableName)) {
     rs =>
       rs.next
       rs.getString("tablespace")
-  }).get
+  }) match {
+    case Some(x) => x
+    case None => throw new Exception("cannot find table %s".format(table.tableName))
+  }
 
   execute("truncate %s".format(table.tableName))
 
