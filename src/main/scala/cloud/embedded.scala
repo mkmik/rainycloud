@@ -91,6 +91,19 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
     bind[JobRequest].toInstance(jobRequest)
     bind[Emitter[HSPEC]].to[CopyDatabaseHSPECEmitter].in[Singleton]
 
-    bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some("select speciesid||':'||lifestage, Layer, SpeciesID, FAOAreas, Pelagic, NMostLat, SMostLat, WMostLong, EMostLong, DepthMin, DepthMax, DepthPrefMin, DepthPrefMax, TempMin, TempMax, TempPrefMin, TempPrefMax, SalinityMin, SalinityMax, SalinityPrefMin, SalinityPrefMax, PrimProdMin, PrimProdMax, PrimProdPrefMin, PrimProdPrefMax, IceConMin, IceConMax, IceConPrefMin, IceConPrefMax, LandDistMin, LandDistMax, LandDistPrefMin, MeanDepth, LandDistPrefMax, LandDistYN from %s".format(jobRequest.hspenTableName.tableName))))
+    val hspenQuery = """SELECT speciesid||':'||lifestage, Layer, SpeciesID, FAOAreas, Pelagic,
+    NMostLat, SMostLat, WMostLong, EMostLong, DepthMin, DepthMax, DepthPrefMin, DepthPrefMax,
+    TempMin, TempMax, TempPrefMin, TempPrefMax, SalinityMin, SalinityMax, SalinityPrefMin, SalinityPrefMax,
+    PrimProdMin, PrimProdMax, PrimProdPrefMin, PrimProdPrefMax, IceConMin, IceConMax, IceConPrefMin, IceConPrefMax,
+    LandDistMin, LandDistMax, LandDistPrefMin, MeanDepth, LandDistPrefMax, LandDistYN FROM %s""".format(jobRequest.hspenTableName.tableName)
+
+    bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some(hspenQuery)))
+
+    val hcafQuery = """SELECT s.CsquareCode,s.OceanArea,s.CenterLat,s.CenterLong,d.FAOAreaM,DepthMin,DepthMax,
+    SSTAnMean,SBTAnMean,SalinityMean, SalinityBMean,PrimProdMean,IceConAnn,d.LandDist,
+    s.EEZFirst,s.LME,d.DepthMean
+    FROM HCAF_S as s INNER JOIN %s as d ON s.CSquareCode=d.CSquareCode where d.oceanarea > 0""".format(jobRequest.hcafTableName.tableName)
+
+    bind[TableReader[HCAF]].toInstance(new DBTableReader(jobRequest.hcafTableName, Some(hcafQuery)))
   }
 }
