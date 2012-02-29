@@ -39,6 +39,7 @@ crossPaths := false
 // fork a new JVM for 'run' and 'test:run'
 fork := true
 
+javaOptions in run += "-javaagent:/home/marko/bin/ZeroTurnaround/JRebel/jrebel.jar"
 
 resolvers += ScalaToolsSnapshots
 
