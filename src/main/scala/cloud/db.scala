@@ -125,7 +125,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
       rs.next
       rs.getString("tablespace")
   }) match {
-    case Some(x) => x
+    case Some(x) => if(x == null) "" else x
     case None => throw new Exception("cannot find table %s".format(table.tableName))
   }
 
