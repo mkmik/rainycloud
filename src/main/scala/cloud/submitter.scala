@@ -31,6 +31,7 @@ object JobSubmitter {
     def totalTasks: Int
     def completedTasks: Int
     def completed: Boolean
+    def error: Option[String] = None
 
     val id: String
   }

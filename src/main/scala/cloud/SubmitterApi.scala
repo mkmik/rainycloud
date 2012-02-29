@@ -31,7 +31,7 @@ case class WebModule() extends AbstractModule with ScalaModule with RainyCloudMo
     // dummy
     //bind[JobSubmitter].to[DummyJobSubmitter].in[Singleton]
 
-    bind[JobSubmitter].to[EmbeddedJobSubmitter].in[Singleton]    
+    bind[JobSubmitter].to[EmbeddedJobSubmitter].in[Singleton]
   }
 }
 
@@ -87,7 +87,7 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
       case None =>
         """{"error" : "unknown job"}"""
       case Some(job) =>
-        val status = if (job.completed) "DONE" else "RUNNING"
+        val status = if (job.completed) (if(job.error.isEmpty) "DONE" else "ERROR") else "RUNNING"
         val metrics = if (job.completed) "{}" else buildMetrics(job)
         val completion = (job.completedTasks: Double) * 100.0 / job.totalTasks
 
@@ -97,7 +97,7 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
 
   get("/list") {
     val jobs = submitter.jobs()
-    def jobDetail(j: Job): java.util.Map[_, _] = Map("completed" -> j.completed)
+    def jobDetail(j: Job): java.util.Map[_, _] = Map("completed" -> j.completed, "error" -> j.error.getOrElse(""))
     val map: java.util.Map[_, _] = jobs mapValues jobDetail
     val json = gson.toJson(map)
     println("JSON list: %s".format(json))
@@ -110,4 +110,3 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
   }
 
 }
-

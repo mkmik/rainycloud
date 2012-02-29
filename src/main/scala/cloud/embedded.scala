@@ -55,6 +55,9 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
 
   def totalTasks = 2
   def completedTasks = 0
+  override def error = errorString
+
+  var errorString: Option[String] = None
 
   def addTask(spec: JobSubmitter.TaskSpec) {}
 
@@ -68,11 +71,17 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
     def run {
       println("LAUNCHING JOB REQUEST %s".format(jobRequest))
 
-      val injector = Guice createInjector (GuiceModules `override` (GuiceModules `override` new AquamapsModule() `with` HDFSModule()) `with` EmbeddedJobModule(jobRequest))
-      val entryPoint = injector.instance[EntryPoint]
-      entryPoint.run
-
-      cleanup(injector)
+      try {
+        val injector = Guice createInjector (GuiceModules `override` (GuiceModules `override` new AquamapsModule() `with` HDFSModule()) `with` EmbeddedJobModule(jobRequest))
+        val entryPoint = injector.instance[EntryPoint]
+        try {
+          entryPoint.run
+        } finally {
+          cleanup(injector)
+        }
+      } catch {
+        case e: Throwable => errorString = Some(e.getMessage)
+      }
     }
 
     def cleanup(injector: Injector) {
