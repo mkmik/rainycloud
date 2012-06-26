@@ -89,7 +89,10 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
       case Some(job) =>
         val status = if (job.completed) (if(job.error.isEmpty) "DONE" else "ERROR") else "RUNNING"
         val metrics = if (job.completed) "{}" else buildMetrics(job)
-        val completion = (job.completedTasks: Double) * 100.0 / job.totalTasks
+        val completion = job.completedTasks match {
+          case -1 => 1.0
+          case x => math.min(95.0, (x: Double) * 100.0 / job.totalTasks)
+        }
 
         """{"id":"%s","status":"%s","completion":%s,"metrics":%s}""".format(id, status, completion, metrics)
     }

@@ -106,6 +106,17 @@ class CSVEmitter[A <: Product] @Inject() (val sink: PositionalSink[A], val csvSe
   def flush = sink.flush
 }
 
+class CountingEmitter[A](val downstream: Emitter[A]) extends Emitter[A] {
+  var count: Int = 0
+
+  def emit(record: A) = {
+    count += 1
+    downstream.emit(record)
+  }
+
+  def flush = downstream.flush
+}
+
 /*!## Table readers
 
  A table reader declares a data source for a `PositionalSource` (or others). We exploit phantom types to easily bind

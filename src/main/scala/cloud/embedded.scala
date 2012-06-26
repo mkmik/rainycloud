@@ -53,8 +53,11 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
     case None => false
   }
 
-  def totalTasks = 2
-  def completedTasks = 0
+  var totalTasksGetter = () => 2
+  var completedTasksGetter = () => 0
+
+  def totalTasks = totalTasksGetter()
+  def completedTasks = completedTasksGetter()
   override def error = errorString
 
   var errorString: Option[String] = None
@@ -74,10 +77,19 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
       try {
         val injector = Guice createInjector (GuiceModules `override` (GuiceModules `override` new AquamapsModule() `with` HDFSModule()) `with` EmbeddedJobModule(jobRequest))
         val entryPoint = injector.instance[EntryPoint]
+
+        val emitter = injector.instance[CountingEmitter[HSPEC]]
+        println("GOT HSPEC EMITTER %s".format(emitter))
+
+        totalTasksGetter = () => 158711108
+        completedTasksGetter = () => emitter.count
+
         try {
           entryPoint.run
         } finally {
+          println("TOTAL NUMBER OF ELEMENTS", emitter.count)
           cleanup(injector)
+          completedTasksGetter = () => -1
         }
       } catch {
         case e: Throwable =>
@@ -100,7 +112,6 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
 case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
     bind[JobRequest].toInstance(jobRequest)
-    bind[Emitter[HSPEC]].to[CopyDatabaseHSPECEmitter].in[Singleton]
 
     val hspenQuery = """SELECT speciesid||':'||lifestage, Layer, SpeciesID, FAOAreas, Pelagic,
     NMostLat, SMostLat, WMostLong, EMostLong, DepthMin, DepthMax, DepthPrefMin, DepthPrefMax,
@@ -109,6 +120,7 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
     LandDistMin, LandDistMax, LandDistPrefMin, MeanDepth, LandDistPrefMax, LandDistYN FROM %s""".format(jobRequest.hspenTableName.tableName)
 
     bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some(hspenQuery)))
+    bind[Emitter[HSPEC]].to[CountingEmitter[HSPEC]].in[Singleton]
 
     val hcafQuery = """SELECT s.CsquareCode,s.OceanArea,s.CenterLat,s.CenterLong,d.FAOAreaM,DepthMin,DepthMax,
     SSTAnMean,SBTAnMean,SalinityMean, SalinityBMean,PrimProdMean,IceConAnn,d.LandDist,
@@ -117,4 +129,8 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
 
     bind[TableReader[HCAF]].toInstance(new DBTableReader(jobRequest.hcafTableName, Some(hcafQuery)))
   }
+
+  @Provides
+  @Singleton
+  def hspecEmitter(jobRequest: JobRequest, csvSerializer: CSVSerializer): CountingEmitter[HSPEC] = new CountingEmitter(new CopyDatabaseHSPECEmitter(jobRequest, csvSerializer))
 }
