@@ -131,6 +131,9 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
 
   execute("truncate %s".format(table.tableName))
 
+  // let's try create them at beginning
+  //createIndices
+
   class DatabaseWriter extends Actor {
     val pipedWriter = new PipedOutputStream
 
@@ -179,24 +182,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     writer ! r
   }
 
-  def flush = {
-    println("FLUSHING")
-    Await.result(writer ask "Wait", 10 minutes)
-    println("writer finished")
-    system.stop(writer)
-    println("writer, stopped")
-
-    Await.result(reader ask "Wait", 10 minutes)
-    println("reader finished")
-    system.stop(reader)
-    println("reader stopped")
-
-    println("VACUUM %s".format(table.tableName))
-    con.setAutoCommit(true)
-    execute("vacuum %s".format(table.tableName))
-
-    println("recreating indices for %s".format(table.tableName))
-
+  def createIndices = {
     implicit val ec = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
     def createIndex(field: String) = Future {
       implicit val con = connection(table)
@@ -205,7 +191,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
         case "" => ""
         case x => "TABLESPACE %s".format(x)
       }
-      val sql = "CREATE INDEX %s_%s_idx ON %s USING btree (%s) %s;".format(table.tableName, field, table.tableName, field, ts)
+      val sql = "CREATE INDEX CONCURRENTLY %s_%s_idx ON %s USING btree (%s) %s;".format(table.tableName, field, table.tableName, field, ts)
       timed("CREATING INDEX: %s".format(sql)) {
         execute(sql)
       }
@@ -230,7 +216,27 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
 
     val index = createMultiIndex(List("speciesid", "csquarecode", "faoaream", "eezall", "lme"))
     Await.result(index, 10 hours)
+  }
 
+  def flush = {
+    println("FLUSHING")
+    Await.result(writer ask "Wait", 10 minutes)
+    println("writer finished")
+    system.stop(writer)
+    println("writer, stopped")
+
+    Await.result(reader ask "Wait", 10 minutes)
+    println("reader finished")
+    system.stop(reader)
+    println("reader stopped")
+
+    println("VACUUM %s".format(table.tableName))
+    con.setAutoCommit(true)
+    execute("vacuum %s".format(table.tableName))
+
+    println("recreating indices for %s".format(table.tableName))
+
+    createIndices
 
     println("DONE")
     con.close
