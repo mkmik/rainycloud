@@ -100,7 +100,6 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   val copyStatement = "COPY %s FROM STDIN WITH CSV".format(table.tableName)
 
   implicit val con = connection(table)
-  con.setAutoCommit(false)
   val copyApi = getCopyApi(con)
 
 
@@ -132,7 +131,11 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   execute("truncate %s".format(table.tableName))
 
   // let's try create them at beginning
-  //createIndices
+  createIndices
+
+  con.setAutoCommit(false)
+
+  execute("truncate %s".format(table.tableName))
 
   class DatabaseWriter extends Actor {
     val pipedWriter = new PipedOutputStream
@@ -207,7 +210,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
         case "" => ""
         case x => "TABLESPACE %s".format(x)
       }
-      val sql = "CREATE INDEX %s_idx ON %s USING btree (%s) %s;".format(table.tableName, table.tableName, fields.mkString(","), ts)
+      val sql = "CREATE INDEX CONCURRENTLY %s_idx ON %s USING btree (%s) %s;".format(table.tableName, table.tableName, fields.mkString(","), ts)
 
       timed("CREATING INDEX: %s".format(sql)) {
         execute(sql)
@@ -215,6 +218,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     }
 
     val index = createMultiIndex(List("speciesid", "csquarecode", "faoaream", "eezall", "lme"))
+    println("FINISHED CREATING INDEX CONCURRENTLY")
     Await.result(index, 10 hours)
   }
 
@@ -230,13 +234,14 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     system.stop(reader)
     println("reader stopped")
 
+    /*
     println("VACUUM %s".format(table.tableName))
     con.setAutoCommit(true)
     execute("vacuum %s".format(table.tableName))
 
     println("recreating indices for %s".format(table.tableName))
-
-    createIndices
+    */
+//    createIndices
 
     println("DONE")
     con.close
