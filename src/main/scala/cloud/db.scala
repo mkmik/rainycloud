@@ -131,8 +131,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   execute("truncate %s".format(table.tableName))
 
   // let's try create them at beginning
-  // hm, no it's too slow
-  //createIndices
+  createIndices
 
   con.setAutoCommit(false)
 
@@ -223,8 +222,8 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     }
 
     val index = createMultiIndex(List("speciesid", "csquarecode", "faoaream", "eezall", "lme"))
-    println("SPAWNED CREATING INDEX CONCURRENTLY")
-    //Await.result(index, 10 hours)
+    println("FINISHED CREATING INDEX CONCURRENTLY")
+    Await.result(index, 10 hours)
   }
 
   def flush = {
@@ -246,7 +245,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
 
     println("recreating indices for %s".format(table.tableName))
     */
-    createIndices
+//    createIndices
 
     println("DONE")
     con.close
