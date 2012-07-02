@@ -138,6 +138,8 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
 
   execute("truncate %s".format(table.tableName))
 
+  object Emitted
+
   class DatabaseWriter extends Actor {
     val pipedWriter = new PipedOutputStream
 
@@ -146,8 +148,10 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     val csvEmitter = new CSVEmitter(sink, csvSerializer)
 
     def receive = {
-      case r : HSPEC =>
+      case r : HSPEC => {
         csvEmitter.emit(r)
+        sender ! Emitted
+      }
       case "Writer" => sender ! pipedWriter
       case "Wait" => csvEmitter.flush; sender ! "ok"
       case _ => // ignore
@@ -183,7 +187,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   reader ! "Start"
 
   def emit(r: HSPEC) = {
-    writer ! r
+    Await.result(writer ask r, 10 minutes)
   }
 
   def createIndices = {
