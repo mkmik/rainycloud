@@ -1,6 +1,5 @@
 package it.cnr.aquamaps.cloud
 
-import akka.actor.ActorSystem
 import akka.actor.Actor
 import akka.actor.Props
 import akka.actor.Actor._
@@ -119,7 +118,7 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
     PrimProdMin, PrimProdMax, PrimProdPrefMin, PrimProdPrefMax, IceConMin, IceConMax, IceConPrefMin, IceConPrefMax,
     LandDistMin, LandDistMax, LandDistPrefMin, MeanDepth, LandDistPrefMax, LandDistYN FROM %s""".format(jobRequest.hspenTableName.tableName)
 
-    bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some(hspenQuery)))
+//    bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some(hspenQuery)))
     bind[Emitter[HSPEC]].to[CountingEmitter[HSPEC]].in[Singleton]
 
     val hcafQuery = """SELECT s.CsquareCode,s.OceanArea,s.CenterLat,s.CenterLong,d.FAOAreaM,DepthMin,DepthMax,
@@ -127,10 +126,11 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
     s.EEZFirst,s.LME,d.DepthMean
     FROM HCAF_S as s INNER JOIN %s as d ON s.CSquareCode=d.CSquareCode where d.oceanarea > 0""".format(jobRequest.hcafTableName.tableName)
 
-    bind[TableReader[HCAF]].toInstance(new DBTableReader(jobRequest.hcafTableName, Some(hcafQuery)))
+//    bind[TableReader[HCAF]].toInstance(new DBTableReader(jobRequest.hcafTableName, Some(hcafQuery)))
   }
 
   @Provides
   @Singleton
-  def hspecEmitter(jobRequest: JobRequest, csvSerializer: CSVSerializer): CountingEmitter[HSPEC] = new CountingEmitter(new CopyDatabaseHSPECEmitter(jobRequest, csvSerializer))
+//  def hspecEmitter(jobRequest: JobRequest, csvSerializer: CSVSerializer): CountingEmitter[HSPEC] = new CountingEmitter(new CopyDatabaseHSPECEmitter(jobRequest, csvSerializer))
+  def hspecEmitter(jobRequest: JobRequest, csvSerializer: CSVSerializer): CountingEmitter[HSPEC] = new CountingEmitter(new CSVEmitter(new CSVPositionalSink(new FileSystemTableWriter("/tmp/my-hspec-%s.gz".format(math.abs(scala.util.Random.nextLong)))), csvSerializer))
 }

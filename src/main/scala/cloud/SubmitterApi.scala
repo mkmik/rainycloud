@@ -90,7 +90,7 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
         val status = if (job.completed) (if(job.error.isEmpty) "DONE" else "ERROR") else "RUNNING"
         val metrics = if (job.completed) "{}" else buildMetrics(job)
         val completion = job.completedTasks match {
-          case -1 => 1.0
+          case -1 => 100.0
           case x => math.min(95.0, (x: Double) * 100.0 / job.totalTasks)
         }
 
@@ -100,7 +100,13 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
 
   get("/list") {
     val jobs = submitter.jobs()
-    def jobDetail(j: Job): java.util.Map[_, _] = Map("completed" -> j.completed, "error" -> j.error.getOrElse(""))
+    def jobDetail(j: Job): java.util.Map[_, _] = {
+      var completion = j.completedTasks match {
+          case -1 => 100.0
+          case x => math.min(95.0, (x: Double) * 100.0 / j.totalTasks)
+        }
+      Map("completed" -> j.completed, "error" -> j.error.getOrElse(""), "completion" -> completion)
+    }
     val map: java.util.Map[_, _] = jobs mapValues jobDetail
     val json = gson.toJson(map)
     println("JSON list: %s".format(json))

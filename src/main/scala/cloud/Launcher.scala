@@ -1,6 +1,5 @@
 package it.cnr.aquamaps.cloud
 
-import akka.actor.ActorSystem
 import akka.actor.Actor
 import akka.actor.Props
 import akka.actor.Actor._
