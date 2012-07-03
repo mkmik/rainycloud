@@ -78,6 +78,7 @@ class Launcher @Inject() (val jobSubmitter: JobSubmitter) extends Logging {
     val injector = Guice createInjector (GuiceModules `override` AquamapsModule() `with` (LauncherModule(jobRequest, jobSubmitter), HDFSModule()))
 
     val entryPoint = injector.instance[EntryPoint]
+    println("EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEENTRY POINT RUNNING %s".format(entryPoint))
     entryPoint.run
 
     val job = injector.instance[JobSubmitter.Job]
