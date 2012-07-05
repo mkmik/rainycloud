@@ -84,7 +84,8 @@ object Main extends Logging {
       val submitterApi = injector.instance[cloud.SubmitterApi]
 //      val zeromqMonitoring = injector.instance[ZeromqMonitoring]
 
-      WebServer.run(Seq("/api/*" -> submitterApi))
+//      WebServer.run(Seq("/api/*" -> submitterApi))
+      WebServer.run(Seq("/RainyCloudWebapplication-1.00.00/*" -> submitterApi))
 //      WebServer.run(Seq("/submitter/*" -> zeromqMonitoring, "/api/*" -> submitterApi))
 //      WebServer.run(Seq("/submitter/*" -> new ZeromqMonitoring()))
       // WebServer.run(Seq("/socket.io/*" -> new ZeromqMonitoringSocket()), Some(8781))

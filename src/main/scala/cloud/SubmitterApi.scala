@@ -57,7 +57,8 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
     contentType = "application/json"
   }
 
-  override def contextPath = getServletConfig().getServletContext().getContextPath() + "/api"
+  //override def contextPath = getServletConfig().getServletContext().getContextPath() + "/api"
+  override def contextPath = getServletConfig().getServletContext().getContextPath() + "/RainyCloudWebapplication-1.00.00"
 
   val style = """ """
 
