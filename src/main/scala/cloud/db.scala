@@ -131,7 +131,7 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
   execute("truncate %s".format(table.tableName))
 
   // let's try create them at beginning
-  createIndices
+  //createIndices
 
   con.setAutoCommit(false)
 

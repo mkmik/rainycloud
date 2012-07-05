@@ -113,6 +113,9 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
     json
   }
 
+  get("/version") {
+    "1.2.3"
+  }
 
   def buildMetrics(job: Job) = {
     """ {"load":[{"resId":"W0","value":82.374146}],"throughput":[1308157425388,2722647]} """
