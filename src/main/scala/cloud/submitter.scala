@@ -28,7 +28,7 @@ object JobSubmitter {
     /*# Don't allow addition of any new tasks */
     def seal()
 
-    def startTime = System.currentTimeMillis
+    val startTime = System.currentTimeMillis
     def totalTasks: Int
     def completedTasks: Int
     def completed: Boolean
