@@ -4,6 +4,9 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.actor.Actor._
 import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.agent.Agent
+import akka.dispatch.Await
 import akka.dispatch.ExecutionContext
 import akka.dispatch.Future
 import akka.dispatch.Dispatchers
@@ -40,6 +43,7 @@ class EmbeddedJobSubmitter extends JobSubmitter with Logging {
 
 object EmbeddedJob {
   implicit val ec = ExecutionContext.fromExecutorService(Executors.newCachedThreadPool())
+  implicit val system = ActorSystem("app")
 }
 
 class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Logging {
@@ -107,6 +111,29 @@ class EmbeddedJob (val jobRequest: JobRequest) extends JobSubmitter.Job with Log
 
 }
 
+class ParallelEmitter[A](val downstream: Emitter[A]) extends Emitter[A] {
+  import EmbeddedJob._
+
+  val partitions = Agent(List[Future[Unit]]())
+
+  def emit(record: A) = downstream.emit(record)
+
+  def flush = {
+    Await.result(Future.sequence(partitions.get), 12 hours)
+    println("AWAITED ALL FUTURES")
+    downstream.flush
+  }
+}
+
+class ParallelGenerator(val downstream:Generator, val emitter: ParallelEmitter[HSPEC]) extends Generator {
+  import EmbeddedJob._
+
+  def computeInPartition(p: Partition) = {
+    val fut = Future { downstream.computeInPartition(p) }
+    emitter.partitions send (_ :+ fut)
+  }
+}
+
 //case class EmbeddedJobModule(val jobRequest: JobRequest) extends AquamapsModule {
 case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule with ScalaModule with RainyCloudModule {
   def configure() {
@@ -118,19 +145,30 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
     PrimProdMin, PrimProdMax, PrimProdPrefMin, PrimProdPrefMax, IceConMin, IceConMax, IceConPrefMin, IceConPrefMax,
     LandDistMin, LandDistMax, LandDistPrefMin, MeanDepth, LandDistPrefMax, LandDistYN FROM %s""".format(jobRequest.hspenTableName.tableName)
 
-    bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some(hspenQuery)))
-    bind[Emitter[HSPEC]].to[CountingEmitter[HSPEC]].in[Singleton]
+    //bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some(hspenQuery)))
+    //bind[Emitter[HSPEC]].to[CountingEmitter[HSPEC]].in[Singleton]
+    bind[Emitter[HSPEC]].to[ParallelEmitter[HSPEC]].in[Singleton]
 
     val hcafQuery = """SELECT s.CsquareCode,s.OceanArea,s.CenterLat,s.CenterLong,d.FAOAreaM,DepthMin,DepthMax,
     SSTAnMean,SBTAnMean,SalinityMean, SalinityBMean,PrimProdMean,IceConAnn,d.LandDist,
     s.EEZFirst,s.LME,d.DepthMean
     FROM HCAF_S as s INNER JOIN %s as d ON s.CSquareCode=d.CSquareCode where d.oceanarea > 0""".format(jobRequest.hcafTableName.tableName)
 
-    bind[TableReader[HCAF]].toInstance(new DBTableReader(jobRequest.hcafTableName, Some(hcafQuery)))
+    //bind[TableReader[HCAF]].toInstance(new DBTableReader(jobRequest.hcafTableName, Some(hcafQuery)))
+
+    bind[Generator].to[ParallelGenerator]
   }
 
   @Provides
   @Singleton
   def hspecEmitter(jobRequest: JobRequest, csvSerializer: CSVSerializer): CountingEmitter[HSPEC] = new CountingEmitter(new CopyDatabaseHSPECEmitter(jobRequest, csvSerializer))
   //def hspecEmitter(jobRequest: JobRequest, csvSerializer: CSVSerializer): CountingEmitter[HSPEC] = new CountingEmitter(new CSVEmitter(new CSVPositionalSink(new FileSystemTableWriter("/tmp/my-hspec-%s.gz".format(math.abs(scala.util.Random.nextLong)))), csvSerializer))
+
+  @Provides
+  @Singleton
+  def parallelEmitter(emitter: CountingEmitter[HSPEC]) = new ParallelEmitter(emitter)
+
+  @Provides
+  @Singleton
+  def parallelGenerator(generator: HSPECGenerator, emitter: ParallelEmitter[HSPEC]) = new ParallelGenerator(generator, emitter)
 }
