@@ -37,8 +37,6 @@ class HSPECGenerator @Inject() (
 
   /*! Then for each partition: */
   def computeInPartition(p: Partition) {
-    val startTime = System.currentTimeMillis
-
     timed("partition %s".format(p.start)) {
       val hcaf = fetcher.fetch(p.start, p.size)
       val records = for {
@@ -51,10 +49,6 @@ class HSPECGenerator @Inject() (
     }
   }
 
-}
-
-object HSPECGenerator {
-  val startTime = System.currentTimeMillis
 }
 
 /*!## Fetcher
