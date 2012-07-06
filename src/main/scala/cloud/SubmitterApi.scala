@@ -106,7 +106,7 @@ class SubmitterApi @Inject() (val launcher: Launcher, val submitter: Submitter) 
           case -1 => 100.0
           case x => math.min(95.0, (x: Double) * 100.0 / j.totalTasks)
         }
-      Map("completed" -> j.completed, "error" -> j.error.getOrElse(""), "completion" -> completion)
+      Map("completed" -> j.completed, "error" -> j.error.getOrElse(""), "completion" -> completion, "startTime" -> new java.util.Date(j.startTime))
     }
     val map: java.util.Map[_, _] = jobs mapValues jobDetail
     val json = gson.toJson(map)
