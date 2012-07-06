@@ -129,7 +129,9 @@ class ParallelGenerator(val downstream:Generator, val emitter: ParallelEmitter[H
   import EmbeddedJob._
 
   def computeInPartition(p: Partition) = {
+    println("Sending computeInPartition(%s) to future".format(p))
     val fut = Future { downstream.computeInPartition(p) }
+    println("Adding future to emitter")
     emitter.partitions send (_ :+ fut)
   }
 }
