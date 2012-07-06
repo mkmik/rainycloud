@@ -143,6 +143,9 @@ class CopyDatabaseHSPECEmitter @Inject() (val jobRequest: JobRequest, val csvSer
     val pipedWriter = new PipedOutputStream
 
     val tableWriter = new TableWriter[HSPEC] { def writer = new OutputStreamWriter(pipedWriter) }
+
+//    val bufferSize = 100 * 1024 * 1024
+//    val tableWriter = new TableWriter[HSPEC] { def writer = new BufferedWriter(new OutputStreamWriter(pipedWriter), bufferSize) }
     val sink = new CSVPositionalSink(tableWriter)
     val csvEmitter = new CSVEmitter(sink, csvSerializer)
 
