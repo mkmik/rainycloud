@@ -3,77 +3,72 @@ The base color for this template is #5c87b2. If you'd like
 to use a different color start by replacing all instances of
 #5c87b2 with your new color.
 ----------------------------------------------------------*/
-body
-{
+body {
     background-color: #5c87b2;
-    font-size: 75%;
-    font-family: Verdana, Tahoma, Arial, "Helvetica Neue", Helvetica, Sans-Serif;
+    font-size: .85em;
+    font-family: "Trebuchet MS", Verdana, Helvetica, Sans-Serif;
     margin: 0;
     padding: 0;
     color: #696969;
 }
 
-a:link
-{
+a:link {
     color: #034af3;
     text-decoration: underline;
 }
-a:visited
-{
+
+a:visited {
     color: #505abc;
 }
-a:hover
-{
+
+a:hover {
     color: #1d60ff;
     text-decoration: none;
 }
-a:active
-{
+
+a:active {
     color: #12eb87;
 }
 
-p, ul
-{
+p, ul {
     margin-bottom: 20px;
     line-height: 1.6em;
 }
 
+header,
+footer,
+nav,
+section {
+    display: block;
+}
+
 /* HEADINGS   
 ----------------------------------------------------------*/
-h1, h2, h3, h4, h5, h6
-{
+h1, h2, h3, h4, h5, h6 {
     font-size: 1.5em;
     color: #000;
 }
 
-h1
-{
+h1 {
     font-size: 2em;
     padding-bottom: 0;
     margin-bottom: 0;
 }
-h2
-{
+
+h2 {
     padding: 0 0 10px 0;
 }
-h3
-{
+
+h3 {
     font-size: 1.2em;
 }
-h4
-{
+
+h4 {
     font-size: 1.1em;
 }
-h5, h6
-{
-    font-size: 1em;
-}
 
-/* this rule styles <h2> tags that are the 
-first child of the left and right table columns */
-.rightColumn > h1, .rightColumn > h2, .leftColumn > h1, .leftColumn > h2
-{
-    margin-top: 0;
+h5, h6 {
+    font-size: 1em;
 }
 
 /* PRIMARY LAYOUT ELEMENTS   
@@ -105,13 +100,14 @@ page width. Or, you can specify an exact pixel width. */
     border: none;
     line-height: 2em;
     font-size: 32px !important;
+    text-shadow: 1px 1px 2px #111;
 }
 
-#main
-{
+#main {
     padding: 30px 30px 15px 30px;
     background-color: #fff;
     margin-bottom: 30px;
+    width: 200%;
     _height: 1px; /* only IE6 applies CSS properties starting with an underscore */
 }
 
@@ -123,6 +119,9 @@ page width. Or, you can specify an exact pixel width. */
     line-height: normal;
     margin: 0;
     font-size: .9em;
+    border-radius: 0 0 4px 4px;
+    -webkit-border-radius: 0 0 4px 4px;
+    -moz-border-radius: 0 0 4px 4px;
 }
 
 /* TAB MENU   
@@ -159,6 +158,9 @@ ul#menu li a
     line-height: 2.8em;
     background-color: #e8eef4;
     color: #034af3;
+    border-radius: 4px 4px 0 0;
+    -webkit-border-radius: 4px 4px 0 0;
+    -moz-border-radius: 4px 4px 0 0;
 }
 
 ul#menu li a:hover
@@ -200,150 +202,136 @@ textarea
     min-height: 75px;
 }
 
-input[type="text"] 
-{
+input[type="text"], 
+input[type="password"] {
+    border: 1px solid #ccc;
+    padding: 2px;
+    font-size: 1.2em;
+    color: #444;
     width: 200px;
-    border: 1px solid #CCC;
 }
 
-input[type="password"] 
-{
-    width: 200px;
-    border: 1px solid #CCC;
+select {
+    border: 1px solid #ccc;
+    padding: 2px;
+    font-size: 1.2em;
+    color: #444;
+}
+
+input[type="submit"] {
+    font-size: 1.2em;
+    padding: 5px;
 }
 
 /* TABLE
 ----------------------------------------------------------*/
 
-table 
-{
-  border: solid 1px #e8eef4;
-  border-collapse: collapse;
+table {
+    border: solid 1px #e8eef4;
+    border-collapse: collapse;
 }
 
-table td 
-{
-  padding: 5px;   
-  border: solid 1px #e8eef4;
+table td {
+    padding: 5px;
+    border: solid 1px #e8eef4;
 }
 
-table th
-{
-  padding: 6px 5px;
-  text-align: left;
-  background-color: #e8eef4; 
-  border: solid 1px #e8eef4;   
+table th {
+    padding: 6px 5px;
+    text-align: left;
+    background-color: #e8eef4;
+    border: solid 1px #e8eef4;
 }
 
 /* MISC  
 ----------------------------------------------------------*/
-.clear
-{
+.clear {
     clear: both;
 }
 
-.error
-{
-    color:Red;
+.error {
+    color: Red;
 }
 
-#menucontainer
-{
-    margin-top:40px;
+nav, 
+#menucontainer {
+    margin-top: 40px;
 }
 
-div#title
-{
-    display:block;
-    float:left;
-    text-align:left;
+div#title {
+    display: block;
+    float: left;
+    text-align: left;
 }
 
-#logindisplay
-{
-    font-size:1.1em;
-    display:block;
-    text-align:right;
-    margin:10px;
-    color:White;
+#logindisplay {
+    font-size: 1.1em;
+    display: block;
+    text-align: right;
+    margin: 10px;
+    color: White;
 }
 
-#logindisplay a:link
-{
+#logindisplay a:link {
     color: white;
     text-decoration: underline;
 }
 
-#logindisplay a:visited
-{
+#logindisplay a:visited {
     color: white;
     text-decoration: underline;
 }
 
-#logindisplay a:hover
-{
+#logindisplay a:hover {
     color: white;
     text-decoration: none;
 }
 
 /* Styles for validation helpers
 -----------------------------------------------------------*/
-.field-validation-error
-{
+.field-validation-error {
     color: #ff0000;
 }
 
-.field-validation-valid
-{
+.field-validation-valid {
     display: none;
 }
 
-.input-validation-error
-{
+.input-validation-error {
     border: 1px solid #ff0000;
     background-color: #ffeeee;
 }
 
-.validation-summary-errors
-{
+.validation-summary-errors {
     font-weight: bold;
     color: #ff0000;
 }
 
-.validation-summary-valid
-{
+.validation-summary-valid {
     display: none;
 }
 
 /* Styles for editor and display helpers
 ----------------------------------------------------------*/
-.display-label
-{
-	color: Black;
-}
-.editor-label
-{
+.display-label, 
+.editor-label {
     margin: 1em 0 0 0;
 }
 
-.display-field,
-.editor-field
-{
-    margin:0.5em 0 0 0;
+.display-field, 
+.editor-field {
+    margin: 0.5em 0 0 0;
 }
 
-.text-box
-{
+.text-box {
     width: 30em;
 }
 
-.text-box.multi-line
-{
+.text-box.multi-line {
     height: 6.5em;
 }
 
-.tri-state
-{
+.tri-state {
     width: 6em;
 }
 
