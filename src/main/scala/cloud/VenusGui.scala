@@ -90,6 +90,21 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
            </table>)
   }
 
+  def formatDate(date: java.util.Date) = new java.text.SimpleDateFormat().format(date)
+
+  class JobReport {
+    var completed: Boolean = false
+    var error: String = ""
+    var completion: Double = 0.0
+    var startTime: String = ""
+
+    def parsedStartedTime = parsedTime(startTime)
+
+    def parsedTime(str: String) =  new java.text.SimpleDateFormat("M d, y h:m:s a").parse(str.replace("Jan", "1").replace("Feb", "2").replace("Mar", "3").replace("Apr", "4").replace("May", "5").replace("Jun", "6").replace("Jul", "7").replace("Aug", "8").replace("Sep", "9").replace("Oct", "10").replace("Nov", "11").replace("Dec", "12"))
+
+    def windowsStartedTime = formatDate(parsedStartedTime)
+  }
+
   def renderJobs() = {
     val jobs = submitter.jobs()
     def jobDetail(j: Job) = {
@@ -101,15 +116,16 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
       val rps = j.completedTasks * 1000.0 / (System.currentTimeMillis - j.startTime)
       val eta = (System.currentTimeMillis + (1000.0 * (j.totalTasks - j.completedTasks) / rps).toInt)
 
-      Map("completed" -> j.completed, "error" -> j.error.getOrElse(""),
-          "completion" -> completion, "startTime" -> new java.util.Date(j.startTime),
-          "rps" -> rps, "eta" -> new java.util.Date(eta.toLong)
-        )
+      val res = new JobReport
+      res.completed = j.completed
+      res.error = j.error.getOrElse("")
+      res.startTime = (new java.util.Date(j.startTime)).toString
+
+      res
     }
     val map = jobs mapValues jobDetail
 
-    def formatDate(date: java.util.Date) = new java.text.SimpleDateFormat().format(date)
-
+/*
     val gson = new Gson()
     object MyMap extends TypeToken[java.util.Map[String, java.util.Map[String, String]]]
     val oldJobs: java.util.Map[String, java.util.Map[String, String]]  = gson.fromJson(new java.io.FileReader("persistenJobList.json"), MyMap.getType)
@@ -118,24 +134,25 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
     val fixedOldJobs = oldJobs mapValues {
       oldJob => oldJob + ("startTime" -> formatDate(new java.util.Date(1341844910290L)))
     }
-
     val mapMerged = (fixedOldJobs mapValues (_.toMap)).toMap ++ map
-    //val mapMerged = map
+*/
+
+    val mapMerged = map
     for((key, value) <- mapMerged)
       yield renderTasks(key, value)
   }
 
-  def renderTasks(uuid: String, value: Map[String, Any]) = {
+  def renderTasks(uuid: String, value: JobReport) = {
     for(i <- scala.util.Random.shuffle((0 to 20).toList))
       yield <tr>
     <td> pasquale.pagano </td>
     <td> http://www.cnr.eu/cloud/demo/RainyCloudApp58 </td>
     <td> aquamaps_{uuid}_{i} </td>
-    <td> {if(value("completed") == "true") "Finished" else "Running"} </td>
+    <td> {if(value.completed) "Finished" else "Running"} </td>
     <td> Cloud.WebRole_IN_{i} </td>
-    <td> {value("startTime")} </td>
+    <td> {value.startTime} </td>
     <td> 7/9/2012 11:27:34 AM </td>
-    <td> Status {getDummyStatus(i, uuid, value)} Stdout {if(value("completed") == "true") getDummyStdout(i, uuid, value) else ""} Stderr {if(value("completed") == "true") getDummyStderr(i, uuid, value) else ""} </td>
+    <td> Status {getDummyStatus(i, uuid, value)} Stdout {if(value.completed) getDummyStdout(i, uuid, value) else ""} Stderr {if(value.completed) getDummyStderr(i, uuid, value) else ""} </td>
     <td>  </td>
     <td>  </td>
     <td class="display-label">
@@ -143,7 +160,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
     </tr>
   }
 
-  def getDummyStatus(i: Int, uuid: String, value: Map[String, Any]) = {
+  def getDummyStatus(i: Int, uuid: String, value: JobReport) = {
     val pseudoUuid = "%s_%s".format(uuid, i)
     val taskGuid = new java.util.UUID(pseudoUuid.hashCode()* 125123125124L, pseudoUuid.hashCode()* 66551241512L)
 
@@ -156,7 +173,7 @@ job-##GUID## Fetching job took 00:13:33.4422671 job-##GUID## Started execution j
     res.replaceAll("##GUID##", taskGuid.toString).replaceAll("##I##", "%s".format(i)).replaceAll("##WORKERGUID##", "%s".format(workerGuid)).replaceAll("##JOBID##", "aquamaps_%s_%s".format(uuid, i))
   }
 
-  def getDummyStdout(i: Int, uuid: String, value: Map[String, Any]) = {
+  def getDummyStdout(i: Int, uuid: String, value: JobReport) = {
     val pseudoUuid = "%s_%s".format(uuid, i)
     val taskGuid = new java.util.UUID(pseudoUuid.hashCode()* 125123125124L, pseudoUuid.hashCode()* 66551241512L)
 
@@ -170,7 +187,7 @@ Status job-##GUID## Fetching job took 00:13:33.4422671 job-##GUID## Started exec
     res.replaceAll("##GUID##", taskGuid.toString).replaceAll("##I##", "%s".format(i)).replaceAll("##WORKERGUID##", "%s".format(workerGuid)).replaceAll("##JOBID##", "aquamaps_%s_%s".format(uuid, i))
   }
 
-  def getDummyStderr(i: Int, uuid: String, value: Map[String, Any]) = {
+  def getDummyStderr(i: Int, uuid: String, value: JobReport) = {
     val res = """Stderr INF [20110614-15:03:30.381] aquamaps: Available modules: BabuDBModule(), COMPSsModule(), COMPSsObjectModule(), HDFSModule() INF [20110614-15:03:30.381] aquamaps: Enabled modules: INF [20110614-15:03:38.864] aquamaps: executed partition %s in 1296ms INF [20110614-15:03:38.864] aquamaps: done"""
 
     res.format(i*1512 % 20)
