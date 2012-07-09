@@ -92,12 +92,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
 
   def formatDate(date: java.util.Date) = new java.text.SimpleDateFormat().format(date)
 
-  class JobReport {
-    var completed: Boolean = false
-    var error: String = ""
-    var completion: Double = 0.0
-    var startTime: String = ""
-
+  class JobReport(val completed: Boolean = false, val error: String = "", val startTime: String = "", val completion: Double = 0.0) {
     def parsedStartedTime = parsedTime(startTime)
 
     def parsedTime(str: String) =  new java.text.SimpleDateFormat("M d, y h:m:s a").parse(str.replace("Jan", "1").replace("Feb", "2").replace("Mar", "3").replace("Apr", "4").replace("May", "5").replace("Jun", "6").replace("Jul", "7").replace("Aug", "8").replace("Sep", "9").replace("Oct", "10").replace("Nov", "11").replace("Dec", "12"))
@@ -116,28 +111,18 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
       val rps = j.completedTasks * 1000.0 / (System.currentTimeMillis - j.startTime)
       val eta = (System.currentTimeMillis + (1000.0 * (j.totalTasks - j.completedTasks) / rps).toInt)
 
-      val res = new JobReport
-      res.completed = j.completed
-      res.error = j.error.getOrElse("")
-      res.startTime = (new java.util.Date(j.startTime)).toString
-
+      val res = new JobReport(j.completed, j.error.getOrElse(""), (new java.util.Date(j.startTime)).toString)
       res
     }
     val map = jobs mapValues jobDetail
 
-/*
     val gson = new Gson()
     object MyMap extends TypeToken[java.util.Map[String, java.util.Map[String, String]]]
     val oldJobs: java.util.Map[String, java.util.Map[String, String]]  = gson.fromJson(new java.io.FileReader("persistenJobList.json"), MyMap.getType)
-    println("OLD JOBS %s".format(oldJobs))
+    val convertedOldJobs = oldJobs mapValues { oj => new JobReport(oj("completed") == "true", oj("error"), oj("startTime")) }
 
-    val fixedOldJobs = oldJobs mapValues {
-      oldJob => oldJob + ("startTime" -> formatDate(new java.util.Date(1341844910290L)))
-    }
-    val mapMerged = (fixedOldJobs mapValues (_.toMap)).toMap ++ map
-*/
+    val mapMerged = convertedOldJobs.toMap ++ map
 
-    val mapMerged = map
     for((key, value) <- mapMerged)
       yield renderTasks(key, value)
   }
