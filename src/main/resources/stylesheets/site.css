@@ -346,3 +346,7 @@ div#title
 {
     width: 6em;
 }
+
+table {
+  font-size: 12px;
+}
