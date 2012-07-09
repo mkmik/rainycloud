@@ -15,6 +15,8 @@ import net.lag.configgy.{ Config, Configgy }
 
 import com.google.inject._
 import scala.collection.JavaConversions._
+import com.google.gson.Gson
+import com.google.gson.reflect._
 
 
 class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with ScalateSupport with UrlSupport {
@@ -108,31 +110,50 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
 
     def formatDate(date: java.util.Date) = new java.text.SimpleDateFormat().format(date)
 
-    val mapDummy = Map("u1" -> Map("completed" -> "Finished",
-                                 "startTime" -> formatDate(new java.util.Date(1341844910290L))),
-                     "u2" -> Map("completed" -> "Finished",
-                                 "startTime" -> formatDate(new java.util.Date(1341844910290L))))
+    val gson = new Gson()
+    object MyMap extends TypeToken[java.util.Map[String, java.util.Map[String, String]]]
+    val oldJobs: java.util.Map[String, java.util.Map[String, String]]  = gson.fromJson(new java.io.FileReader("persistenJobList.json"), MyMap.getType)
+    println("OLD JOBS %s".format(oldJobs))
 
-    for((key, value) <- map) 
+    val fixedOldJobs = oldJobs mapValues {
+      oldJob => oldJob + ("startTime" -> formatDate(new java.util.Date(1341844910290L)))
+    }
+
+    val mapMerged = (fixedOldJobs mapValues (_.toMap)).toMap ++ map
+    //val mapMerged = map
+    for((key, value) <- mapMerged)
       yield renderTasks(key, value)
   }
 
   def renderTasks(uuid: String, value: Map[String, Any]) = {
-    for(i <- 0 to 20)
+    for(i <- scala.util.Random.shuffle((0 to 20).toList))
       yield <tr>
     <td> pasquale.pagano </td>
     <td> http://www.cnr.eu/cloud/demo/RainyCloudApp58 </td>
-    <td> customJobID_{value("startTime")} </td>
-    <td> {value("completed")} </td>
+    <td> aquamaps_{uuid}_{i} </td>
+    <td> {if(value("completed") == "true") "Finished" else "Running"} </td>
     <td> Cloud.WebRole_IN_{i} </td>
     <td> {value("startTime")} </td>
     <td> 7/9/2012 11:27:34 AM </td>
-    <td> {getDummyStdout(i, uuid, value)}</td>
+    <td> Status {getDummyStatus(i, uuid, value)} Stdout {if(value("completed") == "true") getDummyStdout(i, uuid, value) else ""} Stderr {if(value("completed") == "true") getDummyStderr(i, uuid, value) else ""} </td>
     <td>  </td>
     <td>  </td>
     <td class="display-label">
     <label for="No_job-specific_actions_available">No job-specific actions available</label>        </td>
     </tr>
+  }
+
+  def getDummyStatus(i: Int, uuid: String, value: Map[String, Any]) = {
+    val pseudoUuid = "%s_%s".format(uuid, i)
+    val taskGuid = new java.util.UUID(pseudoUuid.hashCode()* 125123125124L, pseudoUuid.hashCode()* 66551241512L)
+
+    val pseudoWorker = "%sgqwga%ssgoiqwg%s".format(i, i, i)
+    val workerGuid = new java.util.UUID(pseudoWorker.hashCode()* 125123125124L, pseudoWorker.hashCode()* 66551241512L)
+
+    val res = """
+job-##GUID## Fetching job took 00:13:33.4422671 job-##GUID## Started execution job-##GUID## Running job-##GUID## User created: gw000001 job-##GUID## Application installed job-##GUID## Download took 00:00:10.0147109 job-##GUID## The command line is job-##GUID## Working directory "C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##":> Executable "C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\RunInAzure.bat" Args " "-e" "100 1000" --hcaf C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hcaf.csv.gz --hspen C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hspen.csv.gz --hspec C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\output.gz " job-##GUID## process.StartInfo.WorkingDirectory C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID## job-##GUID## process.StartInfo.FileName C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\RunInAzure.bat job-##GUID## process.StartInfo.Arguments "-e" "100 1000" --hcaf C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hcaf.csv.gz --hspen C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hspen.csv.gz --hspec C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\output.gz job-##GUID## process.StartInfo.LoadUserProfile False job-##GUID## process.StartInfo.UserName job-##GUID## process.StartInfo.Domain job-##GUID## process.StartInfo.Password XMZzQeSPjV2V123.- job-##GUID## process.StartInfo.RedirectStandardError True job-##GUID## process.StartInfo.RedirectStandardInput False job-##GUID## process.StartInfo.RedirectStandardOutput True job-##GUID## process.StartInfo.UseShellExecute False job-##GUID## process.StartInfo.Verb job-##GUID## process.StartInfo.WindowStyle Normal job-##GUID## process.EnableRaisingEvents True job-##GUID## process.StartInfo.EnvironmentVariables["jobId"] ##JOBID## job-##GUID## process.StartInfo.EnvironmentVariables["jobSubmissionEndpoint"] http://localhost/AcceptLocalJobs/Cloud.WebRole_IN_##I## job-##GUID## Application ended: C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\RunInAzure.bat job-##GUID## Upload took 00:00:09.9486023"""
+
+    res.replaceAll("##GUID##", taskGuid.toString).replaceAll("##I##", "%s".format(i)).replaceAll("##WORKERGUID##", "%s".format(workerGuid)).replaceAll("##JOBID##", "aquamaps_%s_%s".format(uuid, i))
   }
 
   def getDummyStdout(i: Int, uuid: String, value: Map[String, Any]) = {
@@ -143,12 +164,17 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
     val workerGuid = new java.util.UUID(pseudoWorker.hashCode()* 125123125124L, pseudoWorker.hashCode()* 66551241512L)
 
     val res = """
-Status job-##GUID## Fetching job took 00:13:33.4422671 job-##GUID## Started execution job-##GUID## Running job-##GUID## User created: gw000001 job-##GUID## Application installed job-##GUID## Download took 00:00:10.0147109 job-##GUID## The command line is job-##GUID## Working directory "C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##":> Executable "C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\RunInAzure.bat" Args " "-e" "100 1000" --hcaf C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hcaf.csv.gz --hspen C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hspen.csv.gz --hspec C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\output.gz " job-##GUID## process.StartInfo.WorkingDirectory C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID## job-##GUID## process.StartInfo.FileName C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\RunInAzure.bat job-##GUID## process.StartInfo.Arguments "-e" "100 1000" --hcaf C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hcaf.csv.gz --hspen C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hspen.csv.gz --hspec C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\output.gz job-##GUID## process.StartInfo.LoadUserProfile False job-##GUID## process.StartInfo.UserName job-##GUID## process.StartInfo.Domain job-##GUID## process.StartInfo.Password XMZzQeSPjV2V123.- job-##GUID## process.StartInfo.RedirectStandardError True job-##GUID## process.StartInfo.RedirectStandardInput False job-##GUID## process.StartInfo.RedirectStandardOutput True job-##GUID## process.StartInfo.UseShellExecute False job-##GUID## process.StartInfo.Verb job-##GUID## process.StartInfo.WindowStyle Normal job-##GUID## process.EnableRaisingEvents True job-##GUID## process.StartInfo.EnvironmentVariables["jobId"] customJobID_6/14/2011 5:02:47 PM job-##GUID## process.StartInfo.EnvironmentVariables["jobSubmissionEndpoint"] http://localhost/AcceptLocalJobs/Cloud.WebRole_IN_##I## job-##GUID## Application ended: C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\RunInAzure.bat job-##GUID## Upload took 00:00:09.9486023 Stdout C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##>set myPath=C:\Resources\Directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\ C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##>copy C:\Resources\Directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\rainycloud.conf .\rainycloud.conf 1 file(s) copied. C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##>C:\Resources\Directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\jre6\bin\java -jar C:\Resources\Directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\rainycloud_2.8.1-assembly-1.0.jar "-e" "100 1000" --hcaf C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hcaf.csv.gz --hspen C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hspen.csv.gz --hspec C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\output.gz C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##>set myPath= Stderr INF [20110614-15:03:30.381] aquamaps: Available modules: BabuDBModule(), COMPSsModule(), COMPSsObjectModule(), HDFSModule() INF [20110614-15:03:30.381] aquamaps: Enabled modules: INF [20110614-15:03:38.864] aquamaps: executed partition 1000 in 1296ms INF [20110614-15:03:38.864] aquamaps: done
+Status job-##GUID## Fetching job took 00:13:33.4422671 job-##GUID## Started execution job-##GUID## Running job-##GUID## User created: gw000001 job-##GUID## Application installed job-##GUID## Download took 00:00:10.0147109 job-##GUID## The command line is job-##GUID## Working directory "C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##":> Executable "C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\RunInAzure.bat" Args " "-e" "100 1000" --hcaf C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hcaf.csv.gz --hspen C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hspen.csv.gz --hspec C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\output.gz " job-##GUID## process.StartInfo.WorkingDirectory C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID## job-##GUID## process.StartInfo.FileName C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\RunInAzure.bat job-##GUID## process.StartInfo.Arguments "-e" "100 1000" --hcaf C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hcaf.csv.gz --hspen C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hspen.csv.gz --hspec C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\output.gz job-##GUID## process.StartInfo.LoadUserProfile False job-##GUID## process.StartInfo.UserName job-##GUID## process.StartInfo.Domain job-##GUID## process.StartInfo.Password XMZzQeSPjV2V123.- job-##GUID## process.StartInfo.RedirectStandardError True job-##GUID## process.StartInfo.RedirectStandardInput False job-##GUID## process.StartInfo.RedirectStandardOutput True job-##GUID## process.StartInfo.UseShellExecute False job-##GUID## process.StartInfo.Verb job-##GUID## process.StartInfo.WindowStyle Normal job-##GUID## process.EnableRaisingEvents True job-##GUID## process.StartInfo.EnvironmentVariables["jobId"] ##JOBID## job-##GUID## process.StartInfo.EnvironmentVariables["jobSubmissionEndpoint"] http://localhost/AcceptLocalJobs/Cloud.WebRole_IN_##I## job-##GUID## Application ended: C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\RunInAzure.bat job-##GUID## Upload took 00:00:09.9486023 Stdout C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##>set myPath=C:\Resources\Directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\ C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##>copy C:\Resources\Directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\rainycloud.conf .\rainycloud.conf 1 file(s) copied. C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##>C:\Resources\Directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\jre6\bin\java -jar C:\Resources\Directory\##WORKERGUID##.Cloud.WebRole.GWApps\101720a5cb4f49d280a8e8ce458541d8e1e38085\rainycloud_2.8.1-assembly-1.0.jar "-e" "100 1000" --hcaf C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hcaf.csv.gz --hspen C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\hspen.csv.gz --hspec C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##\output.gz C:\Resources\directory\##WORKERGUID##.Cloud.WebRole.GWUsers\gw000001\job-##GUID##>set myPath=
     """
 
-    res.replaceAll("##GUID##", taskGuid.toString).replaceAll("##I##", "%s".format(i)).replaceAll("##WORKERGUID##", "%s".format(workerGuid))
+    res.replaceAll("##GUID##", taskGuid.toString).replaceAll("##I##", "%s".format(i)).replaceAll("##WORKERGUID##", "%s".format(workerGuid)).replaceAll("##JOBID##", "aquamaps_%s_%s".format(uuid, i))
+  }
+
+  def getDummyStderr(i: Int, uuid: String, value: Map[String, Any]) = {
+    val res = """Stderr INF [20110614-15:03:30.381] aquamaps: Available modules: BabuDBModule(), COMPSsModule(), COMPSsObjectModule(), HDFSModule() INF [20110614-15:03:30.381] aquamaps: Enabled modules: INF [20110614-15:03:38.864] aquamaps: executed partition %s in 1296ms INF [20110614-15:03:38.864] aquamaps: done"""
+
+    res.format(i*1512 % 20)
   }
 
 
 }
-
