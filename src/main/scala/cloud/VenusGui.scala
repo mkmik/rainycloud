@@ -75,8 +75,6 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
     <html>
       <head>
         <link href={ url("/stylesheets/site.css") } rel="stylesheet" type="text/css"/>
-        <script src={ url("/javascripts/jquery-1.6.1.min.js") } type="text/javascript"></script>
-        <script src={ url("/javascripts/app.js") } type="text/javascript"></script>
         <title>Rainy cloud</title>
         <style>{ style }</style>
       </head>
@@ -84,7 +82,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
         <div class="page">
           <div id="header">
             <div id="title"><h1>VENUS-C Management Application</h1></div>
-            <div id="logindisplay">[<a href={ url("/login") }>Log On</a>]</div>
+            <div id="logindisplay">[<a href={ url("/Account/LogOn") }>Log On</a>]</div>
             <div id="menucontainer">
               <ul id="menu">
                 <li>
