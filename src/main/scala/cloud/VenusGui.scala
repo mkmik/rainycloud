@@ -225,7 +225,7 @@ Status job-##GUID## Fetching job took 00:13:33.4422671 job-##GUID## Started exec
   }
 
   def getDummyStderr(i: Int, uuid: String, value: JobReport) = {
-    val res = """Stderr INF [20110614-15:03:30.381] aquamaps: Available modules: BabuDBModule(), COMPSsModule(), COMPSsObjectModule(), HDFSModule() INF [20110614-15:03:30.381] aquamaps: Enabled modules: INF [20110614-15:03:38.864] aquamaps: executed partition %s in 1296ms INF [20110614-15:03:38.864] aquamaps: done"""
+    val res = """Stderr INF aquamaps: Available modules: BabuDBModule(), COMPSsModule(), COMPSsObjectModule(), HDFSModule() INF  aquamaps: Enabled modules: INF  aquamaps: executed partition %s in 1296ms INF aquamaps: done"""
 
     res.format(i*1512 % 20)
   }
