@@ -92,12 +92,14 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
 
   def formatDate(date: java.util.Date) = new java.text.SimpleDateFormat().format(date)
 
-  class JobReport(val completed: Boolean = false, val error: String = "", val startTime: String = "", val completion: Double = 0.0) {
+  class JobReport(val completed: Boolean = false, val error: String = "", val startTime: String = "", val completion: Double = 0.0) extends Ordered[JobReport] {
     def parsedStartedTime = parsedTime(startTime)
 
     def parsedTime(str: String) =  new java.text.SimpleDateFormat("M d, y h:m:s a").parse(str.replace("Jan", "1").replace("Feb", "2").replace("Mar", "3").replace("Apr", "4").replace("May", "5").replace("Jun", "6").replace("Jul", "7").replace("Aug", "8").replace("Sep", "9").replace("Oct", "10").replace("Nov", "11").replace("Dec", "12"))
 
     def windowsStartedTime = formatDate(parsedStartedTime)
+
+    def compare(other: JobReport) = parsedStartedTime.compareTo(other.parsedStartedTime)
   }
 
   def renderJobs() = {
@@ -123,7 +125,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
 
     val mapMerged = convertedOldJobs.toMap ++ map
 
-    for((key, value) <- mapMerged)
+    for((key, value) <- mapMerged.toList.sorted)
       yield renderTasks(key, value)
   }
 
