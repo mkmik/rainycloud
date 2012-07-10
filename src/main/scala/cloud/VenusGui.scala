@@ -30,6 +30,46 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
 
   override def contextPath = getServletConfig().getServletContext().getContextPath() + "/JobManagement"
 
+//  override def isScalatePageEnabled = false
+
+  override protected def renderErrorPage(e: Throwable) = {
+    response.getWriter.print((
+<html>
+    <head>
+        <title>The resource cannot be found.</title>
+        <style>
+      {scala.xml.Unparsed("""body{font-family:"Verdana";font-weight:normal;font-size: .7em;color:black;}
+         p {font-family:"Verdana";font-weight:normal;color:black;margin-top: -5px}
+         b {font-family:"Verdana";font-weight:bold;color:black;margin-top: -5px}
+         H1 { font-family:"Verdana";font-weight:normal;font-size:18pt;color:red }
+         H2 { font-family:"Verdana";font-weight:normal;font-size:14pt;color:maroon }
+         pre {font-family:"Lucida Console";font-size: .9em}
+         .marker {font-weight: bold; color: black;text-decoration: none;}
+         .version {color: gray;}
+         .error {margin-bottom: 10px;}
+         .expandable { text-decoration:underline; font-weight:bold; color:navy; cursor:hand; }""")}
+        </style>
+    </head>
+
+    <body bgcolor="white">
+
+            <span><H1>Server Error in '/JobManagement' Application.{scala.xml.Unparsed("<hr width=100% size=1 color=silver>")}</H1>
+
+            <h2> <i>Internal server error.</i> </h2></span>
+
+            {scala.xml.Unparsed("""<font face="Arial, Helvetica, Geneva, SunSans-Regular, sans-serif ">""")}
+
+            <b> Description: </b>HTTP 500. There is a problem with the resource you are looking for, and it cannot be displayed
+      {scala.xml.Unparsed("<br><br>")}
+
+            <b> Requested URL: </b>/JobManagement{scala.xml.Unparsed("<br><br>")}
+
+    </body>
+</html>
+).toString)
+  }
+
+
   def render(content: Seq[Node]) = {
     <html>
       <head>
@@ -50,7 +90,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
                   <a href={ url("/") }>Home</a>
                 </li>
                 <li>
-                  <a href={ url("/submit-test") }>Submit test</a>
+                  <a href={ url("/About") }>About</a>
                 </li>
               </ul>
             </div>
@@ -133,7 +173,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
     for(i <- scala.util.Random.shuffle((0 to 20).toList))
       yield <tr>
     <td> pasquale.pagano </td>
-    <td> http://www.cnr.eu/cloud/demo/RainyCloudApp58 </td>
+    <td> http://www.d4science.eu/RainyCloudApp58 </td>
     <td> aquamaps_{uuid}_{i} </td>
     <td> {if(value.completed) "Finished" else "Running"} </td>
     <td> Cloud.WebRole_IN_{i} </td>
