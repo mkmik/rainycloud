@@ -33,6 +33,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
 //  override def isScalatePageEnabled = false
 
   override protected def renderErrorPage(e: Throwable) = {
+    println("GOT exception %s".format(e))
     response.getWriter.print((
 <html>
     <head>
@@ -130,16 +131,23 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
            </table>)
   }
 
-  def formatDate(date: java.util.Date) = new java.text.SimpleDateFormat().format(date)
+  def formatDate(date: java.util.Date) = new java.text.SimpleDateFormat("M d, y h:m:s a").format(date)
 
   class JobReport(val completed: Boolean = false, val error: String = "", val startTime: String = "", val completion: Double = 0.0) extends Ordered[JobReport] {
-    def parsedStartedTime = parsedTime(startTime)
+    def parsedStartedTime: java.util.Date = {
+      println("SHOULD PARSE %s".format(startTime))
+      parsedTime(startTime)
+    }
 
-    def parsedTime(str: String) =  new java.text.SimpleDateFormat("M d, y h:m:s a").parse(str.replace("Jan", "1").replace("Feb", "2").replace("Mar", "3").replace("Apr", "4").replace("May", "5").replace("Jun", "6").replace("Jul", "7").replace("Aug", "8").replace("Sep", "9").replace("Oct", "10").replace("Nov", "11").replace("Dec", "12"))
+    def parsedTime(str: String): java.util.Date = new java.text.SimpleDateFormat("M d, y h:m:s a").parse(str.replace("Jan", "1").replace("Feb", "2").replace("Mar", "3").replace("Apr", "4").replace("May", "5").replace("Jun", "6").replace("Jul", "7").replace("Aug", "8").replace("Sep", "9").replace("Oct", "10").replace("Nov", "11").replace("Dec", "12"))
 
     def windowsStartedTime = formatDate(parsedStartedTime)
 
-    def compare(other: JobReport) = parsedStartedTime.compareTo(other.parsedStartedTime)
+    def compare(other: JobReport) = {
+      println("COMPARING %s %s = %s", parsedStartedTime, other.parsedStartedTime, parsedStartedTime.compareTo(other.parsedStartedTime))
+      //parsedStartedTime.compareTo(other.parsedStartedTime)
+      other.parsedStartedTime.compareTo(parsedStartedTime)
+    }
   }
 
   def renderJobs() = {
@@ -153,7 +161,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
       val rps = j.completedTasks * 1000.0 / (System.currentTimeMillis - j.startTime)
       val eta = (System.currentTimeMillis + (1000.0 * (j.totalTasks - j.completedTasks) / rps).toInt)
 
-      val res = new JobReport(j.completed, j.error.getOrElse(""), (new java.util.Date(j.startTime)).toString)
+      val res = new JobReport(j.completed, j.error.getOrElse(""), new java.text.SimpleDateFormat("M d, y h:m:s a").format(new java.util.Date(j.startTime)))
       res
     }
     val map = jobs mapValues jobDetail
@@ -165,7 +173,9 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
 
     val mapMerged = convertedOldJobs.toMap ++ map
 
-    for((key, value) <- mapMerged.toList.sorted)
+    println("sorted dates: %s".format((for ((key, value) <- mapMerged.toList.sorted(Ordering.by[(String, JobReport), JobReport](_._2))) yield value.parsedStartedTime)))
+
+    for((key, value) <- mapMerged.toList.sorted(Ordering.by[(String, JobReport), JobReport](_._2)))
       yield renderTasks(key, value)
   }
 
@@ -178,7 +188,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
     <td> {if(value.completed) "Finished" else "Running"} </td>
     <td> Cloud.WebRole_IN_{i} </td>
     <td> {value.startTime} </td>
-    <td> 7/9/2012 11:27:34 AM </td>
+    <td> {value.startTime} </td>
     <td> <div class="status" onClick={"window.location='#aquamaps_%s_%s'".format(uuid, i)} id={"aquamaps_%s_%s".format(uuid, i)}>Status {getDummyStatus(i, uuid, value)} Stdout {if(value.completed) getDummyStdout(i, uuid, value) else ""} Stderr {if(value.completed) getDummyStderr(i, uuid, value) else ""} </div></td>
     <td>  </td>
     <td>  </td>
