@@ -139,7 +139,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
     <td> Cloud.WebRole_IN_{i} </td>
     <td> {value.startTime} </td>
     <td> 7/9/2012 11:27:34 AM </td>
-    <td> Status {getDummyStatus(i, uuid, value)} Stdout {if(value.completed) getDummyStdout(i, uuid, value) else ""} Stderr {if(value.completed) getDummyStderr(i, uuid, value) else ""} </td>
+    <td> <div class="status" onClick={"window.location='#aquamaps_%s_%s'".format(uuid, i)} id={"aquamaps_%s_%s".format(uuid, i)}>Status {getDummyStatus(i, uuid, value)} Stdout {if(value.completed) getDummyStdout(i, uuid, value) else ""} Stderr {if(value.completed) getDummyStderr(i, uuid, value) else ""} </div></td>
     <td>  </td>
     <td>  </td>
     <td class="display-label">

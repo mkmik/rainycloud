@@ -339,3 +339,16 @@ table {
   font-size: 12px;
   font-family: Verdana, Tahoma, Arial, 'Helvetica Neue', Helvetica, sans-serif;
 }
+
+table td .status {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  height: 42px;
+}
+
+table td .status:target {
+  text-overflow: ellipsis;
+  overflow: inherit;
+  height: inherit;
+  background-color: #ffd;
+}
