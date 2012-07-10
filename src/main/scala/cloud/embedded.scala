@@ -147,7 +147,7 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
     PrimProdMin, PrimProdMax, PrimProdPrefMin, PrimProdPrefMax, IceConMin, IceConMax, IceConPrefMin, IceConPrefMax,
     LandDistMin, LandDistMax, LandDistPrefMin, MeanDepth, LandDistPrefMax, LandDistYN FROM %s""".format(jobRequest.hspenTableName.tableName)
 
-    //bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some(hspenQuery)))
+    bind[TableReader[HSPEN]].toInstance(new DBTableReader(jobRequest.hspenTableName, Some(hspenQuery)))
     //bind[Emitter[HSPEC]].to[CountingEmitter[HSPEC]].in[Singleton]
     bind[Emitter[HSPEC]].to[ParallelEmitter[HSPEC]].in[Singleton]
 
