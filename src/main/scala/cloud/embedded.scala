@@ -156,7 +156,7 @@ case class EmbeddedJobModule(val jobRequest: JobRequest) extends AbstractModule 
     s.EEZFirst,s.LME,d.DepthMean
     FROM HCAF_S as s INNER JOIN %s as d ON s.CSquareCode=d.CSquareCode where d.oceanarea > 0""".format(jobRequest.hcafTableName.tableName)
 
-    //bind[TableReader[HCAF]].toInstance(new DBTableReader(jobRequest.hcafTableName, Some(hcafQuery)))
+    bind[TableReader[HCAF]].toInstance(new DBTableReader(jobRequest.hcafTableName, Some(hcafQuery)))
 
     bind[Generator].to[ParallelGenerator]
   }
