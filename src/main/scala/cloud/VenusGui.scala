@@ -197,7 +197,7 @@ class VenusGui @Inject() (val submitter: Submitter) extends ScalatraServlet with
     <td> pasquale.pagano </td>
     <td> http://www.d4science.eu/RainyCloudApp58 </td>
     <td> aquamaps_{uuid}_{i} </td>
-    <td> {if(isHalted(runStatus)) "Finished" else runStatus} </td>
+    <td> {if(isHalted(runStatus)) (if(value.error == "") "Finished" else "Failed") else runStatus} </td>
     <td> Cloud.WebRole_IN_{w} </td>
     <td> {value.startTime} </td>
     <td> {value.startTime} </td>
@@ -237,9 +237,17 @@ Status job-##GUID## Fetching job took 00:13:33.4422671 job-##GUID## Started exec
   }
 
   def getDummyStderr(i: Int, uuid: String, value: JobReport) = {
-    val res = """Stderr INF aquamaps: Available modules: BabuDBModule(), COMPSsModule(), COMPSsObjectModule(), HDFSModule() INF  aquamaps: Enabled modules: INF  aquamaps: executed partition %s in 1296ms INF aquamaps: done"""
+    if(value.error == "") {
+      val res = """Stderr INF aquamaps: Available modules: BabuDBModule(), COMPSsModule(), COMPSsObjectModule(), HDFSModule() INF  aquamaps: Enabled modules: INF  aquamaps: executed partition %s iINF aquamaps: done"""
 
-    res.format(i*1512 % 20)
+
+      res.format(i)
+    } else {
+      val res = """Stderr INF aquamaps: Available modules: BabuDBModule(), COMPSsModule(), COMPSsObjectModule(), HDFSModule() INF  aquamaps: Enabled modules: INF  aquamaps: BROKEN PIPE"""
+
+
+      res.format(i)
+    }
   }
 
 
